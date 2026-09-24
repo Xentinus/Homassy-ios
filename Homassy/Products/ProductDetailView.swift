@@ -15,6 +15,8 @@ struct ProductDetailView: View {
     @State private var model: ProductDetailModel?
     @State private var editing = false
     @State private var amountTarget: AmountTarget?
+    @State private var editingItem: EditTarget?
+    @State private var pendingTransfer: TransferRequest?
     @State private var feedback = 0
 
     /// Which stock item the amount sheet is for, and whether it consumes or moves.
@@ -23,6 +25,15 @@ struct ProductDetailView: View {
         let itemID: UUID
         let purpose: Purpose
         var id: String { "\(itemID)-\(purpose)" }
+    }
+
+    struct EditTarget: Identifiable { let id: UUID }
+
+    /// A stock item waiting for the "move to another space" confirmation.
+    struct TransferRequest: Identifiable {
+        let itemID: UUID
+        let target: PickerOption
+        var id: String { "\(itemID)-\(target.id)" }
     }
 
     var body: some View {
@@ -53,6 +64,23 @@ struct ProductDetailView: View {
                     }
                 }
             }
+        }
+        .sheet(item: $editingItem) { target in
+            if let form = model?.editForm(for: target.id) {
+                StockFormSheet(model: form)
+            }
+        }
+        .confirmationDialog("stock.transfer.title", isPresented: Binding(get: { pendingTransfer != nil },
+                                                                         set: { if !$0 { pendingTransfer = nil } }),
+                            titleVisibility: .visible, presenting: pendingTransfer) { request in
+            Button("stock.transfer.confirm \(request.target.name)") {
+                if model?.transfer(request.itemID, to: request.target.id) == true {
+                    feedback += 1
+                    model?.reload()
+                }
+            }
+            .accessibilityIdentifier("stock.transfer.confirm")
+            Button("common.cancel", role: .cancel) {}
         }
         .alert("common.error", isPresented: Binding(get: { model?.errorMessage != nil },
                                                     set: { if !$0 { model?.dismissError() } })) {
@@ -170,9 +198,11 @@ struct ProductDetailView: View {
         ForEach(model.stockGroups) { group in
             Section {
                 ForEach(group.items) { item in
-                    StockItemRow(item: item, canEdit: model.canEdit,
+                    StockItemRow(item: item, canEdit: model.canEdit, transferTargets: model.transferTargets,
                                  consume: { amountTarget = AmountTarget(itemID: item.id, purpose: .consume) },
                                  move: { amountTarget = AmountTarget(itemID: item.id, purpose: .move) },
+                                 edit: { editingItem = EditTarget(id: item.id) },
+                                 transfer: { pendingTransfer = TransferRequest(itemID: item.id, target: $0) },
                                  delete: { perform(model.deleteItem(item.id)) })
                         .swipeActions(edge: .trailing) {
                             if model.canEdit {
@@ -245,9 +275,11 @@ struct ProductDetailView: View {
     private func load() {
         guard model == nil else { model?.reload(); return }
         guard let product = try? services.products.product(publicId: productID) else { return }
+        let spaceStore = services.spaceStore
         let fresh = ProductDetailModel(product: product, products: services.products, inventory: services.inventory,
                                        storageLocations: services.storageLocations, pending: services.pendingDeletions,
-                                       userRecordName: services.userRecordName)
+                                       userRecordName: services.userRecordName,
+                                       spaces: { (try? spaceStore.allSpaces()) ?? [] })
         fresh.reload()
         model = fresh
     }
@@ -260,8 +292,11 @@ struct ProductDetailView: View {
 private struct StockItemRow: View {
     let item: StockItemCard
     let canEdit: Bool
+    let transferTargets: [PickerOption]
     let consume: () -> Void
     let move: () -> Void
+    let edit: () -> Void
+    let transfer: (PickerOption) -> Void
     let delete: () -> Void
 
     var body: some View {
@@ -272,6 +307,18 @@ private struct StockItemRow: View {
                         .accessibilityIdentifier("stock.consume")
                     Button(action: move) { Label("product.detail.move", systemImage: "arrow.right.arrow.left") }
                         .accessibilityIdentifier("stock.move")
+                    Button(action: edit) { Label("stock.edit", systemImage: "pencil") }
+                        .accessibilityIdentifier("stock.edit")
+                    if !transferTargets.isEmpty {
+                        Menu {
+                            ForEach(transferTargets) { target in
+                                Button(target.name) { transfer(target) }
+                            }
+                        } label: {
+                            Label("stock.transfer", systemImage: "house")
+                        }
+                        .accessibilityIdentifier("stock.transfer")
+                    }
                     Divider()
                     Button(role: .destructive, action: delete) { Label("common.delete", systemImage: "trash") }
                         .accessibilityIdentifier("stock.delete")

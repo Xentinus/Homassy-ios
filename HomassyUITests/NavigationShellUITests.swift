@@ -63,18 +63,31 @@ final class NavigationShellUITests: XCTestCase {
         XCTAssertFalse(newHousehold.isEnabled)
     }
 
+    /// Shopping keeps P1-07's placeholder `+` item until P4-03.
     @MainActor
     func testAddMenuExistsWithPlaceholderItems() throws {
         let app = XCUIApplication.homassy()
         app.launch()
-        XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
-
-        let addMenu = app.buttons["addMenu"].firstMatch
+        app.openTab("Shopping")
+        XCTAssertTrue(app.navigationBars["Shopping"].waitForExistence(timeout: 10))
+        let addMenu = app.navigationBars["Shopping"].buttons["addMenu"]
         XCTAssertTrue(addMenu.waitForExistence(timeout: 5))
         addMenu.tap()
-        let addItem = app.buttons["Add item"].firstMatch
+        let placeholder = app.buttons["New shopping list"].firstMatch
+        XCTAssertTrue(placeholder.waitForExistence(timeout: 5))
+        XCTAssertFalse(placeholder.isEnabled)
+    }
+
+    /// Inventory's `+` menu is live since P2-08.
+    @MainActor
+    func testInventoryAddMenuIsLive() throws {
+        let app = XCUIApplication.homassy()
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
+        app.navigationBars["Inventory"].buttons["addMenu"].tap()
+        let addItem = app.buttons["addMenu.stock"]
         XCTAssertTrue(addItem.waitForExistence(timeout: 5))
-        XCTAssertFalse(addItem.isEnabled)
+        XCTAssertTrue(addItem.isEnabled)
     }
 
     @MainActor

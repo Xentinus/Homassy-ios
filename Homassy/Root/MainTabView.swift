@@ -10,10 +10,10 @@ struct MainTabView: View {
         if UITestHooks.contains("-uiTestUndoDemo") {
             UITestUndoDemoView()
         } else {
-            TabPlaceholderView(tab: .inventory)
+            InventoryView()
         }
         #else
-        TabPlaceholderView(tab: .inventory)
+        InventoryView()
         #endif
     }
 

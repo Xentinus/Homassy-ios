@@ -284,3 +284,47 @@ struct AmountFormModelTests {
         #expect(form.value == Decimal(string: "0.25")!)
     }
 }
+
+@MainActor
+@Suite("ProductDetailModel edit and transfer")
+struct ProductDetailEditTransferTests {
+    func model(_ env: ServiceTestEnvironment, _ product: Product, spaces: [Space]) -> ProductDetailModel {
+        let model = ProductDetailModel(product: product, products: env.productService(), inventory: env.inventoryService(),
+                                       storageLocations: env.storageService(), pending: PendingDeletions(),
+                                       userRecordName: ServiceTestEnvironment.user,
+                                       locale: Locale(identifier: "en_US"), spaces: { spaces })
+        model.reload()
+        return model
+    }
+
+    @Test func editFormLoadsTheItem() async throws {
+        let env = try ServiceTestEnvironment()
+        let eggs = try await env.makeProduct("Eggs")
+        let item = try env.stock(eggs, 10, expiresInDays: 20)
+        let form = try #require(model(env, eggs, spaces: [env.personal]).editForm(for: item.publicId))
+        #expect(form.isEditing && form.quantityText == "10")
+        form.quantityText = "8"
+        #expect(form.save() == item)
+        #expect(item.quantity == 8)
+    }
+
+    @Test("Transfer targets are the other spaces; moving copies the item there")
+    func transfer() async throws {
+        let env = try ServiceTestEnvironment()
+        let home = try env.makeHousehold("Home")
+        let eggs = try await env.makeProduct("Eggs")
+        let item = try env.stock(eggs, 6)
+        let model = model(env, eggs, spaces: [env.personal, home])
+        #expect(model.transferTargets.map(\.name) == ["Home"])
+        #expect(model.transfer(item.publicId, to: home.publicId))
+        model.reload()
+        #expect(model.stockGroups.isEmpty)
+        #expect(try env.inventoryService().items(in: home).map(\.quantity) == [6])
+    }
+
+    @Test func noOtherSpaceMeansNoTargets() async throws {
+        let env = try ServiceTestEnvironment()
+        let eggs = try await env.makeProduct("Eggs")
+        #expect(model(env, eggs, spaces: [env.personal]).transferTargets.isEmpty)
+    }
+}
