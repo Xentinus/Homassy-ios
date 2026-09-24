@@ -20,7 +20,8 @@ struct StorageLocationFormSheet: View {
                 Section("storageLocations.form.color") {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 44))], spacing: 12) {
                         swatch(nil)
-                        ForEach(StorageColor.allCases) { swatch($0) }
+                        ForEach(StorageColor.palette) { swatch($0) }
+                        customSwatch
                     }
                     .padding(.vertical, 4)
                 }
@@ -44,6 +45,29 @@ struct StorageLocationFormSheet: View {
             }
         }
         .presentationDetents(verticalSizeClass == .compact ? [.large] : [.medium, .large])
+    }
+
+    /// The system colour picker for any other colour, shown as the last swatch.
+    private var customSwatch: some View {
+        let selected = model.color?.isCustom == true
+        let selection = Binding<Color>(
+            get: { model.color.flatMap { $0.isCustom ? $0.color : nil } ?? Palette.mocha700 },
+            set: { model.color = StorageColor.custom(from: $0) })
+        return ZStack {
+            ColorPicker(selection: selection, supportsOpacity: false) {
+                Text(StorageColor.custom(0).localizedName)
+            }
+            .labelsHidden()
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityIdentifier("color.custom")
+            if selected {
+                Circle()
+                    .strokeBorder(Color.primary, lineWidth: 2)
+                    .frame(width: 40, height: 40)
+                    .allowsHitTesting(false)
+            }
+        }
+        .frame(minWidth: 44, minHeight: 44)
     }
 
     private func swatch(_ color: StorageColor?) -> some View {

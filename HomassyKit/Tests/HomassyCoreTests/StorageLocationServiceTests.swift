@@ -142,11 +142,11 @@ struct StorageLocationServiceTests {
     }
 
     @Test func colourNamesAreTranslated() {
-        for color in StorageColor.allCases {
+        for color in StorageColor.palette {
             for id in ["hu_HU", "en_US", "de_DE"] {
                 #expect(CoreLocalization.lookup("storageColor.\(color.rawValue)", locale: Locale(identifier: id)) != nil)
             }
         }
-        #expect(StorageColor.allCases.count == 8)
+        #expect(StorageColor.palette.count == 8)
     }
 }

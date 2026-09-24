@@ -208,6 +208,29 @@
         }
       }
     },
+    "storageColor.custom" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigene Farbe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom color"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Egyedi szín"
+          }
+        }
+      }
+    },
     "storageColor.gray" : {
       "extractionState" : "manual",
       "localizations" : {

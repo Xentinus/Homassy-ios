@@ -40,6 +40,14 @@ final class StorageLocationsUITests: XCTestCase {
         XCTAssertTrue(app.buttons["storageLocation.row.Cellar"].waitForExistence(timeout: 5))
     }
 
+    func testCustomColorPickerIsOffered() {
+        let app = openStorageLocations()
+        app.buttons["storageLocations.add"].tap()
+        let custom = app.descendants(matching: .any)["color.custom"]
+        XCTAssertTrue(custom.waitForExistence(timeout: 5))
+        XCTAssertTrue(custom.isHittable)
+    }
+
     func testSwipeDeleteAndUndo() {
         let app = openStorageLocations()
         let pantry = app.buttons["storageLocation.row.Pantry"]
