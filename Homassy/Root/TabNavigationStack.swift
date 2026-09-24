@@ -32,6 +32,9 @@ struct TabNavigationStack<Root: View>: View {
         NavigationStack(path: $path) {
             root
         }
+        .overlay(alignment: .bottom) {
+            UndoToastOverlay()
+        }
         .onAppear {
             guard !restored else { return }
             restored = true

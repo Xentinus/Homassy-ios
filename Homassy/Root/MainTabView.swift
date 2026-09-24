@@ -4,10 +4,23 @@ import SwiftUI
 struct MainTabView: View {
     @SceneStorage("selectedTab") private var selectedTab: AppTab = .inventory
 
+    @ViewBuilder
+    private var inventoryRoot: some View {
+        #if DEBUG
+        if UITestHooks.contains("-uiTestUndoDemo") {
+            UITestUndoDemoView()
+        } else {
+            TabPlaceholderView(tab: .inventory)
+        }
+        #else
+        TabPlaceholderView(tab: .inventory)
+        #endif
+    }
+
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab(AppTab.inventory.title, systemImage: AppTab.inventory.systemImage, value: AppTab.inventory) {
-                TabNavigationStack(tab: .inventory) { TabPlaceholderView(tab: .inventory) }
+                TabNavigationStack(tab: .inventory) { inventoryRoot }
             }
             Tab(AppTab.shopping.title, systemImage: AppTab.shopping.systemImage, value: AppTab.shopping) {
                 TabNavigationStack(tab: .shopping) { TabPlaceholderView(tab: .shopping) }
@@ -29,11 +42,11 @@ struct MainTabView: View {
 #if DEBUG
 #Preview("Portrait") {
     let model = AppModel.preview()
-    MainTabView().environment(model).environment(model.selection)
+    MainTabView().environment(model).environment(model.selection).environment(model.undoQueue)
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
     let model = AppModel.preview()
-    MainTabView().environment(model).environment(model.selection)
+    MainTabView().environment(model).environment(model.selection).environment(model.undoQueue)
 }
 #endif

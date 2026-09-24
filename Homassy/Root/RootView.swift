@@ -8,6 +8,7 @@ struct RootView: View {
     var body: some View {
         accountContent
             .environment(app.selection)
+            .environment(app.undoQueue)
             .task {
                 app.accountGate.startObserving()
                 await app.accountGate.refresh()
