@@ -11,6 +11,7 @@ struct InventoryView: View {
     @State private var model: InventoryModel?
     @State private var addingStock = false
     @State private var creatingProduct = false
+    @State private var scanning = false
 
     var body: some View {
         Group {
@@ -22,6 +23,7 @@ struct InventoryView: View {
         .task(id: selection.selectedSpaceID) { rebuildModel() }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
                                                         object: services.context)) { _ in model?.reload() }
+        .barcodeFlow(isScanning: $scanning, space: model?.space)
         .sheet(isPresented: $addingStock) {
             if let space = model?.space {
                 StockFormSheet(model: StockFormModel(mode: .add(space, productID: nil), inventory: services.inventory,
@@ -123,6 +125,8 @@ struct InventoryView: View {
                     .accessibilityIdentifier("addMenu.stock")
                 Button { creatingProduct = true } label: { Label("add.product", systemImage: "shippingbox") }
                     .accessibilityIdentifier("addMenu.product")
+                Button { scanning = true } label: { Label("barcode.scan", systemImage: "barcode.viewfinder") }
+                    .accessibilityIdentifier("addMenu.barcode")
             }
             .disabled(model?.canEdit != true)
         }
