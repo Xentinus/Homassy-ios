@@ -19,6 +19,9 @@ enum UITestHooks {
         }
     }
 
+    /// `-resetIntroduction`: forget that the introduction was seen, so it shows on this launch.
+    static var resetIntroduction: Bool { contains("-resetIntroduction") }
+
     /// True whenever the app was launched by a UI test.
     static var isActive: Bool { accountState != nil }
 
@@ -50,5 +53,9 @@ nonisolated struct UITestAccountStatus: AccountStatusProviding {
     func userRecordName() async throws -> String {
         UITestHooks.userRecordName
     }
+}
+/// Never shows the system prompt during UI tests.
+nonisolated struct UITestNotificationAuthorizer: NotificationAuthorizing {
+    func requestAuthorization() async throws -> Bool { false }
 }
 #endif

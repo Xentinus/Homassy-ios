@@ -6,16 +6,25 @@ struct RootView: View {
     @Environment(AppModel.self) private var app
 
     var body: some View {
-        accountContent
-            .environment(app.selection)
-            .environment(app.undoQueue)
-            .task {
-                app.accountGate.startObserving()
-                await app.accountGate.refresh()
+        Group {
+            if app.introduction.shouldShow {
+                IntroductionView(model: app.introduction)
+                    .transition(.opacity)
+            } else {
+                accountContent
+                    .transition(.opacity)
             }
-            .onChange(of: app.accountGate.state, initial: true) { _, state in
-                if state == .available { app.bootstrapPersonalSpace() }
-            }
+        }
+        .motionAware(Motion.settle, value: app.introduction.shouldShow)
+        .environment(app.selection)       // P1-07
+        .environment(app.undoQueue)       // P1-08
+        .task {
+            app.accountGate.startObserving()
+            await app.accountGate.refresh()
+        }
+        .onChange(of: app.accountGate.state, initial: true) { _, state in
+            if state == .available { app.bootstrapPersonalSpace() }
+        }
     }
 
     @ViewBuilder
