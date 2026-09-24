@@ -64,3 +64,10 @@ fastlane/test_output
 # IDE
 .idea/
 .vscode/
+
+# Claude / AI tooling and local docs (never committed)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+docs/
