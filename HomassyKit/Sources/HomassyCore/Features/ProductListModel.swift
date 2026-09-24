@@ -29,7 +29,15 @@ public struct ProductSection: Identifiable, Equatable, Sendable {
 @Observable
 public final class ProductListModel {
     public let space: Space
-    public var searchText = "" { didSet { if searchText != oldValue { reload() } } }
+    public var searchText = "" {
+        didSet {
+            guard searchText != oldValue else { return }
+            if searchText != unknownBarcode { unknownBarcode = nil }
+            reload()
+        }
+    }
+    /// A scanned code that matched no product; the view offers creating one with it. Cleared once the text changes.
+    public private(set) var unknownBarcode: String?
     public var selectedCategory: String? { didSet { if selectedCategory != oldValue { reload() } } }
     public private(set) var categories: [String] = []
     public private(set) var errorMessage: String?
@@ -86,6 +94,23 @@ public final class ProductListModel {
                     expiryLevel: ExpirationStatus.level(expiresAt: first?.expiresAt, now: now, calendar: calendar),
                     expiryText: ExpirationStatus.cardLabel(expiresAt: first?.expiresAt, now: now,
                                                            calendar: calendar, locale: locale))
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Search by a scanned code (user request, 2026-09-24). A match shows that product, UPC-A and EAN-13 forms
+    /// included (`BarcodeRouter`); no match leaves the normalised code in the search field and in `unknownBarcode`.
+    public func searchBarcode(_ raw: String, symbology: BarcodeSymbology = .other) {
+        do {
+            switch try BarcodeRouter(products: products).route(barcode: raw, symbology: symbology, in: space) {
+            case .known(let product):
+                unknownBarcode = nil
+                searchText = product.barcode ?? product.name
+            case .unknown(let code):
+                unknownBarcode = code
+                searchText = code
             }
         } catch {
             errorMessage = error.localizedDescription

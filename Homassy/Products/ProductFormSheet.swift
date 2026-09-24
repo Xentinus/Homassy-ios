@@ -5,6 +5,14 @@ import SwiftUI
 struct ProductFormSheet: View {
     @State private var model: ProductFormModel
     @State private var pickerItem: PhotosPickerItem?
+    @State private var takingPhoto = false
+    /// A photo waiting in the editor (crop to a square, rotate); only the edited result reaches the draft.
+    @State private var editing: EditablePhoto?
+
+    struct EditablePhoto: Identifiable {
+        let id = UUID()
+        let data: Data
+    }
     @Environment(\.dismiss) private var dismiss
     private let onSaved: (Product) -> Void
 
@@ -20,15 +28,25 @@ struct ProductFormSheet: View {
                     HStack(spacing: 16) {
                         ProductImageView(data: model.draft.imageData, size: 72)
                         VStack(alignment: .leading, spacing: 8) {
-                            PhotosPicker(selection: $pickerItem, matching: .images) {
-                                Label("product.form.choosePhoto", systemImage: "photo")
+                            if CameraPicker.isAvailable {
+                                Button { takingPhoto = true } label: {
+                                    Label("product.form.takePhoto", systemImage: "camera")
+                                }
+                                .accessibilityIdentifier("product.form.takePhoto")
                             }
-                            if model.draft.imageData != nil {
+                            choosePhotoButton
+                            if let data = model.draft.imageData {
+                                Button { editing = EditablePhoto(data: data) } label: {
+                                    Label("product.form.editPhoto", systemImage: "crop.rotate")
+                                }
+                                .accessibilityIdentifier("product.form.editPhoto")
                                 Button(role: .destructive) { model.setImage(nil) } label: {
                                     Label("product.form.removePhoto", systemImage: "trash")
                                 }
+                                .accessibilityIdentifier("product.form.removePhoto")
                             }
                         }
+                        .buttonStyle(.borderless)
                     }
                 }
                 Section {
@@ -92,16 +110,48 @@ struct ProductFormSheet: View {
                     .accessibilityIdentifier("product.form.save")
                 }
             }
+            .fullScreenCover(isPresented: $takingPhoto) {
+                CameraPicker { data in editing = EditablePhoto(data: data) }
+                    .ignoresSafeArea()
+            }
+            .fullScreenCover(item: $editing) { photo in
+                PhotoEditorView(data: photo.data) { model.setImage($0) }
+            }
             .onChange(of: pickerItem) {
                 guard let item = pickerItem else { return }
                 Task {
-                    if let data = try? await item.loadTransferable(type: Data.self) { model.setImage(data) }
+                    if let data = try? await item.loadTransferable(type: Data.self) { editing = EditablePhoto(data: data) }
                     pickerItem = nil
                 }
             }
         }
         .presentationDetents([.large])
         .interactiveDismissDisabled(model.isSaving)
+    }
+
+    /// PhotosPicker, or under `-uiTestSamplePhoto` a button that hands the editor a generated photo
+    /// (UI tests cannot drive the system photo picker).
+    @ViewBuilder
+    private var choosePhotoButton: some View {
+        #if DEBUG
+        if let sample = UITestHooks.samplePhoto {
+            Button { editing = EditablePhoto(data: sample) } label: {
+                Label("product.form.choosePhoto", systemImage: "photo")
+            }
+            .accessibilityIdentifier("product.form.choosePhoto")
+        } else {
+            photosPicker
+        }
+        #else
+        photosPicker
+        #endif
+    }
+
+    private var photosPicker: some View {
+        PhotosPicker(selection: $pickerItem, matching: .images) {
+            Label("product.form.choosePhoto", systemImage: "photo")
+        }
+        .accessibilityIdentifier("product.form.choosePhoto")
     }
 }
 

@@ -121,7 +121,8 @@ struct ProductDetailView: View {
     private var toolbar: some ToolbarContent {
         if let model, model.canEdit, model.fields != nil {
             ToolbarItem(placement: .primaryAction) {
-                Button("common.edit") { editing = true }
+                Button { editing = true } label: { Label("common.edit", systemImage: "pencil") }
+                    .labelStyle(.iconOnly)
                     .accessibilityIdentifier("product.detail.edit")
             }
             ToolbarItem(placement: .topBarTrailing) {
