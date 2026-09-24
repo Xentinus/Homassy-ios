@@ -119,3 +119,41 @@ struct ProductListModelTests {
         #expect(!model(env, canEdit: false).canEdit)
     }
 }
+
+@MainActor
+@Suite("ProductListModel barcode search")
+struct ProductListBarcodeSearchTests {
+    func model(_ env: ServiceTestEnvironment) -> ProductListModel {
+        let model = ProductListModel(products: env.productService(), inventory: env.inventoryService(),
+                                     space: env.personal, pending: PendingDeletions(), locale: Locale(identifier: "en_US"))
+        model.reload()
+        return model
+    }
+
+    @Test("A scanned code finds the product, also across UPC-A and EAN-13")
+    func knownCode() async throws {
+        let env = try ServiceTestEnvironment()
+        try await env.makeProduct("Milk", barcode: "5991234567890")
+        try await env.makeProduct("Chips", barcode: "012345678905")
+        let model = model(env)
+        model.searchBarcode("0012345678905", symbology: .ean13)
+        #expect(model.sections.flatMap(\.cards).map(\.name) == ["Chips"])
+        #expect(model.unknownBarcode == nil)
+        model.searchBarcode("5991234567890", symbology: .ean13)
+        #expect(model.sections.flatMap(\.cards).map(\.name) == ["Milk"])
+    }
+
+    @Test("An unknown code shows no results and remembers the code for a new product until the text changes")
+    func unknownCode() async throws {
+        let env = try ServiceTestEnvironment()
+        try await env.makeProduct("Milk", barcode: "5991234567890")
+        let model = model(env)
+        model.searchBarcode("4000000000009", symbology: .ean13)
+        #expect(model.sections.isEmpty)
+        #expect(model.unknownBarcode == "4000000000009")
+        #expect(model.searchText == "4000000000009")
+        model.searchText = "mi"
+        #expect(model.unknownBarcode == nil)
+        #expect(model.sections.flatMap(\.cards).map(\.name) == ["Milk"])
+    }
+}

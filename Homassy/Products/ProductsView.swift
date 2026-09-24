@@ -44,28 +44,40 @@ struct ProductsView: View {
     @ViewBuilder
     private func content(_ model: ProductListModel) -> some View {
         @Bindable var model = model
-        ScrollView {
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 12, pinnedViews: [.sectionHeaders]) {
-                ForEach(model.sections) { section in
-                    Section {
-                        ForEach(section.cards) { card in
-                            NavigationLink(value: ProductRoute(id: card.id)) { ProductCard(card: card) }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("product.row.\(card.name)")
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 12, pinnedViews: [.sectionHeaders]) {
+                    ForEach(model.sections) { section in
+                        Section {
+                            ForEach(section.cards) { card in
+                                NavigationLink(value: ProductRoute(id: card.id)) { ProductCard(card: card) }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("product.row.\(card.name)")
+                            }
+                        } header: {
+                            Text(section.id)
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 4)
+                                .background(Color(uiColor: .systemGroupedBackground))
+                                .accessibilityAddTraits(.isHeader)
+                                .id(section.id)
                         }
-                    } header: {
-                        Text(section.id)
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 4)
-                            .background(Color(uiColor: .systemGroupedBackground))
-                            .accessibilityAddTraits(.isHeader)
                     }
                 }
+                .padding(.leading)
+                .padding(.trailing, showsIndex(model) ? 28 : 16)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal)
-            .padding(.bottom, 24)
+            .overlay(alignment: .trailing) {
+                if showsIndex(model) {
+                    SectionIndexBar(letters: model.sections.map(\.id)) { letter in
+                        proxy.scrollTo(letter, anchor: .top)
+                    }
+                    .padding(.trailing, 2)
+                }
+            }
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .searchable(text: $model.searchText, placement: .navigationBarDrawer(displayMode: .always),
@@ -86,9 +98,17 @@ struct ProductsView: View {
         } message: { Text(model.errorMessage ?? "") }
     }
 
+    /// The letter strip appears once there is more than one letter to jump between.
+    private func showsIndex(_ model: ProductListModel) -> Bool { model.sections.count > 1 }
+
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { SpaceSwitcher() }
+        ToolbarItem(placement: .topBarTrailing) {
+            BarcodeSearchButton(identifier: "products.barcodeSearch") { code, symbology in
+                model?.searchBarcode(code, symbology: symbology)
+            }
+        }
         if let model, !model.categories.isEmpty {
             ToolbarItem(placement: .topBarTrailing) {
                 @Bindable var model = model
