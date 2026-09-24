@@ -48,6 +48,7 @@ final class AppModel {
     let persistence: PersistenceController
     let spaceStore: SpaceStore
     let accountGate: AccountGateModel
+    let selection = SpaceSelection()
     private(set) var personalSpace: Space?
     private(set) var bootstrapError: (any Error)?
 
