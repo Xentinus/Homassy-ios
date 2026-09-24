@@ -46,6 +46,15 @@ enum Palette {
     static let expirySoon = Color.expirySoon
     static let expiryCritical = Color.expiryCritical
     static let memberRingFallback = Color.memberRingFallback
+
+    /// Filled Mocha button (the undo toast's Undo): Mocha 700 with white text in light mode, Mocha 300 with Mocha 950 text
+    /// in dark mode (both ≥ 4.5:1; plain Mocha 500 would be only 2.8:1 with white).
+    static let mochaButtonBackground = Color(uiColor: UIColor { traits in
+        UIColor(traits.userInterfaceStyle == .dark ? mocha300 : mocha700)
+    })
+    static let mochaButtonForeground = Color(uiColor: UIColor { traits in
+        UIColor(traits.userInterfaceStyle == .dark ? mocha950 : .white)
+    })
 }
 
 #if DEBUG

@@ -49,6 +49,7 @@ final class AppModel {
     let spaceStore: SpaceStore
     let accountGate: AccountGateModel
     let selection = SpaceSelection()
+    let undoQueue = UndoQueue()
     private(set) var personalSpace: Space?
     private(set) var bootstrapError: (any Error)?
 
