@@ -75,3 +75,6 @@ _tasks/
 tasks/
 plans/
 specs/
+
+# Throwaway spike code
+Spikes/
