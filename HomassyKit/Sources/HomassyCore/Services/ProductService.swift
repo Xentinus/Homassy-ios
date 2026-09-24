@@ -25,11 +25,12 @@ public final class ProductService {
         guard !space.isGone else { throw ServiceError.notFound }
         try ensureEditable(space)
         let name = try validatedName(draft.name)
+        let url = try Self.normalizedURL(draft.url)
         let image = try await Self.processedImage(draft.imageData)
 
         let product = spaceStore.insert(Product.self, in: space, by: userRecordName)
         product.space = space
-        apply(draft, name: name, image: image, to: product)
+        apply(draft, name: name, url: url, image: image, to: product)
         try context.save()
         return product
     }
@@ -38,6 +39,7 @@ public final class ProductService {
         guard !product.isGone, let space = product.space else { throw ServiceError.notFound }
         try ensureEditable(space)
         let name = try validatedName(draft.name)
+        let url = try Self.normalizedURL(draft.url)
         let image: Data?
         if draft.imageData == product.image {
             image = product.image
@@ -46,7 +48,7 @@ public final class ProductService {
         }
         guard !product.isGone else { throw ServiceError.notFound }
 
-        apply(draft, name: name, image: image, to: product)
+        apply(draft, name: name, url: url, image: image, to: product)
         product.stamp(by: userRecordName)
         try context.save()
     }
@@ -124,18 +126,30 @@ public final class ProductService {
         guard canEditSpace(space) else { throw ServiceError.readOnlySpace }
     }
 
+    /// Trimmed; `https://` is added when there is no scheme. Only http(s) links with a host are accepted.
+    static func normalizedURL(_ text: String) throws -> String? {
+        guard let trimmed = text.nilIfBlank else { return nil }
+        let candidate = trimmed.contains("://") || trimmed.lowercased().hasPrefix("mailto:") ? trimmed : "https://" + trimmed
+        guard let components = URLComponents(string: candidate),
+              let scheme = components.scheme?.lowercased(), ["http", "https"].contains(scheme),
+              let host = components.host, !host.isEmpty, host.contains(".") || host == "localhost",
+              components.url != nil
+        else { throw ServiceError.invalidURL }
+        return candidate
+    }
+
     private func validatedName(_ name: String) throws -> String {
         guard let value = name.nilIfBlank else { throw ServiceError.nameRequired }
         return value
     }
 
-    private func apply(_ draft: ProductDraft, name: String, image: Data?, to product: Product) {
+    private func apply(_ draft: ProductDraft, name: String, url: String?, image: Data?, to product: Product) {
         product.name = name
         product.brand = draft.brand.nilIfBlank
         product.category = draft.category.nilIfBlank
         product.barcode = draft.barcode.nilIfBlank
         product.defaultUnit = draft.defaultUnit
-        product.isEatable = draft.isEatable
+        product.url = url
         product.isFavorite = draft.isFavorite
         product.notes = draft.notes.nilIfBlank
         product.image = image

@@ -47,6 +47,29 @@
         }
       }
     },
+    "error.invalidURL" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib eine Webadresse ein, zum Beispiel shop.de/milch."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a web address, for example shop.hu/milk."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adj meg egy webcímet, például bolt.hu/tej."
+          }
+        }
+      }
+    },
     "error.nameRequired" : {
       "extractionState" : "manual",
       "localizations" : {

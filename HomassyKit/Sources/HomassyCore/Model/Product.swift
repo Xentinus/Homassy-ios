@@ -14,10 +14,11 @@ public final class Product: NSManagedObject, HomassyEntity {
     @NSManaged public var category: String?
     @NSManaged public var barcode: String?
     @NSManaged public var defaultUnitRaw: String
-    @NSManaged public var isEatable: Bool
     @NSManaged public var isFavorite: Bool
     @NSManaged public var notes: String?
     @NSManaged public var image: Data?
+    /// A web link for the product (manufacturer page, shop), `http` or `https`.
+    @NSManaged public var url: String?
 
     @NSManaged public var space: Space?
     @NSManaged public var inventoryItems: NSSet?

@@ -10,12 +10,13 @@ struct ProductServiceTests {
         let env = try ServiceTestEnvironment()
         let product = try await env.productService().create(in: env.personal, draft: ProductDraft(
             name: "  Milk ", brand: " Mizo ", category: "  ", barcode: " 5991234567890 ",
-            defaultUnit: .liter, isEatable: true, isFavorite: true, notes: ""))
+            defaultUnit: .liter, isFavorite: true, notes: "", url: " tej.hu/mizo "))
         #expect(product.name == "Milk")
         #expect(product.brand == "Mizo")
         #expect(product.category == nil)
         #expect(product.barcode == "5991234567890")
         #expect(product.notes == nil)
+        #expect(product.url == "https://tej.hu/mizo")
         #expect(product.defaultUnit == .liter)
         #expect(product.isFavorite)
         #expect(product.space == env.personal)
@@ -70,11 +71,11 @@ struct ProductServiceTests {
         var draft = ProductDraft(product: product)
         draft.name = "Oat milk"
         draft.category = "Drinks"
-        draft.isEatable = false
+        draft.url = "http://example.com/oat"
         try await env.productService(user: ServiceTestEnvironment.otherUser).update(product, with: draft)
         #expect(product.name == "Oat milk")
         #expect(product.category == "Drinks")
-        #expect(!product.isEatable)
+        #expect(product.url == "http://example.com/oat")
         #expect(product.createdBy == ServiceTestEnvironment.user)
         #expect(product.updatedBy == ServiceTestEnvironment.otherUser)
         #expect(!env.context.hasChanges)
@@ -173,5 +174,29 @@ struct ProductServiceTests {
         let milk = try await env.makeProduct("Milk")
         #expect(try env.productService().product(publicId: milk.publicId) == milk)
         #expect(try env.productService().product(publicId: UUID()) == nil)
+    }
+
+    @Test("Links are trimmed, get https:// when they have no scheme, and blank removes them")
+    func urlNormalisation() async throws {
+        let env = try ServiceTestEnvironment()
+        let service = env.productService()
+        let product = try await service.create(in: env.personal, draft: ProductDraft(name: "Milk", url: "  "))
+        #expect(product.url == nil)
+        var draft = ProductDraft(product: product)
+        draft.url = "https://www.mizo.hu/termekek?id=12"
+        try await service.update(product, with: draft)
+        #expect(product.url == "https://www.mizo.hu/termekek?id=12")
+        draft.url = ""
+        try await service.update(product, with: draft)
+        #expect(product.url == nil)
+    }
+
+    @Test("Invalid links are rejected", arguments: ["not a link", "ftp://example.com", "https://", "mailto:a@b.hu", "http://exa mple.com"])
+    func invalidURL(text: String) async throws {
+        let env = try ServiceTestEnvironment()
+        await #expect(throws: ServiceError.invalidURL) {
+            _ = try await env.productService().create(in: env.personal, draft: ProductDraft(name: "Milk", url: text))
+        }
+        #expect(try env.count(Product.self) == 0)
     }
 }

@@ -1979,29 +1979,6 @@
         }
       }
     },
-    "product.chip.eatable" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Essbares Produkt"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Eatable product"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ehető termék"
-          }
-        }
-      }
-    },
     "product.detail.consume" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2393,29 +2370,6 @@
         }
       }
     },
-    "product.field.eatable" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Essbar"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Eatable"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ehető"
-          }
-        }
-      }
-    },
     "product.field.favorite" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2504,6 +2458,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mértékegység"
+          }
+        }
+      }
+    },
+    "product.field.url" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link (optional)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Link (optional)"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hivatkozás (nem kötelező)"
+          }
+        }
+      }
+    },
+    "product.form.addPhoto" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto hinzufügen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add photo"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotó hozzáadása"
           }
         }
       }

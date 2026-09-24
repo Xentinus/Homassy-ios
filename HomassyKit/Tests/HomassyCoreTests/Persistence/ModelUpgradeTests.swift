@@ -22,6 +22,48 @@ struct ModelUpgradeTests {
         return model
     }
 
+    /// The model as it was from P2-06 to P2-09: Product still had `isEatable` and no `url`.
+    static func modelWithEatableAndNoURL() -> NSManagedObjectModel {
+        let model = HomassyModel.shared.copy() as! NSManagedObjectModel
+        for entity in model.entities {
+            entity.managedObjectClassName = NSStringFromClass(NSManagedObject.self)
+        }
+        let product = model.entitiesByName["Product"]!
+        let eatable = NSAttributeDescription()
+        eatable.name = "isEatable"
+        eatable.attributeType = .booleanAttributeType
+        eatable.isOptional = true
+        eatable.defaultValue = NSNumber(value: true)
+        product.properties = product.properties.filter { $0.name != "url" } + [eatable]
+        return model
+    }
+
+    @Test("A store with isEatable and without url opens and keeps its products")
+    func droppingEatableAndAddingURLMigratesTheLocalStore() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "ModelUpgrade-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let old = Self.modelWithEatableAndNoURL()
+        for fileName in [PersistenceController.privateFileName, PersistenceController.sharedFileName] {
+            let coordinator = NSPersistentStoreCoordinator(managedObjectModel: old)
+            _ = try coordinator.addPersistentStore(type: .sqlite, at: directory.appending(path: fileName),
+                                                   options: [NSPersistentHistoryTrackingKey: true as NSNumber])
+            let context = NSManagedObjectContext(.mainQueue)
+            context.persistentStoreCoordinator = coordinator
+            let product = NSEntityDescription.insertNewObject(forEntityName: "Product", into: context)
+            product.setValue("Milk", forKey: "name")
+            product.setValue(false, forKey: "isEatable")
+            product.setValue(UUID(), forKey: "publicId")
+            try context.save()
+        }
+
+        let controller = try PersistenceController(mode: .sqlite(directory: directory))
+        let products = try controller.viewContext.fetch(Product.makeFetchRequest())
+        #expect(products.count == 2)
+        #expect(products.allSatisfy { $0.name == "Milk" && $0.url == nil })
+    }
+
     @Test("A P1-era local store opens after InventoryEvent was added and keeps its data")
     func addingInventoryEventMigratesTheLocalStore() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "ModelUpgrade-\(UUID().uuidString)")

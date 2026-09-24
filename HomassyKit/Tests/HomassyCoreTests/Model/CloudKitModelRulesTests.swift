@@ -63,6 +63,14 @@ struct CloudKitModelRulesTests {
         }
     }
 
+    @Test("Product has a link and no eatable flag (user, 2026-09-24)")
+    func productAttributes() {
+        let attributes = HomassyModel.shared.entitiesByName["Product"]?.attributesByName ?? [:]
+        #expect(attributes["url"]?.attributeType == .stringAttributeType)
+        #expect(attributes["url"]?.isOptional == true)
+        #expect(attributes["isEatable"] == nil)
+    }
+
     @Test func deleteRulesMatchTheSpec() {
         let model = HomassyModel.shared.entitiesByName
         func rule(_ entity: String, _ relationship: String) -> NSDeleteRule? {

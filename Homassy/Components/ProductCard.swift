@@ -1,7 +1,7 @@
 import HomassyCore
 import SwiftUI
 
-/// A product card (README "Card layout"): picture, name, brand, barcode, eatable glyph, stock and expiry line.
+/// A product card (README "Card layout"): picture, name, brand, barcode, stock and expiry line.
 /// Used by the Products grid (P2-07) and the Inventory grid (P2-08).
 struct ProductCard: View {
     let card: ProductCardData
@@ -33,18 +33,8 @@ struct ProductCard: View {
                         .lineLimit(1)
                         .accessibilityLabel(Text("product.card.barcode \(barcode)"))
                 }
-                if card.isEatable || card.stockText != nil {
-                    HStack(spacing: 6) {
-                        if card.isEatable {
-                            Image(systemName: "fork.knife")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .accessibilityLabel(Text("product.field.eatable"))
-                        }
-                        if let stock = card.stockText {
-                            Text(stock).font(.subheadline.weight(.semibold)).monospacedDigit()
-                        }
-                    }
+                if let stock = card.stockText {
+                    Text(stock).font(.subheadline.weight(.semibold)).monospacedDigit()
                 }
                 if let expiry = card.expiryText {
                     Label(expiry, systemImage: card.expiryLevel.cardGlyph)

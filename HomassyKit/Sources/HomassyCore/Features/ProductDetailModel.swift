@@ -9,10 +9,11 @@ public struct ProductFields: Equatable, Sendable {
     public let category: String?
     public let barcode: String?
     public let unitName: String
-    public let isEatable: Bool
     public let isFavorite: Bool
     public let notes: String?
     public let image: Data?
+    /// The product's web link, opened from the header card.
+    public let url: URL?
 }
 
 /// One stock item card inside a storage-location group.
@@ -125,8 +126,8 @@ public final class ProductDetailModel {
         }
         fields = ProductFields(name: product.name, brand: product.brand, category: product.category,
                                barcode: product.barcode, unitName: product.defaultUnit.name(for: 1, locale: locale),
-                               isEatable: product.isEatable, isFavorite: product.isFavorite,
-                               notes: product.notes, image: product.image)
+                               isFavorite: product.isFavorite, notes: product.notes, image: product.image,
+                               url: product.url.flatMap(URL.init(string:)))
         do {
             openItems = try inventory.items(for: product)
             allGroups = try groups(in: space)

@@ -274,7 +274,7 @@ struct InventoryServiceTests {
         let photo = TestImages.jpeg(width: 400, height: 300)
         let source = try await env.productService().create(in: env.personal, draft: ProductDraft(
             name: "Cheese", brand: "Pannónia", category: "Dairy", barcode: "", defaultUnit: .gram,
-            isEatable: true, isFavorite: true, notes: "Sliced", imageData: photo))
+            isFavorite: true, notes: "Sliced", imageData: photo, url: "https://example.com/cheese"))
         let service = env.inventoryService()
         let item = try service.addStock(product: source, quantity: 250, unit: .gram, expiresAt: env.day(6),
                                         purchasedAt: env.day(-1), price: 1290, currency: "HUF",
@@ -287,6 +287,7 @@ struct InventoryServiceTests {
         #expect(copy.name == "Cheese" && copy.brand == "Pannónia" && copy.category == "Dairy")
         #expect(copy.defaultUnit == .gram && copy.isFavorite && copy.notes == "Sliced")
         #expect(copy.image == source.image)
+        #expect(copy.url == "https://example.com/cheese")
         #expect(moved.quantity == 200 && moved.unit == .gram)
         #expect(moved.expiresAt == env.day(6) && moved.purchasedAt == env.day(-1))
         #expect(moved.price == 1290 && moved.currency == "HUF")

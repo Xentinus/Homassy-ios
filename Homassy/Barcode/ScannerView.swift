@@ -6,6 +6,8 @@ import VisionKit
 /// DataScannerViewController for EAN-13, EAN-8, UPC-E and Code 128.
 /// Uses `ScannedSymbology` (HomassyCore's `BarcodeSymbology`): the iOS 27 SDK's Vision has a type with the same name.
 struct ScannerView: UIViewControllerRepresentable {
+    /// The torch is switched here, next to the scanner, so a stalled scan session can be restarted right after.
+    var torchOn = false
     let onScan: (String, ScannedSymbology) -> Void
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
@@ -24,9 +26,19 @@ struct ScannerView: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: DataScannerViewController, context: Context) {
         context.coordinator.onScan = onScan
         if !controller.isScanning { try? controller.startScanning() }
+        if context.coordinator.torchOn != torchOn {
+            context.coordinator.torchOn = torchOn
+            Torch.set(torchOn)
+            // Reconfiguring the camera can stop the session; restart it if so.
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(300))
+                if !controller.isScanning { try? controller.startScanning() }
+            }
+        }
     }
 
     static func dismantleUIViewController(_ controller: DataScannerViewController, coordinator: Coordinator) {
+        if coordinator.torchOn { Torch.set(false) }
         controller.stopScanning()
     }
 
@@ -35,6 +47,7 @@ struct ScannerView: UIViewControllerRepresentable {
     @MainActor
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
         var onScan: (String, ScannedSymbology) -> Void
+        var torchOn = false
 
         init(onScan: @escaping (String, ScannedSymbology) -> Void) {
             self.onScan = onScan
