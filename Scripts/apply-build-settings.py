@@ -45,6 +45,7 @@ text = edit(text, 'PBXNativeTarget "Homassy"', {
     **common,
     "PRODUCT_BUNDLE_IDENTIFIER": "com.homassy.app",
     "INFOPLIST_FILE": "Homassy/Info.plist",
+    "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
     "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone":
         '"UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"',
     "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad":
