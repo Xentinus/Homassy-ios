@@ -1,6 +1,29 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "error.imageUnreadable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Bild kann nicht gelesen werden. Versuche ein anderes Foto."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This image can't be read. Try another photo."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez a kép nem olvasható. Próbálj egy másik fotót."
+          }
+        }
+      }
+    },
     "expiration.expiredRelative %@" : {
       "extractionState" : "manual",
       "localizations" : {
