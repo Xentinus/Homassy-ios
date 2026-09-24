@@ -28,10 +28,10 @@ public enum HomassyModel {
             string("category"),
             string("barcode"),
             string("defaultUnitRaw", default: MeasureUnit.piece.rawValue),
-            bool("isEatable", default: true),
             bool("isFavorite", default: false),
             string("notes"),
             binary("image"),
+            string("url"),
         ])
         let storageLocation = entity(StorageLocation.self, [
             string("name", default: ""),

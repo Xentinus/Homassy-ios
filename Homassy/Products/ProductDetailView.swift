@@ -170,12 +170,17 @@ struct ProductDetailView: View {
                     if let category = fields.category {
                         Chip(text: Text(category), systemImage: "tag")
                     }
-                    if fields.isEatable {
-                        Chip(text: Text("product.chip.eatable"), systemImage: "fork.knife")
-                    }
                     if let barcode = fields.barcode {
                         Chip(text: Text(barcode).monospacedDigit(), systemImage: "barcode")
                     }
+                }
+                if let url = fields.url {
+                    Link(destination: url) {
+                        Label(url.host() ?? url.absoluteString, systemImage: "link")
+                            .font(.callout)
+                            .lineLimit(1)
+                    }
+                    .accessibilityIdentifier("product.detail.link")
                 }
                 if let notes = fields.notes {
                     Text(notes).font(.callout).foregroundStyle(.secondary)

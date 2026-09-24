@@ -34,7 +34,7 @@ struct ProductDetailModelTests {
         let eggs = try await env.makeProduct("Eggs", brand: "Farm", category: "Dairy", barcode: "5990000000001")
         let fields = try #require(model(env, eggs).fields)
         #expect(fields.name == "Eggs" && fields.brand == "Farm" && fields.category == "Dairy")
-        #expect(fields.barcode == "5990000000001" && fields.isEatable && !fields.isFavorite)
+        #expect(fields.barcode == "5990000000001" && !fields.isFavorite && fields.url == nil)
         #expect(fields.unitName == MeasureUnit.piece.name(for: 1, locale: Self.en))
     }
 

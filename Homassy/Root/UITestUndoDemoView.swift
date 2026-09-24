@@ -159,7 +159,6 @@ private struct DemoItem: Identifiable, Hashable {
     let brand: String?
     let barcode: String?
     let category: String?
-    let isEatable: Bool
     let quantity: String
     let symbol: String
     let expiry: Expiry
@@ -169,19 +168,19 @@ private struct DemoItem: Identifiable, Hashable {
     var id: String { name }
 
     static let samples = [
-        DemoItem(name: "Milk", brand: "Mizo", barcode: "5998200101234", category: "Dairy", isEatable: true, quantity: "2 × 1 l",
+        DemoItem(name: "Milk", brand: "Mizo", barcode: "5998200101234", category: "Dairy", quantity: "2 × 1 l",
                  symbol: "waterbottle", expiry: .expired("Expired yesterday"),
                  prices: ["Sep 20 · Spar · 429 Ft", "Sep 6 · Aldi · 399 Ft", "Aug 23 · Spar · 449 Ft"]),
-        DemoItem(name: "Bread", brand: "Fornetti", barcode: nil, category: "Bakery", isEatable: true, quantity: "1 pc",
+        DemoItem(name: "Bread", brand: "Fornetti", barcode: nil, category: "Bakery", quantity: "1 pc",
                  symbol: "birthday.cake", expiry: .soon("9 days left")),
-        DemoItem(name: "Eggs", brand: nil, barcode: nil, category: "Dairy", isEatable: true, quantity: "10 pcs",
+        DemoItem(name: "Eggs", brand: nil, barcode: nil, category: "Dairy", quantity: "10 pcs",
                  symbol: "oval.portrait", expiry: .later("3 weeks left"),
                  stock: [DemoStock(location: "Fridge", amount: 10, unit: "pcs"), DemoStock(location: "Pantry", amount: 2, unit: "pcs")]),
-        DemoItem(name: "Basmati rice", brand: "Tilda", barcode: "5011157630016", category: "Grains", isEatable: true, quantity: "1 × 2 kg",
+        DemoItem(name: "Basmati rice", brand: "Tilda", barcode: "5011157630016", category: "Grains", quantity: "1 × 2 kg",
                  symbol: "leaf", expiry: .later("8 months left"), prices: ["Jul 2 · Lidl · 1 290 Ft"]),
-        DemoItem(name: "Aspirin", brand: "Bayer", barcode: "5993300417911", category: "Medicine", isEatable: false, quantity: "1 box",
+        DemoItem(name: "Aspirin", brand: "Bayer", barcode: "5993300417911", category: "Medicine", quantity: "1 box",
                  symbol: "pills", expiry: .none),
-        DemoItem(name: "Butter", brand: "Pöttyös", barcode: nil, category: "Dairy", isEatable: true, quantity: "1 × 250 g",
+        DemoItem(name: "Butter", brand: "Pöttyös", barcode: nil, category: "Dairy", quantity: "1 × 250 g",
                  symbol: "square.stack", expiry: .soon("12 days left")),
     ]
 }
@@ -215,12 +214,6 @@ private struct DemoItemCard: View {
             HStack(spacing: 8) {
                 Label { Text(verbatim: item.quantity) } icon: { Image(systemName: "shippingbox") }
                     .font(.subheadline.weight(.medium))
-                if item.isEatable {
-                    Image(systemName: "fork.knife")
-                        .font(.caption)
-                        .foregroundStyle(Palette.mocha600)
-                        .accessibilityLabel(Text(verbatim: "Eatable"))
-                }
             }
             expiryLine
         }
@@ -456,7 +449,6 @@ private struct DemoItemDetail: View {
     private var chips: [(String, String)] {
         var chips = [("scalemass", item.quantity.components(separatedBy: " ").last ?? "")]
         if let category = item.category { chips.append(("tag", category)) }
-        if item.isEatable { chips.append(("fork.knife", "Eatable product")) }
         if let barcode = item.barcode { chips.append(("barcode", barcode)) }
         return chips
     }

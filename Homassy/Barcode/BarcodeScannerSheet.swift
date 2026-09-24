@@ -17,7 +17,7 @@ struct BarcodeScannerSheet: View {
             Group {
                 switch gate {
                 case .ready:
-                    ScannerView { code, symbology in deliver(code, symbology) }
+                    ScannerView(torchOn: torchOn) { code, symbology in deliver(code, symbology) }
                         .ignoresSafeArea(edges: .bottom)
                         .overlay(alignment: .bottom) {
                             Text("barcode.hint")
@@ -55,7 +55,6 @@ struct BarcodeScannerSheet: View {
                     ToolbarItem(placement: .primaryAction) {
                         Button {
                             torchOn.toggle()
-                            Torch.set(torchOn)
                         } label: {
                             Label(torchOn ? "barcode.torch.off" : "barcode.torch.on",
                                   systemImage: torchOn ? "flashlight.on.fill" : "flashlight.off.fill")
@@ -64,7 +63,7 @@ struct BarcodeScannerSheet: View {
                     }
                 }
             }
-            .onDisappear { if torchOn { Torch.set(false) } }
+
         }
         .task {
             #if DEBUG
@@ -110,7 +109,7 @@ struct BarcodeScannerSheet: View {
     private func deliver(_ code: String, _ symbology: ScannedSymbology) {
         guard !delivered else { return }
         delivered = true
-        if torchOn { Torch.set(false); torchOn = false }
+        torchOn = false
         onScan(code, symbology)                                   // the flow steps on in the same sheet
     }
 }

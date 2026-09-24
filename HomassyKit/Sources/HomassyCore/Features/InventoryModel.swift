@@ -38,7 +38,6 @@ public final class InventoryModel {
         let name: String
         let brand: String?
         let barcode: String?
-        let isEatable: Bool
         let isFavorite: Bool
         let image: Data?
         let quantity: Decimal
@@ -85,7 +84,7 @@ public final class InventoryModel {
                 let first = items.min { key($0) < key($1) }!
                 let card = ProductCardData(
                     id: product.productID, name: product.name, brand: product.brand, barcode: product.barcode,
-                    isEatable: product.isEatable, isFavorite: product.isFavorite, image: product.image,
+                    isFavorite: product.isFavorite, image: product.image,
                     stockText: StockSummary.text(for: items.map { ($0.quantity, $0.unit) }, locale: locale),
                     expiryLevel: level(first),
                     expiryText: ExpirationStatus.cardLabel(expiresAt: first.expiresAt, now: now,
@@ -121,7 +120,7 @@ public final class InventoryModel {
             entries = try inventory.items(in: space).compactMap { item in
                 guard !item.isGone, let product = item.product else { return nil }
                 return Entry(itemID: item.publicId, productID: product.publicId, name: product.name, brand: product.brand,
-                             barcode: product.barcode, isEatable: product.isEatable, isFavorite: product.isFavorite,
+                             barcode: product.barcode, isFavorite: product.isFavorite,
                              image: product.image, quantity: item.quantity, unit: item.unit, expiresAt: item.expiresAt,
                              locationID: item.storageLocation?.publicId)
             }

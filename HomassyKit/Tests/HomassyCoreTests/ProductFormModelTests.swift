@@ -67,3 +67,28 @@ struct ProductFormModelTests {
         #expect(form.errorMessage == ServiceError.readOnlySpace.errorDescription)
     }
 }
+
+@MainActor
+@Suite("ProductFormModel link")
+struct ProductFormLinkTests {
+    @Test func invalidLinkShowsInlineError() async throws {
+        let env = try ServiceTestEnvironment()
+        let form = ProductFormModel(mode: .create(env.personal, barcode: nil), service: env.productService())
+        form.draft.name = "Milk"
+        form.draft.url = "not a link"
+        #expect(await form.save() == nil)
+        #expect(form.urlError == ServiceError.invalidURL.errorDescription)
+        #expect(form.nameError == nil && form.errorMessage == nil)
+        form.draft.url = "mizo.hu"
+        let product = try #require(await form.save())
+        #expect(product.url == "https://mizo.hu")
+        #expect(form.urlError == nil)
+    }
+
+    @Test func editLoadsTheLink() async throws {
+        let env = try ServiceTestEnvironment()
+        let milk = try await env.productService().create(in: env.personal, draft: ProductDraft(name: "Milk", url: "https://mizo.hu"))
+        let form = ProductFormModel(mode: .edit(milk), service: env.productService())
+        #expect(form.draft.url == "https://mizo.hu")
+    }
+}

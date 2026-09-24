@@ -335,7 +335,7 @@ public final class InventoryService {
         copy.category = product.category
         copy.barcode = product.barcode
         copy.defaultUnit = product.defaultUnit
-        copy.isEatable = product.isEatable
+        copy.url = product.url
         copy.isFavorite = product.isFavorite
         copy.notes = product.notes
         copy.image = product.image

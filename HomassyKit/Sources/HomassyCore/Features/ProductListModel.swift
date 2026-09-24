@@ -8,7 +8,6 @@ public struct ProductCardData: Identifiable, Equatable, Sendable {
     public let name: String
     public let brand: String?
     public let barcode: String?
-    public let isEatable: Bool
     public let isFavorite: Bool
     public let image: Data?
     /// Open stock added up per unit; nil when nothing is in stock.
@@ -89,7 +88,7 @@ public final class ProductListModel {
                 }
                 return ProductCardData(
                     id: product.publicId, name: product.name, brand: product.brand, barcode: product.barcode,
-                    isEatable: product.isEatable, isFavorite: product.isFavorite, image: product.image,
+                    isFavorite: product.isFavorite, image: product.image,
                     stockText: StockSummary.text(for: items, locale: locale),
                     expiryLevel: ExpirationStatus.level(expiresAt: first?.expiresAt, now: now, calendar: calendar),
                     expiryText: ExpirationStatus.cardLabel(expiresAt: first?.expiresAt, now: now,

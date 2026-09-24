@@ -38,7 +38,7 @@ struct ProductListModelTests {
         try await env.makeProduct("Milk", brand: "Mizo", category: "Dairy", barcode: "5991234567890", unit: .liter)
         let card = try #require(model(env).sections.first?.cards.first)
         #expect(card.name == "Milk" && card.brand == "Mizo" && card.barcode == "5991234567890")
-        #expect(card.isEatable && !card.isFavorite)
+        #expect(!card.isFavorite)
         #expect(card.stockText == nil && card.expiryText == nil && card.expiryLevel == .none)
     }
 

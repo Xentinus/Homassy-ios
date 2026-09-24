@@ -110,6 +110,35 @@ final class ProductsUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Milk 2"].waitForExistence(timeout: 5))
     }
 
+    func testProductLinkIsEditableAndOpensFromTheDetail() {
+        let app = openProducts()
+        openDetail("Milk", in: app)
+        XCTAssertFalse(app.links["product.detail.link"].exists)
+        app.buttons["product.detail.edit"].tap()
+        let url = app.textFields["product.form.url"]
+        XCTAssertTrue(url.waitForExistence(timeout: 5))
+        url.tap()
+        url.typeText("not a link")
+        app.buttons["product.form.save"].tap()
+        XCTAssertTrue(app.staticTexts["Enter a web address, for example shop.hu/milk."].waitForExistence(timeout: 3))
+        url.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        url.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 10) + "mizo.hu")
+        app.buttons["product.form.save"].tap()
+        let link = app.links["product.detail.link"]
+        XCTAssertTrue(link.waitForExistence(timeout: 5))
+        XCTAssertTrue(link.label.contains("mizo.hu"), link.label)
+    }
+
+    func testNoEatableFlagAnywhere() {
+        let app = openProducts()
+        XCTAssertFalse(app.buttons["product.row.Milk"].label.contains("Eatable"))
+        openDetail("Milk", in: app)
+        XCTAssertFalse(app.staticTexts["Eatable product"].exists)
+        app.buttons["product.detail.edit"].tap()
+        XCTAssertTrue(app.textFields["product.form.name"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.switches["Eatable"].exists)
+    }
+
     func testDeleteProductFromDetailAndUndo() {
         let app = openProducts()
         openDetail("Bread", in: app)

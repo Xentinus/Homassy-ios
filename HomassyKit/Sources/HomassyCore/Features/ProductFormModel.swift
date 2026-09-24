@@ -11,6 +11,7 @@ public final class ProductFormModel {
 
     public var draft: ProductDraft
     public private(set) var nameError: String?
+    public private(set) var urlError: String?
     public private(set) var errorMessage: String?
     public private(set) var isSaving = false
     public private(set) var categorySuggestions: [String] = []
@@ -56,6 +57,7 @@ public final class ProductFormModel {
         isSaving = true
         defer { isSaving = false }
         nameError = nil
+        urlError = nil
         errorMessage = nil
         do {
             switch mode {
@@ -67,6 +69,8 @@ public final class ProductFormModel {
             }
         } catch ServiceError.nameRequired {
             nameError = ServiceError.nameRequired.errorDescription
+        } catch ServiceError.invalidURL {
+            urlError = ServiceError.invalidURL.errorDescription
         } catch {
             errorMessage = error.localizedDescription
         }

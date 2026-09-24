@@ -122,7 +122,6 @@ struct ModelTests {
 
         let product = Product(context: context)
         #expect(product.defaultUnit == .piece)
-        #expect(product.isEatable)
         #expect(!product.isFavorite)
         #expect(product.image == nil)
 

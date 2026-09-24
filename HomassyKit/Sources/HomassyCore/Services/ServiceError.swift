@@ -4,6 +4,8 @@ public enum ServiceError: Error, Equatable, LocalizedError {
     case nameRequired, quantityMustBePositive, expiryBeforePurchase, readOnlySpace, notFound
     /// Consume or move asked for more than the stock item holds (P2-06; never clamped).
     case quantityExceedsStock
+    /// A product link that is not an http(s) address (user request, 2026-09-24).
+    case invalidURL
 
     var catalogKey: String {
         switch self {
@@ -13,6 +15,7 @@ public enum ServiceError: Error, Equatable, LocalizedError {
         case .readOnlySpace: "error.readOnlySpace"
         case .notFound: "error.notFound"
         case .quantityExceedsStock: "error.quantityExceedsStock"
+        case .invalidURL: "error.invalidURL"
         }
     }
 

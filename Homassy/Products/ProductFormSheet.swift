@@ -6,6 +6,7 @@ struct ProductFormSheet: View {
     @State private var model: ProductFormModel
     @State private var pickerItem: PhotosPickerItem?
     @State private var takingPhoto = false
+    @State private var choosingPhoto = false
     /// A photo waiting in the editor (crop to a square, rotate); only the edited result reaches the draft.
     @State private var editing: EditablePhoto?
 
@@ -24,30 +25,10 @@ struct ProductFormSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("product.form.photo") {
-                    HStack(spacing: 16) {
-                        ProductImageView(data: model.draft.imageData, size: 72)
-                        VStack(alignment: .leading, spacing: 8) {
-                            if CameraPicker.isAvailable {
-                                Button { takingPhoto = true } label: {
-                                    Label("product.form.takePhoto", systemImage: "camera")
-                                }
-                                .accessibilityIdentifier("product.form.takePhoto")
-                            }
-                            choosePhotoButton
-                            if let data = model.draft.imageData {
-                                Button { editing = EditablePhoto(data: data) } label: {
-                                    Label("product.form.editPhoto", systemImage: "crop.rotate")
-                                }
-                                .accessibilityIdentifier("product.form.editPhoto")
-                                Button(role: .destructive) { model.setImage(nil) } label: {
-                                    Label("product.form.removePhoto", systemImage: "trash")
-                                }
-                                .accessibilityIdentifier("product.form.removePhoto")
-                            }
-                        }
-                        .buttonStyle(.borderless)
-                    }
+                Section {
+                    photoMenu
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.clear)
                 }
                 Section {
                     TextField("product.field.name", text: $model.draft.name)
@@ -75,6 +56,15 @@ struct ProductFormSheet: View {
                     TextField("product.field.barcode", text: $model.draft.barcode)
                         .keyboardType(.numberPad)
                         .accessibilityIdentifier("product.form.barcode")
+                    TextField("product.field.url", text: $model.draft.url)
+                        .keyboardType(.URL)
+                        .textContentType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityIdentifier("product.form.url")
+                    if let error = model.urlError {
+                        Text(error).font(.footnote).foregroundStyle(.red)
+                    }
                 }
                 Section {
                     Picker("product.field.unit", selection: $model.draft.defaultUnit) {
@@ -82,7 +72,6 @@ struct ProductFormSheet: View {
                             Text(unit.name(for: 1)).tag(unit)
                         }
                     }
-                    Toggle("product.field.eatable", isOn: $model.draft.isEatable)
                     Toggle("product.field.favorite", isOn: $model.draft.isFavorite)
                 }
                 Section("product.field.notes") {
@@ -117,6 +106,7 @@ struct ProductFormSheet: View {
             .fullScreenCover(item: $editing) { photo in
                 PhotoEditorView(data: photo.data) { model.setImage($0) }
             }
+            .photosPicker(isPresented: $choosingPhoto, selection: $pickerItem, matching: .images)
             .onChange(of: pickerItem) {
                 guard let item = pickerItem else { return }
                 Task {
@@ -129,29 +119,46 @@ struct ProductFormSheet: View {
         .interactiveDismissDisabled(model.isSaving)
     }
 
-    /// PhotosPicker, or under `-uiTestSamplePhoto` a button that hands the editor a generated photo
-    /// (UI tests cannot drive the system photo picker).
-    @ViewBuilder
-    private var choosePhotoButton: some View {
-        #if DEBUG
-        if let sample = UITestHooks.samplePhoto {
-            Button { editing = EditablePhoto(data: sample) } label: {
-                Label("product.form.choosePhoto", systemImage: "photo")
+    /// The photo, with every photo action in one menu behind it (user request, 2026-09-24).
+    private var photoMenu: some View {
+        Menu {
+            if CameraPicker.isAvailable {
+                Button { takingPhoto = true } label: { Label("product.form.takePhoto", systemImage: "camera") }
+                    .accessibilityIdentifier("product.form.takePhoto")
             }
-            .accessibilityIdentifier("product.form.choosePhoto")
-        } else {
-            photosPicker
+            Button { choosePhoto() } label: { Label("product.form.choosePhoto", systemImage: "photo.on.rectangle") }
+                .accessibilityIdentifier("product.form.choosePhoto")
+            if let data = model.draft.imageData {
+                Button { editing = EditablePhoto(data: data) } label: { Label("product.form.editPhoto", systemImage: "crop.rotate") }
+                    .accessibilityIdentifier("product.form.editPhoto")
+                Divider()
+                Button(role: .destructive) { model.setImage(nil) } label: { Label("product.form.removePhoto", systemImage: "trash") }
+                    .accessibilityIdentifier("product.form.removePhoto")
+            }
+        } label: {
+            ProductImageView(data: model.draft.imageData, size: 120)
+                .overlay(alignment: .bottomTrailing) {
+                    Image(systemName: model.draft.imageData == nil ? "camera.circle.fill" : "pencil.circle.fill")
+                        .font(.title)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(Palette.mochaButtonForeground, Palette.mochaButtonBackground)
+                        .offset(x: 8, y: 8)
+                }
+                .padding(8)
         }
-        #else
-        photosPicker
-        #endif
+        .accessibilityLabel(Text(model.draft.imageData == nil ? "product.form.addPhoto" : "product.form.photo"))
+        .accessibilityIdentifier("product.form.photo")
     }
 
-    private var photosPicker: some View {
-        PhotosPicker(selection: $pickerItem, matching: .images) {
-            Label("product.form.choosePhoto", systemImage: "photo")
+    /// The system photo picker, or under `-uiTestSamplePhoto` a generated picture (UI tests cannot drive the picker).
+    private func choosePhoto() {
+        #if DEBUG
+        if let sample = UITestHooks.samplePhoto {
+            editing = EditablePhoto(data: sample)
+            return
         }
-        .accessibilityIdentifier("product.form.choosePhoto")
+        #endif
+        choosingPhoto = true
     }
 }
 
