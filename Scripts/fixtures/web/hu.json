@@ -1,0 +1,8 @@
+{
+  "common": { "personal": "Személyes", "cancel": "Mégse" },
+  "undo": {
+    "action": "Visszavonás",
+    "item": { "delete": "{name} törölve" },
+    "collapsed": { "delete": "{count} tétel törölve" }
+  }
+}
