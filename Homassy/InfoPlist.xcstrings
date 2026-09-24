@@ -1,0 +1,30 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSCameraUsageDescription" : {
+      "comment" : "Camera permission prompt (barcode scanner, product photo)",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homassy verwendet die Kamera, um Barcodes zu scannen und Produktfotos aufzunehmen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homassy uses the camera to scan barcodes and to take product photos."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Homassy a kamerát vonalkódok beolvasására és termékfotók készítésére használja."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

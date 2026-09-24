@@ -15,6 +15,7 @@ struct ProductsView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var model: ProductListModel?
     @State private var showingForm = false
+    @State private var scanning = false
 
     var body: some View {
         Group {
@@ -26,6 +27,7 @@ struct ProductsView: View {
         .task(id: selection.selectedSpaceID) { rebuildModel() }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
                                                         object: services.context)) { _ in model?.reload() }
+        .barcodeFlow(isScanning: $scanning, space: model?.space)
         .sheet(isPresented: $showingForm) {
             if let space = model?.space {
                 ProductFormSheet(model: ProductFormModel(mode: .create(space, barcode: nil), service: services.products))
@@ -107,6 +109,8 @@ struct ProductsView: View {
                 Button { showingForm = true } label: { Label("add.product", systemImage: "shippingbox") }
                     .accessibilityIdentifier("addMenu.product")
                     .disabled(model?.canEdit != true)
+                Button { scanning = true } label: { Label("barcode.scan", systemImage: "barcode.viewfinder") }
+                    .accessibilityIdentifier("addMenu.barcode")
             }
         }
     }
