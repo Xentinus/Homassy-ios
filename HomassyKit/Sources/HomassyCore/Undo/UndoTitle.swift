@@ -18,6 +18,10 @@ public enum UndoTitle {
         String(localized: "undo.item.consume \(name)", bundle: .module, comment: "Undo toast: one item used up")
     }
 
+    public static func usedUp(_ name: String) -> String {
+        String(localized: "undo.item.usedUp \(name)", bundle: .module, comment: "Undo toast: one item used up completely")
+    }
+
     /// Several pending actions. `kind` is nil when they are of different kinds; `.generic` reads the same as mixed.
     public static func collapsed(kind: UndoKind?, count: Int) -> String {
         switch kind {

@@ -20,6 +20,7 @@ public final class InventoryItem: NSManagedObject, HomassyEntity {
     @NSManaged public var storageLocation: StorageLocation?
     @NSManaged public var shoppingLocation: ShoppingLocation?
     @NSManaged public var consumptionLogs: NSSet?
+    @NSManaged public var inventoryEvents: NSSet?
 
     /// Stored as Core Data Decimal. You cannot sort by it with a Swift key path; use `NSSortDescriptor(key: "quantity", …)`.
     public var quantity: Decimal {
@@ -38,6 +39,7 @@ public final class InventoryItem: NSManagedObject, HomassyEntity {
     }
 
     public var consumptionLogSet: Set<ConsumptionLog> { consumptionLogs as? Set<ConsumptionLog> ?? [] }
+    public var inventoryEventSet: Set<InventoryEvent> { inventoryEvents as? Set<InventoryEvent> ?? [] }
 
     public override func awakeFromInsert() {
         super.awakeFromInsert()
