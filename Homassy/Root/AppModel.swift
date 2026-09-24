@@ -52,6 +52,9 @@ final class AppModel {
     let selection = SpaceSelection()
     let undoQueue = UndoQueue()
     private(set) var personalSpace: Space?
+    /// Every domain service. Built once the account is available and the Personal space exists.
+    private(set) var services: ServiceContainer?
+    private var isBuildingServices = false
     private(set) var bootstrapError: (any Error)?
 
     init(persistence: PersistenceController,
@@ -112,6 +115,8 @@ final class AppModel {
                              defaults: seen,
                              introduction: IntroductionModel(defaults: seen, notifications: UITestNotificationAuthorizer()))
         model.personalSpace = try? model.spaceStore.bootstrapPersonalSpace(userRecordName: UITestHooks.userRecordName)
+        model.services = ServiceContainer(spaceStore: model.spaceStore, context: model.persistence.viewContext,
+                                          userRecordName: UITestHooks.userRecordName)
         return model
     }
     #endif
@@ -122,8 +127,25 @@ final class AppModel {
         do {
             personalSpace = try spaceStore.bootstrapPersonalSpace(userRecordName: userRecordName)
             bootstrapError = nil
+            Task { await buildServices() }
         } catch {
             bootstrapError = error
         }
+    }
+
+    /// Builds the one `ServiceContainer` (and applies the UI-test seed) after the Personal space is bootstrapped.
+    func buildServices() async {
+        guard services == nil, !isBuildingServices,
+              let personalSpace, let userRecordName = accountGate.userRecordName else { return }
+        isBuildingServices = true
+        defer { isBuildingServices = false }
+        let container = ServiceContainer(spaceStore: spaceStore, context: persistence.viewContext,
+                                         userRecordName: userRecordName)
+        #if DEBUG
+        if UITestHooks.isSeeded {
+            try? await UITestSeed.populate(container, in: personalSpace)
+        }
+        #endif
+        services = container
     }
 }
