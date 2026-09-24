@@ -54,6 +54,14 @@ nonisolated struct UITestAccountStatus: AccountStatusProviding {
         UITestHooks.userRecordName
     }
 }
+/// Schedules nothing and leaves the badge alone during UI tests (P2-10).
+nonisolated struct UITestNotificationCenter: NotificationCentering {
+    func pendingRequestIdentifiers() async -> [String] { [] }
+    func add(_ notification: PlannedNotification) async throws {}
+    func removePendingRequests(withIdentifiers identifiers: [String]) async {}
+    func setBadgeCount(_ count: Int) async throws {}
+}
+
 /// Never shows the system prompt during UI tests.
 nonisolated struct UITestNotificationAuthorizer: NotificationAuthorizing {
     func requestAuthorization() async throws -> Bool { false }

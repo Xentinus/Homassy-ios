@@ -133,6 +133,15 @@ final class AppModel {
         }
     }
 
+    /// The real notification center, or under UI tests one that schedules nothing and never touches the badge,
+    /// so seeded test data leaves no notifications behind on the test iPhone.
+    static var notificationCenter: any NotificationCentering {
+        #if DEBUG
+        if UITestHooks.isActive { return UITestNotificationCenter() }
+        #endif
+        return SystemNotificationCenter()
+    }
+
     /// Builds the one `ServiceContainer` (and applies the UI-test seed) after the Personal space is bootstrapped.
     func buildServices() async {
         guard services == nil, !isBuildingServices,
@@ -140,7 +149,7 @@ final class AppModel {
         isBuildingServices = true
         defer { isBuildingServices = false }
         let container = ServiceContainer(spaceStore: spaceStore, context: persistence.viewContext,
-                                         userRecordName: userRecordName)
+                                         userRecordName: userRecordName, notificationCenter: Self.notificationCenter)
         #if DEBUG
         if UITestHooks.isSeeded {
             try? await UITestSeed.populate(container, in: personalSpace)

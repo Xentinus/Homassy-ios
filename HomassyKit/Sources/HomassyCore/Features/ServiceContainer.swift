@@ -14,9 +14,11 @@ public final class ServiceContainer {
     public let products: ProductService
     public let storageLocations: StorageLocationService
     public let inventory: InventoryService
+    public let notifications: ExpiryNotificationCoordinator
 
     public init(spaceStore: SpaceStore, context: NSManagedObjectContext, userRecordName: String,
-                canEdit: @escaping @MainActor (Space) -> Bool = { _ in true }) {
+                canEdit: @escaping @MainActor (Space) -> Bool = { _ in true },
+                notificationCenter: any NotificationCentering = SystemNotificationCenter()) {
         self.spaceStore = spaceStore
         self.context = context
         self.userRecordName = userRecordName
@@ -24,6 +26,9 @@ public final class ServiceContainer {
         storageLocations = StorageLocationService(spaceStore: spaceStore, context: context,
                                                   userRecordName: userRecordName, canEdit: canEdit)
         inventory = InventoryService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: canEdit)
+        notifications = ExpiryNotificationCoordinator(
+            context: context, center: notificationCenter,
+            locale: Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en"))
     }
 
     /// The selected space, or Personal when nothing (or something that no longer exists) is selected.

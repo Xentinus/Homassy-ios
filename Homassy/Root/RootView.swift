@@ -36,6 +36,7 @@ struct RootView: View {
             if let services = app.services {
                 MainTabView()
                     .environment(services)
+                    .expiryNotifications(services.notifications, context: services.context)
             } else if app.bootstrapError != nil {
                 AccountGateView(state: .couldNotDetermine) { app.bootstrapPersonalSpace() }
             } else {
