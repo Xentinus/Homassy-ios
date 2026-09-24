@@ -7,6 +7,7 @@ struct RootView: View {
 
     var body: some View {
         accountContent
+            .environment(app.selection)
             .task {
                 app.accountGate.startObserving()
                 await app.accountGate.refresh()
