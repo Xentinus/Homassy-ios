@@ -82,11 +82,14 @@ public final class ProductDetailModel {
     private let pending: PendingDeletions
     private let userRecordName: String
     private let locale: Locale
+    private let spaces: @MainActor () -> [Space]
     private var openItems: [InventoryItem] = []
 
+    /// `spaces` lists every space the user belongs to; transfer targets are the other editable ones.
     public init(product: Product, products: ProductService, inventory: InventoryService,
                 storageLocations: StorageLocationService, pending: PendingDeletions, userRecordName: String,
-                locale: Locale = .current) {
+                locale: Locale = .current, spaces: @escaping @MainActor () -> [Space] = { [] }) {
+        self.spaces = spaces
         self.product = product
         self.products = products
         self.inventory = inventory
@@ -182,6 +185,33 @@ public final class ProductDetailModel {
     public func amountForm(for itemID: UUID) -> AmountFormModel? {
         guard let item = try? item(itemID), !item.isFullyConsumed else { return nil }
         return AmountFormModel(maximum: item.quantity, unit: item.unit, locale: locale)
+    }
+
+    /// The edit-stock sheet for one item.
+    public func editForm(for itemID: UUID) -> StockFormModel? {
+        guard let item = try? item(itemID) else { return nil }
+        return StockFormModel(mode: .edit(item), inventory: inventory, products: products, storage: storageLocations,
+                              locale: locale)
+    }
+
+    /// Other spaces the item can move to (copy then delete, spec §3.3). Empty while there is only Personal.
+    public var transferTargets: [PickerOption] {
+        guard let current = product.space else { return [] }
+        return spaces()
+            .filter { $0 != current && !$0.isGone && inventory.canEdit($0) }
+            .map { PickerOption(id: $0.publicId, name: $0.name) }
+    }
+
+    /// Moves the whole item to another space. No undo: the view confirms first.
+    public func transfer(_ itemID: UUID, to spaceID: UUID) -> Bool {
+        do {
+            guard let target = spaces().first(where: { $0.publicId == spaceID }) else { throw ServiceError.notFound }
+            try inventory.transfer(try item(itemID), to: target)
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
     }
 
     public func dismissError() { errorMessage = nil }
