@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "HomassyCore", targets: ["HomassyCore"]),
     ],
     targets: [
-        .target(name: "HomassyCore"),
+        .target(name: "HomassyCore", resources: [.process("Resources")]),
         .testTarget(name: "HomassyCoreTests", dependencies: ["HomassyCore"]),
     ]
 )
