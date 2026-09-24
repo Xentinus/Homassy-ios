@@ -4,7 +4,7 @@ import Testing
 
 @Suite("ServiceError")
 struct ServiceErrorTests {
-    static let all: [ServiceError] = [.nameRequired, .quantityMustBePositive, .expiryBeforePurchase, .readOnlySpace, .notFound]
+    static let all: [ServiceError] = [.nameRequired, .quantityMustBePositive, .quantityExceedsStock, .expiryBeforePurchase, .readOnlySpace, .notFound]
 
     @Test("Every error has a message in hu, en and de", arguments: ["hu_HU", "en_US", "de_DE"])
     func translated(localeID: String) {

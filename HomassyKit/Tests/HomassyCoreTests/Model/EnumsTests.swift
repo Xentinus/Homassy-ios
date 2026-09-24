@@ -7,6 +7,10 @@ struct EnumsTests {
         #expect(SpaceKind.allCases.map(\.rawValue) == ["personal", "household"])
     }
 
+    @Test func inventoryEventKindRawValuesAreStable() {
+        #expect(InventoryEventKind.allCases.map(\.rawValue) == ["added", "consumed", "moved", "deleted", "edited"])
+    }
+
     @Test func measureUnitRawValuesAreStable() {
         #expect(MeasureUnit.allCases.map(\.rawValue) == [
             "piece", "gram", "kilogram", "milligram", "milliliter", "centiliter", "deciliter", "liter",

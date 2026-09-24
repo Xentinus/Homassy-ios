@@ -13,6 +13,7 @@ public final class ServiceContainer {
     public let pendingDeletions = PendingDeletions()
     public let products: ProductService
     public let storageLocations: StorageLocationService
+    public let inventory: InventoryService
 
     public init(spaceStore: SpaceStore, context: NSManagedObjectContext, userRecordName: String,
                 canEdit: @escaping @MainActor (Space) -> Bool = { _ in true }) {
@@ -22,6 +23,7 @@ public final class ServiceContainer {
         products = ProductService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: canEdit)
         storageLocations = StorageLocationService(spaceStore: spaceStore, context: context,
                                                   userRecordName: userRecordName, canEdit: canEdit)
+        inventory = InventoryService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: canEdit)
     }
 
     /// The selected space, or Personal when nothing (or something that no longer exists) is selected.

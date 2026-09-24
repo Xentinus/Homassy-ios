@@ -93,6 +93,29 @@
         }
       }
     },
+    "error.quantityExceedsStock" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das ist mehr als der vorhandene Bestand."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That's more than is in stock."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez több, mint ami készleten van."
+          }
+        }
+      }
+    },
     "error.quantityMustBePositive" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -775,6 +798,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ megvásárolva"
+          }
+        }
+      }
+    },
+    "undo.item.usedUp %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ aufgebraucht"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ used up"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ elfogyott"
           }
         }
       }

@@ -54,6 +54,14 @@ public enum HomassyModel {
             decimal("remaining", default: 0),
             date("consumedAt"),
         ])
+        let inventoryEvent = entity(InventoryEvent.self, [
+            string("kindRaw", default: InventoryEventKind.added.rawValue),
+            decimal("quantity", default: 0),
+            string("unitRaw", default: MeasureUnit.piece.rawValue),
+            string("fromLocationName"),
+            string("toLocationName"),
+            date("occurredAt"),
+        ])
         let shoppingLocation = entity(ShoppingLocation.self, [
             string("mapItemIdentifier"),
             string("name", default: ""),
@@ -90,13 +98,17 @@ public enum HomassyModel {
         relate(storageLocation, "inventoryItems", toMany: true, rule: .nullifyDeleteRule, inventoryItem, "storageLocation", toMany: false, rule: .nullifyDeleteRule)
         relate(shoppingLocation, "inventoryItems", toMany: true, rule: .nullifyDeleteRule, inventoryItem, "shoppingLocation", toMany: false, rule: .nullifyDeleteRule)
 
+        // History: the product owns it; a deleted stock item leaves its events behind.
+        relate(product, "inventoryEvents", toMany: true, rule: .cascadeDeleteRule, inventoryEvent, "product", toMany: false, rule: .nullifyDeleteRule)
+        relate(inventoryItem, "inventoryEvents", toMany: true, rule: .nullifyDeleteRule, inventoryEvent, "inventoryItem", toMany: false, rule: .nullifyDeleteRule)
+
         // Shopping.
         relate(shoppingList, "items", toMany: true, rule: .cascadeDeleteRule, shoppingListItem, "shoppingList", toMany: false, rule: .nullifyDeleteRule)
         relate(product, "shoppingListItems", toMany: true, rule: .nullifyDeleteRule, shoppingListItem, "product", toMany: false, rule: .nullifyDeleteRule)
         relate(shoppingLocation, "shoppingListItems", toMany: true, rule: .nullifyDeleteRule, shoppingListItem, "shoppingLocation", toMany: false, rule: .nullifyDeleteRule)
 
         let model = NSManagedObjectModel()
-        model.entities = [space, member, product, storageLocation, inventoryItem, consumptionLog,
+        model.entities = [space, member, product, storageLocation, inventoryItem, consumptionLog, inventoryEvent,
                           shoppingLocation, shoppingList, shoppingListItem]
         return model
     }

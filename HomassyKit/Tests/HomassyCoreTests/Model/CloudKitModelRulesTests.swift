@@ -51,7 +51,7 @@ struct CloudKitModelRulesTests {
     @Test func quantitiesAreDecimalAndImagesAreExternal() {
         let model = HomassyModel.shared.entitiesByName
         let decimals = [("InventoryItem", "quantity"), ("InventoryItem", "price"),
-                        ("ConsumptionLog", "quantity"), ("ConsumptionLog", "remaining"),
+                        ("ConsumptionLog", "quantity"), ("ConsumptionLog", "remaining"), ("InventoryEvent", "quantity"),
                         ("ShoppingListItem", "quantity")]
         for (entity, name) in decimals {
             #expect(model[entity]?.attributesByName[name]?.attributeType == .decimalAttributeType, "\(entity).\(name)")
@@ -73,6 +73,10 @@ struct CloudKitModelRulesTests {
         }
         #expect(rule("Product", "inventoryItems") == .cascadeDeleteRule)
         #expect(rule("InventoryItem", "consumptionLogs") == .cascadeDeleteRule)
+        #expect(rule("Product", "inventoryEvents") == .cascadeDeleteRule)
+        #expect(rule("InventoryItem", "inventoryEvents") == .nullifyDeleteRule)
+        #expect(rule("InventoryEvent", "product") == .nullifyDeleteRule)
+        #expect(rule("InventoryEvent", "inventoryItem") == .nullifyDeleteRule)
         #expect(rule("ShoppingList", "items") == .cascadeDeleteRule)
         #expect(rule("Product", "shoppingListItems") == .nullifyDeleteRule)
         #expect(rule("StorageLocation", "inventoryItems") == .nullifyDeleteRule)
