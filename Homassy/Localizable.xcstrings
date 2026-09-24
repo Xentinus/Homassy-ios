@@ -484,6 +484,305 @@
         }
       }
     },
+    "intro.getStarted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los geht's"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get started"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kezdjük"
+          }
+        }
+      }
+    },
+    "intro.inventory.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im Tab „Vorrat“ steht oben, was bald abläuft. Jeden Morgen um 7:00 fasst eine kurze Mitteilung es zusammen. Scanne einen Barcode, um Dinge schnell hinzuzufügen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Inventory tab shows what expires soon at the top. Every morning at 7:00 one short notification sums it up. Scan a barcode to add things quickly."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Készlet fülön legfelül látod, mi jár le hamarosan. Minden reggel 7:00-kor egy rövid értesítés összefoglalja. Vonalkód beolvasásával gyorsan felvehetsz új tételeket."
+          }
+        }
+      }
+    },
+    "intro.inventory.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wissen, was da ist"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Know what's at home"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tudd, mi van otthon"
+          }
+        }
+      }
+    },
+    "intro.next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tovább"
+          }
+        }
+      }
+    },
+    "intro.notifications.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homassy kann dir jeden Morgen eine kurze Zusammenfassung und montags einen Überblick schicken. Die Erlaubnis wird erfragt, wenn du auf „Los geht's“ tippst. Wenn du ablehnst, funktioniert alles andere genauso."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homassy can send one short summary each morning and an overview on Mondays. It asks for permission when you tap Get started. If you say no, everything else works the same."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Homassy minden reggel egy rövid összefoglalót, hétfőnként pedig áttekintést küldhet. Az engedélyt a Kezdjük gomb megnyomásakor kéri. Ha nemet mondasz, minden más ugyanúgy működik."
+          }
+        }
+      }
+    },
+    "intro.notifications.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ablaufdaten im Blick"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stay ahead of expiry dates"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Előzd meg a lejáratot"
+          }
+        }
+      }
+    },
+    "intro.shopping.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erstelle Listen und tippe auf einen Artikel, wenn er gekauft ist. Der Einkaufsmodus hält den Bildschirm wach, Apple Karten findet Geschäfte in der Nähe, und Gekauftes landet in einem Schritt im Vorrat."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make lists and tap an item to mark it bought. Shopping mode keeps the screen awake, Apple Maps finds stores nearby, and what you bought goes into the inventory in one step."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Készíts listákat, és koppints egy tételre, ha megvetted. A bevásárló mód ébren tartja a képernyőt, az Apple Térkép megtalálja a közeli boltokat, a megvett dolgok pedig egy lépésben a készletbe kerülnek."
+          }
+        }
+      }
+    },
+    "intro.shopping.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einfach einkaufen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shopping made simple"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Egyszerű bevásárlás"
+          }
+        }
+      }
+    },
+    "intro.skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überspringen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kihagyom"
+          }
+        }
+      }
+    },
+    "intro.spaces.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein persönlicher Bereich gehört nur dir. Einen Haushalt teilst du per Link mit allen, die du einlädst. Über das Menü oben wechselst du zwischen ihnen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Personal space is only yours. A household is shared by link with anyone you invite. Switch between them with the menu at the top."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Személyes tér csak a tiéd. Egy háztartást linkkel oszthatsz meg bárkivel, akit meghívsz. A felső menüvel válthatsz közöttük."
+          }
+        }
+      }
+    },
+    "intro.spaces.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Persönlich und geteilt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personal and shared"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Személyes és közös"
+          }
+        }
+      }
+    },
+    "intro.welcome.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorrat, Ablaufdaten und Einkäufe deines Haushalts an einem Ort. Kostenlos und ohne Werbung. Deine Daten liegen in deiner eigenen iCloud, deshalb braucht Homassy ein iCloud-Konto."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your household's inventory, expiry dates and shopping in one place. Free and without ads. Your data lives in your own iCloud, which is why Homassy needs an iCloud account."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A háztartásod készlete, lejárati dátumai és bevásárlása egy helyen. Ingyenes és reklámmentes. Az adataid a saját iCloudodban vannak, ezért a Homassyhoz iCloud-fiók kell."
+          }
+        }
+      }
+    },
+    "intro.welcome.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Willkommen bei Homassy"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to Homassy"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Üdv a Homassyban"
+          }
+        }
+      }
+    },
     "search.prompt" : {
       "extractionState" : "manual",
       "localizations" : {

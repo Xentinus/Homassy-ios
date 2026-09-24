@@ -48,16 +48,20 @@ final class AppModel {
     let persistence: PersistenceController
     let spaceStore: SpaceStore
     let accountGate: AccountGateModel
+    let introduction: IntroductionModel
     let selection = SpaceSelection()
     let undoQueue = UndoQueue()
     private(set) var personalSpace: Space?
     private(set) var bootstrapError: (any Error)?
 
-    init(persistence: PersistenceController, accountProvider: any AccountStatusProviding,
-         defaults: UserDefaults = AppModel.appDefaults) {
+    init(persistence: PersistenceController,
+         accountProvider: any AccountStatusProviding,
+         defaults: UserDefaults = AppModel.appDefaults,
+         introduction: IntroductionModel) {
         self.persistence = persistence
         spaceStore = SpaceStore(persistence: persistence, sharing: ContainerShareLookup(container: persistence.container))
         accountGate = AccountGateModel(provider: accountProvider, defaults: defaults)
+        self.introduction = introduction
     }
 
     /// The app's real configuration, or the UI-test configuration when launched by HomassyUITests.
@@ -83,14 +87,30 @@ final class AppModel {
         } catch {
             fatalError("Homassy could not open its stores: \(error)")
         }
-        self.init(persistence: persistence, accountProvider: provider, defaults: defaults)
+        let notifications: any NotificationAuthorizing
+        #if DEBUG
+        if UITestHooks.resetIntroduction {
+            UserDefaults.standard.removeObject(forKey: IntroductionModel.defaultsKey)
+        }
+        notifications = UITestHooks.isActive ? UITestNotificationAuthorizer() : UserNotificationAuthorizer()
+        #else
+        notifications = UserNotificationAuthorizer()
+        #endif
+        self.init(persistence: persistence,
+                  accountProvider: provider,
+                  defaults: defaults,
+                  introduction: IntroductionModel(notifications: notifications))
     }
 
     #if DEBUG
     /// For SwiftUI previews: seeded in-memory store, available account, Personal space bootstrapped.
     static func preview() -> AppModel {
-        let model = AppModel(persistence: .preview(), accountProvider: UITestAccountStatus(state: .available),
-                             defaults: UserDefaults(suiteName: "preview.accountGate") ?? .standard)
+        let seen = UserDefaults(suiteName: "HomassyPreview")!
+        seen.set(true, forKey: IntroductionModel.defaultsKey)
+        let model = AppModel(persistence: .preview(),
+                             accountProvider: UITestAccountStatus(state: .available),
+                             defaults: seen,
+                             introduction: IntroductionModel(defaults: seen, notifications: UITestNotificationAuthorizer()))
         model.personalSpace = try? model.spaceStore.bootstrapPersonalSpace(userRecordName: UITestHooks.userRecordName)
         return model
     }
