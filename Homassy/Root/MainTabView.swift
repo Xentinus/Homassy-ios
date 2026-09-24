@@ -26,7 +26,7 @@ struct MainTabView: View {
                 TabNavigationStack(tab: .shopping) { TabPlaceholderView(tab: .shopping) }
             }
             Tab(AppTab.products.title, systemImage: AppTab.products.systemImage, value: AppTab.products) {
-                TabNavigationStack(tab: .products) { TabPlaceholderView(tab: .products) }
+                TabNavigationStack(tab: .products) { ProductsView() }
             }
             Tab(AppTab.household.title, systemImage: AppTab.household.systemImage, value: AppTab.household) {
                 TabNavigationStack(tab: .household) { HouseholdView() }

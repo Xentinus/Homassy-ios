@@ -61,6 +61,28 @@ public enum ExpirationStatus {
         ExpirationSortKey(level: level(expiresAt: expiresAt, now: now, calendar: calendar), date: expiresAt)
     }
 
+    /// The expiry line on a card: "Holnap lejár", "Még 9 nap", "Még 8 hónap", "3 napja lejárt".
+    /// Days up to 60, then whole calendar months, then years from 24 months on.
+    public static func cardLabel(expiresAt: Date?, now: Date, calendar: Calendar, locale: Locale) -> String? {
+        guard let expiresAt, let days = daysUntilExpiration(expiresAt, now: now, calendar: calendar) else { return nil }
+        switch days {
+        case ..<(-1): return CoreLocalization.format("expiry.card.daysAgo %lld", locale: locale, -days)
+        case -1: return CoreLocalization.string("expiry.card.yesterday", locale: locale)
+        case 0: return CoreLocalization.string("expiry.card.today", locale: locale)
+        case 1: return CoreLocalization.string("expiry.card.tomorrow", locale: locale)
+        case 2...60: return CoreLocalization.format("expiry.card.daysLeft %lld", locale: locale, days)
+        default:
+            let today = calendar.startOfDay(for: now)
+            let target = calendar.startOfDay(for: expiresAt)
+            let months = calendar.dateComponents([.month], from: today, to: target).month ?? 0
+            if months < 24 {
+                return CoreLocalization.format("expiry.card.monthsLeft %lld", locale: locale, max(months, 2))
+            }
+            let years = calendar.dateComponents([.year], from: today, to: target).year ?? 2
+            return CoreLocalization.format("expiry.card.yearsLeft %lld", locale: locale, years)
+        }
+    }
+
     /// "Tomorrow", "In 3 days", "Expired 2 days ago" inside the 14-day window; the date outside it.
     public static func label(expiresAt: Date?, now: Date, calendar: Calendar, locale: Locale) -> String? {
         guard let expiresAt, let days = daysUntilExpiration(expiresAt, now: now, calendar: calendar) else { return nil }
