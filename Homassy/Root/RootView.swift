@@ -33,8 +33,9 @@ struct RootView: View {
         case .checking:
             ProgressView("gate.checking")
         case .available:
-            if app.personalSpace != nil {
+            if let services = app.services {
                 MainTabView()
+                    .environment(services)
             } else if app.bootstrapError != nil {
                 AccountGateView(state: .couldNotDetermine) { app.bootstrapPersonalSpace() }
             } else {

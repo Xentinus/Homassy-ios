@@ -29,7 +29,7 @@ struct MainTabView: View {
                 TabNavigationStack(tab: .products) { TabPlaceholderView(tab: .products) }
             }
             Tab(AppTab.household.title, systemImage: AppTab.household.systemImage, value: AppTab.household) {
-                TabNavigationStack(tab: .household) { TabPlaceholderView(tab: .household) }
+                TabNavigationStack(tab: .household) { HouseholdView() }
             }
             Tab(AppTab.search.title, systemImage: AppTab.search.systemImage, value: AppTab.search, role: .search) {
                 TabNavigationStack(tab: .search) { SearchView() }
@@ -43,10 +43,12 @@ struct MainTabView: View {
 #Preview("Portrait") {
     let model = AppModel.preview()
     MainTabView().environment(model).environment(model.selection).environment(model.undoQueue)
+        .environment(model.services!)
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
     let model = AppModel.preview()
     MainTabView().environment(model).environment(model.selection).environment(model.undoQueue)
+        .environment(model.services!)
 }
 #endif
