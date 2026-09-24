@@ -78,3 +78,7 @@ specs/
 
 # Throwaway spike code
 Spikes/
+
+# Python bytecode caches (Scripts/ tests)
+__pycache__/
+*.pyc
