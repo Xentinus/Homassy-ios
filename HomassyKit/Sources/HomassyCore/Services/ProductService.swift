@@ -51,6 +51,16 @@ public final class ProductService {
         try context.save()
     }
 
+    /// The favourite heart in the product detail. Saves at once; no undo.
+    public func setFavorite(_ product: Product, _ isFavorite: Bool) throws {
+        guard !product.isGone, let space = product.space else { throw ServiceError.notFound }
+        try ensureEditable(space)
+        guard product.isFavorite != isFavorite else { return }
+        product.isFavorite = isFavorite
+        product.stamp(by: userRecordName)
+        try context.save()
+    }
+
     public func delete(_ product: Product) throws {
         guard !product.isGone, let space = product.space else { throw ServiceError.notFound }
         try ensureEditable(space)
