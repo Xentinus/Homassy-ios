@@ -25,6 +25,10 @@ enum UITestHooks {
     /// True whenever the app was launched by a UI test.
     static var isActive: Bool { accountState != nil }
 
+    /// UI tests start every launch on Inventory with empty stacks: the scene delegate lets the system
+    /// restore scene storage across test launches, which would leak the previous test's tab.
+    static var ignoresRestoredSceneState: Bool { isActive }
+
     static func contains(_ flag: String) -> Bool {
         ProcessInfo.processInfo.arguments.contains(flag)
     }

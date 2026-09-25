@@ -3,6 +3,8 @@ import SwiftUI
 
 @main
 struct HomassyApp: App {
+    /// Only routes scenes to `SceneDelegate`, which receives CloudKit share invitations.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var appModel = AppModel.shared
     // App-wide view state for archives; not domain services, so they stay out of ServiceContainer.
     @State private var archiveRouter = ArchiveImportRouter()

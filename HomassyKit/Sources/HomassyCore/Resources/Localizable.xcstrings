@@ -884,6 +884,121 @@
         }
       }
     },
+    "share.accept.error.generic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beitritt zum Haushalt fehlgeschlagen (Fehler %lld). Versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't join the household (error %lld). Try again."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nem sikerült csatlakozni a háztartáshoz (hibakód: %lld). Próbáld újra."
+          }
+        }
+      }
+    },
+    "share.accept.error.invalid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Einladung ist nicht mehr gültig. Bitte um einen neuen Link."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This invitation is no longer valid. Ask for a new link."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez a meghívó már nem érvényes. Kérj új linket."
+          }
+        }
+      }
+    },
+    "share.accept.error.network" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't reach iCloud. Check your connection and try again."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Az iCloud nem érhető el. Ellenőrizd a kapcsolatot, és próbáld újra."
+          }
+        }
+      }
+    },
+    "share.accept.error.timedOut" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Haushalt ist noch nicht angekommen. Lass Homassy geöffnet und versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The household hasn't arrived yet. Keep Homassy open and try again."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A háztartás még nem érkezett meg. Hagyd nyitva a Homassyt, és próbáld újra."
+          }
+        }
+      }
+    },
+    "share.accept.error.wrongContainer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Einladung gehört zu einer anderen App."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This invitation belongs to a different app."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez a meghívó egy másik alkalmazáshoz tartozik."
+          }
+        }
+      }
+    },
     "sharing.error.cloudUnavailable" : {
       "extractionState" : "manual",
       "localizations" : {

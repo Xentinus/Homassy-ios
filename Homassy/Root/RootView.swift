@@ -5,6 +5,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(AppModel.self) private var app
     @State private var exportTarget: Space?
+    @State private var inbox = ShareInvitationInbox.shared
 
     var body: some View {
         Group {
@@ -38,6 +39,16 @@ struct RootView: View {
                 MainTabView()
                     .environment(\.requestExport, ExportRequestAction { space in exportTarget = space })
                     .archiveExporting($exportTarget)
+                    .shareAcceptanceOverlay(app.shareAcceptance)
+                    .onChange(of: inbox.pending.count, initial: true) { startNextInvitation() }
+                    .onChange(of: app.shareAcceptance.state) { _, state in
+                        if case let .accepted(id) = state {
+                            app.selection.selectedSpaceID = id      // P5-03 then shows member setup for it
+                            app.shareAcceptance.reset()
+                            startNextInvitation()
+                        }
+                    }
+                    .environment(app.shareAcceptance)
                     .environment(services)
                     .expiryNotifications(services.notifications, context: services.context)
             } else if app.bootstrapError != nil {
@@ -50,5 +61,11 @@ struct RootView: View {
                 Task { await app.accountGate.refresh() }
             }
         }
+    }
+
+    /// Invitations wait in the inbox until the services exist, then are accepted one at a time.
+    private func startNextInvitation() {
+        guard app.shareAcceptance.state == .idle, let next = inbox.takeNext() else { return }
+        Task { await app.shareAcceptance.accept(next) }
     }
 }

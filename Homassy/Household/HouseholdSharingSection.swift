@@ -15,6 +15,8 @@ struct HouseholdSpaceSections: View {
     @State private var confirmDeleteStep2 = false
     @State private var isWorking = false
     @State private var errorMessage: String?
+    @State private var sharingPresentation: SharingPresentation?
+    @State private var showsCloudNotice = false
 
     var body: some View {
         if space.managedObjectContext != nil {
@@ -37,9 +39,21 @@ struct HouseholdSpaceSections: View {
             .accessibilityIdentifier("household.sharing.role")
             if role == .notShared {
                 Button("household.sharing.share", systemImage: "person.2.badge.plus") {
-                    run { _ = try await sharing.shareExistingSpace(space) }
+                    run {
+                        let share = try await sharing.shareExistingSpace(space)
+                        if sharing.isCloudBacked {
+                            sharingPresentation = SharingPresentation(share: share)
+                        } else {
+                            showsCloudNotice = true
+                        }
+                    }
                 }
                 .accessibilityIdentifier("household.sharing.share")
+            } else {
+                // One entry for owner and participant: the system sheet lists members, adds people
+                // (owner) and offers Remove Me (participant).
+                Button("household.sharing.manage", systemImage: "person.2") { presentSharing(sharing) }
+                    .accessibilityIdentifier("household.sharing.manage")
             }
             #if DEBUG
             LabeledContent("household.sharing.zoneCheck") {
@@ -51,6 +65,17 @@ struct HouseholdSpaceSections: View {
             Text("household.sharing.title")
         }
         .disabled(isWorking)
+        .sheet(item: $sharingPresentation) { presentation in
+            CloudSharingView(share: presentation.share, space: space, sharing: sharing) { message in
+                errorMessage = message
+            }
+            .ignoresSafeArea()
+        }
+        .alert(Text("household.sharing.cloudNeeded"), isPresented: $showsCloudNotice) {
+            Button("common.ok", role: .cancel) {}
+        } message: {
+            Text(verbatim: SharingError.cloudUnavailable.errorDescription ?? "")
+        }
         .alert(Text("household.error.title"),
                isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
             Button("common.ok", role: .cancel) {}
@@ -98,6 +123,16 @@ struct HouseholdSpaceSections: View {
         } message: {
             Text("household.delete.final.message")
         }
+    }
+
+    /// Local mode has no CloudKit behind it, so it explains that instead of opening the system sheet.
+    private func presentSharing(_ sharing: SharingService) {
+        guard sharing.isCloudBacked else {
+            showsCloudNotice = true
+            return
+        }
+        guard let share = sharing.share(for: space) else { return }
+        sharingPresentation = SharingPresentation(share: share)
     }
 
     private func run(_ action: @escaping @MainActor () async throws -> Void) {
