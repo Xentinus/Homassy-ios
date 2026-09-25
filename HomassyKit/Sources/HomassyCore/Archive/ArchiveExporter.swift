@@ -4,17 +4,25 @@ import Foundation
 @MainActor
 public final class ArchiveExporter {
     private let context: NSManagedObjectContext
+    private let userRecordName: String?
+    private let ownsSpace: @MainActor (Space) -> Bool
     private let appVersion: String
     private let locale: Locale
     private let timeZone: TimeZone
     private let now: () -> Date
 
+    /// `ownsSpace` decides whose photos travel: the owner exports everyone's, anyone else only their own
+    /// (`userRecordName`). Names and colours always stay, so attribution keeps working.
     public init(context: NSManagedObjectContext,
+                userRecordName: String? = nil,
+                ownsSpace: @escaping @MainActor (Space) -> Bool = { _ in true },
                 appVersion: String = ArchiveExporter.bundleVersion(),
                 locale: Locale = .current,
                 timeZone: TimeZone = .current,
                 now: @escaping () -> Date = { Date() }) {
         self.context = context
+        self.userRecordName = userRecordName
+        self.ownsSpace = ownsSpace
         self.appVersion = appVersion
         self.locale = locale
         self.timeZone = timeZone
@@ -65,12 +73,15 @@ public final class ArchiveExporter {
             return text
         }
 
+        let isOwner = ownsSpace(space)
         var members: [MemberDTO] = []
         for m in try fetch(Member.self, "space == %@", space) {
+            let keepsPhoto = isOwner || (m.userRecordName != nil && m.userRecordName == userRecordName)
             members.append(MemberDTO(publicId: m.publicId, createdAt: m.createdAt, updatedAt: m.updatedAt,
                                      createdBy: m.createdBy, updatedBy: m.updatedBy,
                                      userRecordName: m.userRecordName ?? "", displayName: m.displayName ?? "",
-                                     colorSeed: m.colorSeed ?? m.userRecordName ?? "", avatar: imageReference(m.avatar)))
+                                     colorSeed: m.colorSeed ?? m.userRecordName ?? "",
+                                     avatar: keepsPhoto ? imageReference(m.avatar) : nil))
         }
 
         var products: [ProductDTO] = []

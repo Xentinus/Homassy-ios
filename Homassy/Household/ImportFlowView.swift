@@ -144,7 +144,9 @@ struct ImportFlowView: View {
     @ViewBuilder private func groupRow(_ group: ArchiveSelection.Group, preview: ImportPreview) -> some View {
         let entity = Self.mainEntity(of: group)
         let counts = preview.counts(for: entity)
-        let isOn = model.groups.contains(group) && (group != .stock || model.isStockAvailable)
+        // Someone else's household can leave no importable member at all (P5-02a).
+        let isEmptyGroup = group == .members && model.options(for: .members).isEmpty
+        let isOn = model.groups.contains(group) && (group != .stock || model.isStockAvailable) && !isEmptyGroup
         let automatic = isOn ? 0 : preview.autoIncluded[entity] ?? 0
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
@@ -181,7 +183,7 @@ struct ImportFlowView: View {
                 Text(Self.title(for: group))
             }
             .labelsHidden()
-            .disabled(model.phase == .importing || (group == .stock && !model.isStockAvailable))
+            .disabled(model.phase == .importing || (group == .stock && !model.isStockAvailable) || isEmptyGroup)
             .accessibilityIdentifier("import.group.\(group.rawValue)")
         }
     }
@@ -193,6 +195,10 @@ struct ImportFlowView: View {
             if storage > 0 { Text("archive.import.auto.storageLocations \(storage)") }
             if stores > 0 { Text("archive.import.auto.shoppingLocations \(stores)") }
             if preview.unlinkedListItems > 0 { Text("archive.import.unlinked \(preview.unlinkedListItems)") }
+            if preview.withheldMembers > 0 {
+                Text("archive.import.members.withheld \(preview.withheldMembers)")
+                    .accessibilityIdentifier("import.membersWithheld")
+            }
             if model.isSelectionEmpty {
                 Text("archive.import.nothingSelected").accessibilityIdentifier("import.nothingSelected")
             }

@@ -829,6 +829,29 @@
         }
       }
     },
+    "archive.import.members.withheld %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Andere Mitglieder kann nur der Eigentümer des Haushalts mitnehmen. Ausgelassene Mitglieder: %lld. Deine eigenen Mitgliedsdaten kommen mit."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the household's owner can bring other members along. Members left out: %lld. Your own member details come along."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más tagokat csak a háztartás tulajdonosa hozhat át. Kimaradó tagok: %lld. A saját tagadataid átkerülnek."
+          }
+        }
+      }
+    },
     "archive.import.merge.footer" : {
       "extractionState" : "manual",
       "localizations" : {
