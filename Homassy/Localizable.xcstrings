@@ -3796,6 +3796,29 @@
         }
       }
     },
+    "member.color.custom" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eigene Farbe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom colour"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Egyedi szín"
+          }
+        }
+      }
+    },
     "member.color.fuchsia" : {
       "extractionState" : "manual",
       "localizations" : {

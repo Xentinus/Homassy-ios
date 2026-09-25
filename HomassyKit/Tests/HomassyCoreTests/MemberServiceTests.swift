@@ -165,4 +165,23 @@ struct MemberServiceTests {
         #expect(localMembers.memberRows(in: owned).first?.isOwner == true)
         UserDefaults.standard.removePersistentDomain(forName: suite)
     }
+
+    @Test func aCustomColourIsStoredAsHexAndResolved() throws {
+        let joined = try cloud.simulateJoinedHousehold(named: "Theirs")
+        let member = try service.ensureCurrentMember(in: joined, displayName: "Anna", avatar: nil, colorKey: "#1A2B3C")
+
+        #expect(member.colorKey == "#1a2b3c")
+        let preset = MemberColor.resolve(key: member.colorKey, seed: me)
+        #expect(preset.light == 0x1A2B3C)
+        #expect(preset.dark == 0x1A2B3C)
+        #expect(MemberColor.isCustom(member.colorKey))
+        #expect(!MemberColor.isCustom("mocha"))
+    }
+
+    @Test func anInvalidCustomColourIsDropped() throws {
+        let joined = try cloud.simulateJoinedHousehold(named: "Theirs")
+        let member = try service.ensureCurrentMember(in: joined, displayName: "Anna", avatar: nil, colorKey: "#zzzzzz")
+        #expect(member.colorKey == nil)
+    }
 }
+
