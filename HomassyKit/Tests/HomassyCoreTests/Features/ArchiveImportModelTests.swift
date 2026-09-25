@@ -116,9 +116,15 @@ struct ArchiveImportModelSelectionTests {
     @Test func everythingIsSelectedAfterLoading() throws {
         let model = try loadedModel()
         #expect(model.groups == Set(ArchiveSelection.Group.allCases))
-        #expect(model.selectedProductIDs == [ArchiveSamples.milkID, ArchiveSamples.flourID])
-        #expect(model.productOptions.map(\.name) == ["Liszt", "Tej"])
-        #expect(model.productOptions.first { $0.name == "Tej" }?.brand == "Mizo")
+        #expect(model.pickedIDs(for: .products) == [ArchiveSamples.milkID, ArchiveSamples.flourID])
+        #expect(model.options(for: .products).map(\.title) == ["Liszt", "Tej"])
+        let milk = try #require(model.options(for: .products).first { $0.title == "Tej" })
+        #expect(milk.detail == .text("Mizo · Tejtermék"))
+        #expect(milk.keywords.contains("5998200110039"))
+        #expect(model.options(for: .members).map(\.title) == ["Anna", "Béla"])
+        #expect(model.options(for: .storageLocations).first?.detail == nil)
+        #expect(model.options(for: .shoppingLists).first?.detail == .items(2))
+        #expect(model.options(for: .stock).isEmpty)
         #expect(model.selection == .everything)
         #expect(model.isStockAvailable)
     }
@@ -138,30 +144,59 @@ struct ArchiveImportModelSelectionTests {
 
     @Test func pickingProductsNarrowsTheSelection() throws {
         let model = try loadedModel()
-        model.setProducts([ArchiveSamples.flourID], selected: false)
+        model.setRecords([ArchiveSamples.flourID], in: .products, selected: false)
         #expect(model.selection.productIDs == [ArchiveSamples.milkID])
         #expect(model.preview?.counts(for: .products) == EntityImportCounts(toCreate: 1))
         #expect(model.preview?.counts(for: .inventoryItems) == EntityImportCounts(toCreate: 1))
     }
 
+    @Test func pickingMembersNarrowsTheSelection() throws {
+        let model = try loadedModel()
+        model.setRecords([ArchiveSamples.ownerMemberID], in: .members, selected: false)
+        #expect(model.selection.picks[.members] == [ArchiveSamples.annaMemberID])
+        #expect(model.preview?.counts(for: .members) == EntityImportCounts(toCreate: 1))
+    }
+
+    @Test func unpickedStorageNeededByStockIsAutomatic() throws {
+        let model = try loadedModel()
+        model.setRecords([ArchiveSamples.fridgeID], in: .storageLocations, selected: false)
+        #expect(!model.groups.contains(.storageLocations))
+        #expect(model.preview?.autoIncluded == [.storageLocations: 1])
+    }
+
     @Test func deselectingTheLastProductTurnsProductsAndStockOff() throws {
         let model = try loadedModel()
-        model.setProducts([ArchiveSamples.milkID, ArchiveSamples.flourID], selected: false)
+        model.setRecords([ArchiveSamples.milkID, ArchiveSamples.flourID], in: .products, selected: false)
         #expect(!model.groups.contains(.products))
         #expect(!model.isStockAvailable)
         #expect(model.preview?.counts(for: .inventoryItems) == EntityImportCounts())
         #expect(model.preview?.unlinkedListItems == 1)
 
-        model.setProducts([ArchiveSamples.milkID], selected: true)
+        model.setRecords([ArchiveSamples.milkID], in: .products, selected: true)
         #expect(model.groups.contains(.products))
         #expect(model.isStockAvailable)
     }
 
-    @Test func turningProductsBackOnSelectsThemAll() throws {
+    @Test func turningAGroupBackOnPicksAllOfIt() throws {
         let model = try loadedModel()
-        model.setProducts([ArchiveSamples.milkID, ArchiveSamples.flourID], selected: false)
+        model.setRecords([ArchiveSamples.milkID, ArchiveSamples.flourID], in: .products, selected: false)
         model.setGroup(.products, isOn: true)
-        #expect(model.selectedProductIDs.count == 2)
+        #expect(model.pickedIDs(for: .products).count == 2)
+        model.setRecords([ArchiveSamples.weeklyListID], in: .shoppingLists, selected: false)
+        model.setGroup(.shoppingLists, isOn: true)
+        #expect(model.pickedIDs(for: .shoppingLists) == [ArchiveSamples.weeklyListID])
+    }
+
+    @Test func aGroupThatIsOffHasNothingTicked() throws {
+        let model = try loadedModel()
+        model.setGroup(.members, isOn: false)
+        #expect(model.pickedIDs(for: .members).isEmpty)
+        model.setRecords([ArchiveSamples.annaMemberID], in: .members, selected: true)
+        #expect(model.groups.contains(.members))
+        #expect(model.pickedIDs(for: .members) == [ArchiveSamples.annaMemberID])
+        model.setGroup(.members, isOn: false)
+        model.setGroup(.members, isOn: true)
+        #expect(model.pickedIDs(for: .members) == [ArchiveSamples.annaMemberID])
     }
 
     @Test func emptySelectionCannotBeConfirmed() throws {
@@ -176,7 +211,7 @@ struct ArchiveImportModelSelectionTests {
     @Test func confirmImportsOnlyTheSelection() throws {
         let model = try loadedModel()
         for group in ArchiveSelection.Group.allCases where group != .products { model.setGroup(group, isOn: false) }
-        model.setProducts([ArchiveSamples.flourID], selected: false)
+        model.setRecords([ArchiveSamples.flourID], in: .products, selected: false)
         let space = try #require(model.confirm())
         #expect(try stack.fetch(Product.self, "space == %@", space).map(\.name) == ["Tej"])
         #expect(try stack.fetch(Member.self, "space == %@", space).isEmpty)

@@ -1,21 +1,33 @@
 import Foundation
 
-/// What the user chose to import from an archive: whole groups, and optionally a subset of the products.
+/// What the user chose to import from an archive: whole groups, and within a group optionally a subset.
 public struct ArchiveSelection: Equatable, Sendable {
     public enum Group: String, CaseIterable, Sendable {
         case products, stock, storageLocations, shoppingLocations, shoppingLists, members
     }
 
     public var groups: Set<Group>
-    /// The products to import when `groups` contains `.products`; nil means all of them.
-    public var productIDs: Set<UUID>?
+    /// Per group, the records to import. A group without an entry imports all of them. Stock has no picks:
+    /// it follows the imported products.
+    public var picks: [Group: Set<UUID>]
 
-    public init(groups: Set<Group>, productIDs: Set<UUID>? = nil) {
+    public init(groups: Set<Group>, productIDs: Set<UUID>? = nil, picks: [Group: Set<UUID>] = [:]) {
         self.groups = groups
-        self.productIDs = productIDs
+        self.picks = picks
+        if let productIDs { self.picks[.products] = productIDs }
+    }
+
+    /// The pick of `.products`; nil means all of them.
+    public var productIDs: Set<UUID>? {
+        get { picks[.products] }
+        set { picks[.products] = newValue }
     }
 
     public static let everything = ArchiveSelection(groups: Set(Group.allCases))
+
+    func keeps(_ id: UUID, in group: Group) -> Bool {
+        groups.contains(group) && (picks[group]?.contains(id) ?? true)
+    }
 }
 
 public struct ArchiveFilterResult: Equatable, Sendable {
@@ -33,14 +45,13 @@ public struct ArchiveFilterResult: Equatable, Sendable {
 
 extension ArchiveData {
     /// The part of the archive `selection` asks for, plus what it references (user rules, 2026-09-25):
-    /// stock follows the imported products and brings its storage locations and stores; shopping lists
-    /// bring their stores, and list items of products left out arrive without a product, named after it.
+    /// stock follows the imported products and brings its storage locations and stores, even unpicked ones;
+    /// shopping lists bring their stores, and list items of products left out arrive without a product,
+    /// named after it.
     /// The order of every collection is kept, and the result always passes `ArchiveValidator`.
     public func filtered(by selection: ArchiveSelection) -> ArchiveFilterResult {
         let groups = selection.groups
-        let keptProducts = groups.contains(.products)
-            ? products.filter { selection.productIDs?.contains($0.publicId) ?? true }
-            : []
+        let keptProducts = products.filter { selection.keeps($0.publicId, in: .products) }
         let productIDs = Set(keptProducts.map(\.publicId))
 
         let keptItems = groups.contains(.stock) ? inventoryItems.filter { productIDs.contains($0.product) } : []
@@ -48,7 +59,7 @@ extension ArchiveData {
         let keptLogs = consumptionLogs.filter { itemIDs.contains($0.inventoryItem) }
         let keptEvents = groups.contains(.stock) ? inventoryEvents.filter { productIDs.contains($0.product) } : []
 
-        let keptLists = groups.contains(.shoppingLists) ? shoppingLists : []
+        let keptLists = shoppingLists.filter { selection.keeps($0.publicId, in: .shoppingLists) }
         let listIDs = Set(keptLists.map(\.publicId))
         let productNames = Dictionary(uniqueKeysWithValues: products.map { ($0.publicId, $0.name) })
         var unlinked = 0
@@ -64,9 +75,14 @@ extension ArchiveData {
         var autoIncluded: [ArchiveEntity: Int] = [:]
         func places<T: ArchiveRecord>(_ all: [T], group: ArchiveSelection.Group, entity: ArchiveEntity,
                                       referenced: Set<UUID>) -> [T] {
-            if groups.contains(group) { return all }
-            let kept = all.filter { referenced.contains($0.publicId) }
-            if !kept.isEmpty { autoIncluded[entity] = kept.count }
+            var automatic = 0
+            let kept = all.filter { record in
+                if selection.keeps(record.publicId, in: group) { return true }
+                guard referenced.contains(record.publicId) else { return false }
+                automatic += 1
+                return true
+            }
+            if automatic > 0 { autoIncluded[entity] = automatic }
             return kept
         }
         let keptStorage = places(storageLocations, group: .storageLocations, entity: .storageLocations,
@@ -76,7 +92,7 @@ extension ArchiveData {
                                                 + keptListItems.compactMap(\.shoppingLocation)))
 
         let data = ArchiveData(space: space,
-                               members: groups.contains(.members) ? members : [],
+                               members: members.filter { selection.keeps($0.publicId, in: .members) },
                                products: keptProducts,
                                storageLocations: keptStorage,
                                shoppingLocations: keptStores,
