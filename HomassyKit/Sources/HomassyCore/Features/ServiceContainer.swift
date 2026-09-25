@@ -15,10 +15,13 @@ public final class ServiceContainer {
     public let storageLocations: StorageLocationService
     public let inventory: InventoryService
     public let notifications: ExpiryNotificationCoordinator
+    /// Export and import. Nil only in package tests that build the container without persistence.
+    public let archive: ArchiveServices?
 
     public init(spaceStore: SpaceStore, context: NSManagedObjectContext, userRecordName: String,
                 canEdit: @escaping @MainActor (Space) -> Bool = { _ in true },
-                notificationCenter: any NotificationCentering = SystemNotificationCenter()) {
+                notificationCenter: any NotificationCentering = SystemNotificationCenter(),
+                persistence: PersistenceController? = nil) {
         self.spaceStore = spaceStore
         self.context = context
         self.userRecordName = userRecordName
@@ -29,6 +32,7 @@ public final class ServiceContainer {
         notifications = ExpiryNotificationCoordinator(
             context: context, center: notificationCenter,
             locale: Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en"))
+        archive = persistence.map { ArchiveServices(persistence: $0, spaceStore: spaceStore, userRecordName: userRecordName) }
     }
 
     /// The selected space, or Personal when nothing (or something that no longer exists) is selected.

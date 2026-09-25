@@ -116,7 +116,7 @@ final class AppModel {
                              introduction: IntroductionModel(defaults: seen, notifications: UITestNotificationAuthorizer()))
         model.personalSpace = try? model.spaceStore.bootstrapPersonalSpace(userRecordName: UITestHooks.userRecordName)
         model.services = ServiceContainer(spaceStore: model.spaceStore, context: model.persistence.viewContext,
-                                          userRecordName: UITestHooks.userRecordName)
+                                          userRecordName: UITestHooks.userRecordName, persistence: model.persistence)
         return model
     }
     #endif
@@ -149,7 +149,8 @@ final class AppModel {
         isBuildingServices = true
         defer { isBuildingServices = false }
         let container = ServiceContainer(spaceStore: spaceStore, context: persistence.viewContext,
-                                         userRecordName: userRecordName, notificationCenter: Self.notificationCenter)
+                                         userRecordName: userRecordName, notificationCenter: Self.notificationCenter,
+                                         persistence: persistence)
         #if DEBUG
         if UITestHooks.isSeeded {
             try? await UITestSeed.populate(container, in: personalSpace)
