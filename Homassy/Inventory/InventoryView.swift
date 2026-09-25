@@ -62,6 +62,9 @@ struct InventoryView: View {
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            BackupReminderBanner(space: model.space)
+        }
         .background(Color(uiColor: .systemGroupedBackground))
         .accessibilityIdentifier("inventory.grid")
         .overlay {
@@ -148,6 +151,7 @@ struct InventoryView: View {
     NavigationStack { InventoryView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
         .environment(model.services!)
+        .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
@@ -155,5 +159,6 @@ struct InventoryView: View {
     NavigationStack { InventoryView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
         .environment(model.services!)
+        .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 #endif
