@@ -2,6 +2,7 @@ import HomassyCore
 import SwiftUI
 
 /// One item on the list's card grid (README "Card layout"): picture, name, quantity, store, deadline and note.
+/// A deadline within 14 days draws the card yellow, a passed one red, exactly like stock expiry.
 /// A tap opens the purchase sheet.
 struct ShoppingItemCard: View {
     let row: ShoppingListModel.Row
@@ -35,10 +36,10 @@ struct ShoppingItemCard: View {
                     Label {
                         Text("shopping.item.deadline \(deadline.formatted(.dateTime.month(.abbreviated).day()))")
                     } icon: {
-                        Image(systemName: "calendar")
+                        Image(systemName: row.deadlineLevel.cardGlyph)
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(row.deadlineLevel.cardForeground)
                     .lineLimit(1)
                 }
                 if let note = row.note {
@@ -48,7 +49,7 @@ struct ShoppingItemCard: View {
             .padding(10)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .cardChrome()
+        .cardChrome(level: row.deadlineLevel)
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
     }

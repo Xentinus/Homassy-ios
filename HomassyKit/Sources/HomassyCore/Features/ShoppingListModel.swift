@@ -13,6 +13,8 @@ public final class ShoppingListModel {
         public let note: String?
         public let storeName: String?
         public let deadline: Date?
+        /// Drawn like stock expiry (README "Card layout"): yellow within 14 days, red once the deadline passed.
+        public let deadlineLevel: ExpirationLevel
         /// Set for product items: the card shows the product photo.
         public let productID: UUID?
         public let image: Data?
@@ -27,6 +29,8 @@ public final class ShoppingListModel {
     @ObservationIgnored private let undoQueue: UndoQueue
     @ObservationIgnored private let pending: PendingDeletions
     @ObservationIgnored private let locale: Locale
+    @ObservationIgnored private let calendar: Calendar
+    @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private var items: [UUID: ShoppingListItem] = [:]
 
     /// Items waiting in an undo window (deleted or bought) are filtered out here. `pending` is observable,
@@ -35,8 +39,11 @@ public final class ShoppingListModel {
     public var totalCount: Int { remaining.count }
 
     public init(service: ShoppingService, list: ShoppingList, undoQueue: UndoQueue,
-                pending: PendingDeletions, locale: Locale = .current) {
+                pending: PendingDeletions, locale: Locale = .current, calendar: Calendar = .current,
+                now: @escaping () -> Date = { Date() }) {
         self.service = service
+        self.calendar = calendar
+        self.now = now
         self.list = list
         self.undoQueue = undoQueue
         self.pending = pending
@@ -91,6 +98,7 @@ public final class ShoppingListModel {
         Row(id: item.publicId, name: ShoppingService.displayName(of: item),
             quantityText: Quantity.format(item.quantity, unit: item.unit, locale: locale),
             note: item.note, storeName: item.shoppingLocation?.name, deadline: item.deadline,
+            deadlineLevel: ExpirationStatus.level(expiresAt: item.deadline, now: now(), calendar: calendar),
             productID: item.product?.publicId, image: item.product?.image)
     }
 }

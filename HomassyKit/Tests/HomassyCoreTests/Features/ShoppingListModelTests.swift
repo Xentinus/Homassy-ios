@@ -8,11 +8,18 @@ struct ShoppingListModelTests {
     let stack: ShoppingTestStack
     let queue = UndoQueue(window: .seconds(3600))
     let locale = Locale(identifier: "en_US")
+    let calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Budapest")!
+        return calendar
+    }()
 
     init() throws { stack = try ShoppingTestStack() }
 
     private func makeModel(_ list: ShoppingList) -> ShoppingListModel {
-        ShoppingListModel(service: stack.service, list: list, undoQueue: queue, pending: stack.pending, locale: locale)
+        let clock = stack.now
+        return ShoppingListModel(service: stack.service, list: list, undoQueue: queue, pending: stack.pending,
+                                 locale: locale, calendar: calendar, now: { clock.date })
     }
 
     @Test func rowsDescribeTheItemsStillToBuy() throws {
@@ -88,5 +95,22 @@ struct ShoppingListModelTests {
         #expect(model.remaining.map(\.name) == ["A", "B", "C"])
         model.moveItem(a.publicId, onto: a.publicId)
         #expect(model.remaining.map(\.name) == ["A", "B", "C"])
+    }
+
+    @Test func deadlinesAreStyledLikeExpiry() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let day: TimeInterval = 86_400
+        try stack.service.addItem(to: list, customName: "Ráér", deadline: stack.now.date.addingTimeInterval(30 * day))
+        try stack.service.addItem(to: list, customName: "Hamarosan", deadline: stack.now.date.addingTimeInterval(10 * day))
+        try stack.service.addItem(to: list, customName: "Holnap", deadline: stack.now.date.addingTimeInterval(day))
+        try stack.service.addItem(to: list, customName: "Lejárt", deadline: stack.now.date.addingTimeInterval(-2 * day))
+        try stack.service.addItem(to: list, customName: "Nincs")
+
+        let levels = Dictionary(uniqueKeysWithValues: makeModel(list).remaining.map { ($0.name, $0.deadlineLevel) })
+        #expect(levels["Ráér"] == .ok)
+        #expect(levels["Hamarosan"] == .soon)
+        #expect(levels["Holnap"] == .critical)
+        #expect(levels["Lejárt"] == .expired)
+        #expect(levels["Nincs"] == ExpirationLevel.none)
     }
 }
