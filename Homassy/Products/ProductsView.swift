@@ -150,13 +150,13 @@ struct ProductsView: View {
     let model = AppModel.preview()
     NavigationStack { ProductsView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!)
+        .environment(model.services!).environment(model.services!.attribution)
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
     let model = AppModel.preview()
     NavigationStack { ProductsView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!)
+        .environment(model.services!).environment(model.services!.attribution)
 }
 #endif

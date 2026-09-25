@@ -53,6 +53,8 @@ struct RootView: View {
                         }
                     }
                     .environment(app.shareAcceptance)
+                    .environment(attributionTracker(services))
+                    .environment(\.memberLookup, memberLookup(services))
                     .onChange(of: app.selection.selectedSpaceID, initial: true) { evaluateMemberSetup() }
                     .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)
                         .receive(on: RunLoop.main)) { _ in
@@ -83,6 +85,28 @@ struct RootView: View {
     private func startNextInvitation() {
         guard app.shareAcceptance.state == .idle, let next = inbox.takeNext() else { return }
         Task { await app.shareAcceptance.accept(next) }
+    }
+
+    private func attributionTracker(_ services: ServiceContainer) -> AttributionTracker {
+        #if DEBUG
+        if let override = app.attributionOverride { return override }
+        #endif
+        return services.attribution
+    }
+
+    /// Names and colours of the selected space's members, resolved when a flashing card asks.
+    private func memberLookup(_ services: ServiceContainer) -> MemberLookup {
+        let selection = app.selection
+        func space() -> Space? { services.activeSpace(selectedID: selection.selectedSpaceID) }
+        return MemberLookup(
+            name: { record in
+                guard let members = services.members, let space = space() else { return "" }
+                return members.displayName(for: record, in: space)
+            },
+            colorKey: { record in
+                guard let members = services.members, let space = space() else { return nil }
+                return members.colorKey(for: record, in: space)
+            })
     }
 
     /// First visit to an editable shared household without a named member record: ask for name, photo, colour.

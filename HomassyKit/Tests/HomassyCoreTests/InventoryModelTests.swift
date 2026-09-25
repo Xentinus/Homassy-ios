@@ -48,6 +48,17 @@ struct InventoryModelTests {
         #expect(!model.isEmpty)
     }
 
+    @Test("A card knows its product and stock items, so a change to any of them flashes it (P5-04)")
+    func cardsCarryTheirRecordIDs() async throws {
+        let env = try ServiceTestEnvironment()
+        let eggs = try await env.makeProduct("Eggs")
+        let first = try env.stock(eggs, 6, expiresInDays: 30)
+        let second = try env.stock(eggs, 6, expiresInDays: 40)
+
+        let card = try #require(model(env).sections.first?.cards.first)
+        #expect(card.relatedIDs == [eggs.publicId, first.publicId, second.publicId])
+    }
+
     @Test("One card per product per section, with the stock added up")
     func aggregatesPerProductAndSection() async throws {
         let env = try ServiceTestEnvironment()

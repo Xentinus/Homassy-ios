@@ -150,7 +150,7 @@ struct InventoryView: View {
     let model = AppModel.preview()
     NavigationStack { InventoryView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!)
+        .environment(model.services!).environment(model.services!.attribution)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 
@@ -158,7 +158,7 @@ struct InventoryView: View {
     let model = AppModel.preview()
     NavigationStack { InventoryView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!)
+        .environment(model.services!).environment(model.services!.attribution)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 #endif

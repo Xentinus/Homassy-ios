@@ -67,6 +67,7 @@ struct ShoppingListsView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(Color(uiColor: .secondarySystemGroupedBackground),
                                             in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .attributionRing([summary.id], cornerRadius: 14)
                         }
                         .buttonStyle(.plain)
                         .contextMenu { actions(for: summary) }
