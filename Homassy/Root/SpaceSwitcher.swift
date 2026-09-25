@@ -7,7 +7,9 @@ import SwiftUI
 struct SpaceSwitcher: View {
     @Environment(AppModel.self) private var app
     @Environment(SpaceSelection.self) private var selection
+    @Environment(ServiceContainer.self) private var services
     @State private var spaces: [Space] = []
+    @State private var isCreatingHousehold = false
 
     var body: some View {
         let current = selection.resolve(in: spaces)
@@ -24,14 +26,17 @@ struct SpaceSwitcher: View {
                 }
             }
             Divider()
-            // Enabled by P5-01, which adds household creation and sharing.
-            Button("space.new", systemImage: "plus") {}
-                .disabled(true)
+            Button("space.new", systemImage: "plus") { isCreatingHousehold = true }
+                .disabled(services.sharing == nil)
+                .accessibilityIdentifier("space.new")
         } label: {
             Label(current?.name ?? "", systemImage: current?.kind == .household ? "house.fill" : "person.crop.circle")
                 .labelStyle(.titleAndIcon)
         }
         .accessibilityIdentifier("spaceSwitcher")
+        .sheet(isPresented: $isCreatingHousehold) {
+            if let sharing = services.sharing { NewHouseholdSheet(service: sharing) }
+        }
         .accessibilityHint(Text("space.switcher"))
         .task { reload() }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,

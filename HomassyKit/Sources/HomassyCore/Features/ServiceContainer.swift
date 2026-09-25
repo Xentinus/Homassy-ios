@@ -21,22 +21,33 @@ public final class ServiceContainer {
     public let notifications: ExpiryNotificationCoordinator
     /// Export and import. Nil only in package tests that build the container without persistence.
     public let archive: ArchiveServices?
+    /// Households: create, share, leave, delete. Nil only in package tests that build the container without it.
+    public let sharing: SharingService?
 
     public init(spaceStore: SpaceStore, context: NSManagedObjectContext, userRecordName: String,
                 canEdit: @escaping @MainActor (Space) -> Bool = { _ in true },
                 notificationCenter: any NotificationCentering = SystemNotificationCenter(),
                 persistence: PersistenceController? = nil,
-                storeSearch: any StoreSearching = MapKitStoreSearch()) {
+                storeSearch: any StoreSearching = MapKitStoreSearch(),
+                sharing: SharingService? = nil) {
+        // When sharing is given, its permission check is every service's canEdit (read-only households).
+        let permission: @MainActor (Space) -> Bool
+        if let sharing {
+            permission = { sharing.canEdit($0) }
+        } else {
+            permission = canEdit
+        }
+        self.sharing = sharing
         self.spaceStore = spaceStore
         self.context = context
         self.userRecordName = userRecordName
-        products = ProductService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: canEdit)
+        products = ProductService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: permission)
         storageLocations = StorageLocationService(spaceStore: spaceStore, context: context,
-                                                  userRecordName: userRecordName, canEdit: canEdit)
-        inventory = InventoryService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: canEdit)
-        shopping = ShoppingService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: canEdit)
+                                                  userRecordName: userRecordName, canEdit: permission)
+        inventory = InventoryService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: permission)
+        shopping = ShoppingService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: permission)
         shoppingLocations = ShoppingLocationService(spaceStore: spaceStore, context: context,
-                                                    userRecordName: userRecordName, canEdit: canEdit)
+                                                    userRecordName: userRecordName, canEdit: permission)
         self.storeSearch = storeSearch
         notifications = ExpiryNotificationCoordinator(
             context: context, center: notificationCenter,
