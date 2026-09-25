@@ -42,14 +42,17 @@ struct ShoppingItemCard: View {
                     .foregroundStyle(row.deadlineLevel.cardForeground)
                     .lineLimit(1)
                 }
-                if let note = row.note {
-                    Text(verbatim: note).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                AttributionCaption(ids: [row.id]) {
+                    if let note = row.note {
+                        Text(verbatim: note).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    }
                 }
             }
             .padding(10)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .cardChrome(level: row.deadlineLevel)
+        .attributionRing([row.id])
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
     }

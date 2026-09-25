@@ -58,6 +58,12 @@ final class AppModel {
     private(set) var personalSpace: Space?
     /// Every domain service. Built once the account is available and the Personal space exists.
     private(set) var services: ServiceContainer?
+    #if DEBUG
+    /// `-uiTestAttribution`: a tracker with a simulated foreign change, used instead of the container's.
+    private(set) var attributionOverride: AttributionTracker?
+    #endif
+    /// Runs persistent-history processing on every remote change (P5-04).
+    private(set) var remoteChanges: RemoteChangeObserver?
     private var isBuildingServices = false
     private(set) var bootstrapError: (any Error)?
 
@@ -178,12 +184,40 @@ final class AppModel {
                                             cloud: cloudSharing, userRecordName: userRecordName)
         let container = ServiceContainer(spaceStore: spaceStore, context: persistence.viewContext,
                                          userRecordName: userRecordName, notificationCenter: Self.notificationCenter,
-                                         persistence: persistence, sharing: sharingService)
+                                         persistence: persistence, sharing: sharingService,
+                                         historyDefaults: Self.appDefaults)
         #if DEBUG
         if UITestHooks.isSeeded {
             try? await UITestSeed.populate(container, in: personalSpace)
         }
+        if UITestHooks.simulatesAttribution {
+            let tracker = AttributionTracker(window: .seconds(120))
+            let milk = try? container.products.products(in: personalSpace).first { $0.name == "Milk" }
+            if let milk {
+                tracker.record([ForeignChange(publicId: milk.publicId, entityName: "Product", userRecordName: "_uiTestFriend")])
+            }
+            attributionOverride = tracker
+        }
         #endif
         services = container
+        startRemoteChanges(for: container)
+    }
+
+    /// Merges and deduplicates imported history, flashes rows others changed, and refreshes the expiry
+    /// schedule and badge when anything it depends on changed.
+    private func startRemoteChanges(for container: ServiceContainer) {
+        remoteChanges?.stop()
+        guard let processor = container.history else { return }
+        let attribution = container.attribution
+        let notifications = container.notifications
+        let observer = RemoteChangeObserver(container: persistence.container, processor: processor) { batch in
+            attribution.record(batch.foreignChanges)
+            let scheduleRelevant: Set<String> = ["Space", "Product", "InventoryItem", "StorageLocation"]
+            if !batch.changedEntityNames.isDisjoint(with: scheduleRelevant) {
+                notifications.scheduleRefresh(.remoteChange)    // also refreshes the badge
+            }
+        }
+        observer.start()
+        remoteChanges = observer
     }
 }

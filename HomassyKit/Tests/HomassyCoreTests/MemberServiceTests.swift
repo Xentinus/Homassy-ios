@@ -183,5 +183,12 @@ struct MemberServiceTests {
         let member = try service.ensureCurrentMember(in: joined, displayName: "Anna", avatar: nil, colorKey: "#zzzzzz")
         #expect(member.colorKey == nil)
     }
+
+    @Test func colourKeyLookupForAttribution() throws {
+        let joined = try cloud.simulateJoinedHousehold(named: "Theirs")
+        try service.ensureCurrentMember(in: joined, displayName: "Anna", avatar: nil, colorKey: "mocha")
+        #expect(service.colorKey(for: me, in: joined) == "mocha")
+        #expect(service.colorKey(for: "_unknown", in: joined) == nil)
+    }
 }
 

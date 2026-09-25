@@ -15,6 +15,8 @@ public struct ProductCardData: Identifiable, Equatable, Sendable {
     /// From the open item that expires first; `.none` without a date.
     public let expiryLevel: ExpirationLevel
     public let expiryText: String?
+    /// The product and its stock items: a change by someone else to any of them flashes the card (P5-04).
+    public var relatedIDs: Set<UUID> = []
 }
 
 public struct ProductSection: Identifiable, Equatable, Sendable {
@@ -92,7 +94,8 @@ public final class ProductListModel {
                     stockText: StockSummary.text(for: items, locale: locale),
                     expiryLevel: ExpirationStatus.level(expiresAt: first?.expiresAt, now: now, calendar: calendar),
                     expiryText: ExpirationStatus.cardLabel(expiresAt: first?.expiresAt, now: now,
-                                                           calendar: calendar, locale: locale))
+                                                           calendar: calendar, locale: locale),
+                    relatedIDs: Set([product.publicId] + items.map(\.publicId)))
             }
         } catch {
             errorMessage = error.localizedDescription

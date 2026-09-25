@@ -13,9 +13,11 @@ struct ShoppingListCard: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: summary.name).font(.headline).lineLimit(2)
-                Text("shopping.lists.remaining \(summary.remaining)")
-                    .font(.subheadline)
-                .foregroundStyle(.secondary)
+                AttributionCaption(ids: [summary.id]) {
+                    Text("shopping.lists.remaining \(summary.remaining)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer(minLength: 0)
         }

@@ -36,17 +36,20 @@ struct ProductCard: View {
                 if let stock = card.stockText {
                     Text(stock).font(.subheadline.weight(.semibold)).monospacedDigit()
                 }
-                if let expiry = card.expiryText {
-                    Label(expiry, systemImage: card.expiryLevel.cardGlyph)
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(card.expiryLevel.cardForeground)
-                        .lineLimit(1)
+                AttributionCaption(ids: card.relatedIDs) {
+                    if let expiry = card.expiryText {
+                        Label(expiry, systemImage: card.expiryLevel.cardGlyph)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(card.expiryLevel.cardForeground)
+                            .lineLimit(1)
+                    }
                 }
             }
             .padding(10)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .cardChrome(level: card.expiryLevel)
+        .attributionRing(card.relatedIDs)
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
     }

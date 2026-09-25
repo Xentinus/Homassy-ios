@@ -71,6 +71,14 @@ public final class MemberService {
         return (name?.isEmpty == false ? name : nil) ?? Self.newMemberName
     }
 
+    /// The member's hand-picked colour key in `space`, for rings drawn outside the member list (P5-04).
+    public func colorKey(for userRecordName: String, in space: Space) -> String? {
+        let request = NSFetchRequest<Member>(entityName: "Member")
+        request.predicate = NSPredicate(format: "space == %@ AND userRecordName == %@", space, userRecordName)
+        request.fetchLimit = 1
+        return (try? context.fetch(request).first)?.colorKey
+    }
+
     public func needsSetup(in space: Space) -> Bool {
         guard space.kind == .household, sharing.role(for: space) != .notShared, sharing.canEdit(space) else { return false }
         let name = currentMember(in: space)?.displayName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""

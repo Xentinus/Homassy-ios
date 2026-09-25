@@ -7,6 +7,15 @@ struct ExportRequestAction {
     @MainActor func callAsFunction(_ space: Space) { handler(space) }
 }
 
+/// Name and colour of a member of the selected space, by userRecordName (attribution, P5-04).
+struct MemberLookup {
+    let name: @MainActor (String) -> String
+    let colorKey: @MainActor (String) -> String?
+
+    static let none = MemberLookup(name: { _ in "" }, colorKey: { _ in nil })
+}
+
 extension EnvironmentValues {
     @Entry var requestExport = ExportRequestAction { _ in }
+    @Entry var memberLookup = MemberLookup.none
 }

@@ -25,6 +25,10 @@ enum UITestHooks {
     /// True whenever the app was launched by a UI test.
     static var isActive: Bool { accountState != nil }
 
+    /// `-uiTestAttribution`: after seeding, pretend someone else just changed Milk, with a long window
+    /// so a UI test can see the ring and the "· now" caption (P5-04). Nothing else arrives from others locally.
+    static var simulatesAttribution: Bool { contains("-uiTestAttribution") }
+
     /// UI tests start every launch on Inventory with empty stacks: the scene delegate lets the system
     /// restore scene storage across test launches, which would leak the previous test's tab.
     static var ignoresRestoredSceneState: Bool { isActive }

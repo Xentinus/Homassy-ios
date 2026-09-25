@@ -25,13 +25,18 @@ public final class ServiceContainer {
     public let sharing: SharingService?
     /// Member records: names, photos, colours. Built from `sharing` when the container has one.
     public let members: MemberService?
+    /// Persistent history of remote changes (P5-04): merge, dedupe, attribution. Built from `sharing`.
+    public let history: HistoryProcessor?
+    /// Rows recently changed by someone else, for the attribution flash.
+    public let attribution = AttributionTracker()
 
     public init(spaceStore: SpaceStore, context: NSManagedObjectContext, userRecordName: String,
                 canEdit: @escaping @MainActor (Space) -> Bool = { _ in true },
                 notificationCenter: any NotificationCentering = SystemNotificationCenter(),
                 persistence: PersistenceController? = nil,
                 storeSearch: any StoreSearching = MapKitStoreSearch(),
-                sharing: SharingService? = nil) {
+                sharing: SharingService? = nil,
+                historyDefaults: UserDefaults = .standard) {
         // When sharing is given, its permission check is every service's canEdit (read-only households).
         let permission: @MainActor (Space) -> Bool
         if let sharing {
@@ -42,6 +47,12 @@ public final class ServiceContainer {
         self.sharing = sharing
         members = sharing.map { MemberService(persistence: $0.persistence, spaceStore: spaceStore,
                                               sharing: $0, userRecordName: userRecordName) }
+        history = sharing.map { sharing in
+            HistoryProcessor(container: sharing.persistence.container,
+                             tokens: HistoryTokenStore(defaults: historyDefaults),
+                             currentUserRecordName: userRecordName,
+                             deduplicateStore: sharing.persistence.privateStore)
+        }
         self.spaceStore = spaceStore
         self.context = context
         self.userRecordName = userRecordName

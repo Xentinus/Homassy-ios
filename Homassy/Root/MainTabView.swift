@@ -67,14 +67,14 @@ struct MainTabView: View {
 #Preview("Portrait") {
     let model = AppModel.preview()
     MainTabView().environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!)
+        .environment(model.services!).environment(model.services!.attribution)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
     let model = AppModel.preview()
     MainTabView().environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!)
+        .environment(model.services!).environment(model.services!.attribution)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 #endif

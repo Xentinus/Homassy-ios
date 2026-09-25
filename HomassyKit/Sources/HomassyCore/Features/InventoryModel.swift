@@ -88,7 +88,8 @@ public final class InventoryModel {
                     stockText: StockSummary.text(for: items.map { ($0.quantity, $0.unit) }, locale: locale),
                     expiryLevel: level(first),
                     expiryText: ExpirationStatus.cardLabel(expiresAt: first.expiresAt, now: now,
-                                                           calendar: calendar, locale: locale))
+                                                           calendar: calendar, locale: locale),
+                    relatedIDs: Set([product.productID] + items.map(\.itemID)))
                 return (card, key(first))
             }
             if urgentFirst {

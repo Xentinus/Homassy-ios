@@ -498,13 +498,13 @@ struct ChipsLayout: Layout {
     let model = AppModel.preview()
     NavigationStack { ProductDetailView(productID: UUID()) }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!)
+        .environment(model.services!).environment(model.services!.attribution)
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
     let model = AppModel.preview()
     NavigationStack { ProductDetailView(productID: UUID()) }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!)
+        .environment(model.services!).environment(model.services!.attribution)
 }
 #endif

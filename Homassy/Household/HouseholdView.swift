@@ -36,7 +36,7 @@ struct HouseholdView: View {
     let model = AppModel.preview()
     NavigationStack { HouseholdView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!)
+        .environment(model.services!).environment(model.services!.attribution)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 
@@ -44,7 +44,7 @@ struct HouseholdView: View {
     let model = AppModel.preview()
     NavigationStack { HouseholdView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!)
+        .environment(model.services!).environment(model.services!.attribution)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 #endif
