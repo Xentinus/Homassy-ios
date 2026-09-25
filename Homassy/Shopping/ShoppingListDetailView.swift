@@ -2,22 +2,32 @@ import CoreData
 import HomassyCore
 import SwiftUI
 
-/// One list: items to buy by sort order, then a collapsible "Bought" section, with the add bar at the bottom.
-/// Each item is a card: the checkbox marks it bought (undoable), a tap on the card opens the product detail
-/// (or the item form for a custom item), swipe left deletes (undoable), swipe right edits, drag reorders.
+/// One list: the items still to buy by sort order, with the quick add bar at the bottom. Each item is a card:
+/// the checkbox buys the whole quantity into inventory (undoable), a tap on the card opens the purchase sheet,
+/// swipe left deletes (undoable), swipe right edits, drag reorders. Bought items leave the list.
 struct ShoppingListDetailView: View {
-    struct EditTarget: Identifiable { let id: UUID }
+    struct Target: Identifiable { let id: UUID }
+    /// Opens the add sheet, carrying what was typed in the quick bar.
+    struct AddRequest: Identifiable {
+        let id = UUID()
+        let query: String
+    }
 
+    let list: ShoppingList
     let services: ServiceContainer
     @State private var model: ShoppingListModel
-    @State private var editing: EditTarget?
-    @State private var confirmClear = false
+    @State private var editing: Target?
+    @State private var purchasing: Target?
+    @State private var adding: AddRequest?
+    @State private var boughtCount = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(list: ShoppingList, services: ServiceContainer, undoQueue: UndoQueue) {
+        self.list = list
         self.services = services
-        _model = State(initialValue: ShoppingListModel(service: services.shopping, list: list,
-                                                       undoQueue: undoQueue, pending: services.pendingDeletions))
+        _model = State(initialValue: ShoppingListModel(service: services.shopping, inventory: services.inventory,
+                                                       list: list, undoQueue: undoQueue,
+                                                       pending: services.pendingDeletions))
     }
 
     var body: some View {
@@ -32,20 +42,6 @@ struct ShoppingListDetailView: View {
             } header: {
                 if !model.remaining.isEmpty { Text("shopping.detail.toBuy") }
             }
-
-            if !model.purchased.isEmpty {
-                Section {
-                    if model.showPurchased {
-                        ForEach(model.purchased) { row in
-                            card(row)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) { deleteButton(row) }
-                                .swipeActions(edge: .leading) { editButton(row) }
-                        }
-                    }
-                } header: {
-                    purchasedHeader
-                }
-            }
         }
         .listRowSpacing(8)
         .overlay {
@@ -57,69 +53,52 @@ struct ShoppingListDetailView: View {
                 }
             }
         }
-        .safeAreaInset(edge: .bottom) { AddItemBar(model: model) }
-        .navigationTitle(Text(verbatim: model.listName))
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button(role: .destructive) { confirmClear = true } label: {
-                        Label("shopping.detail.clearPurchased", systemImage: "checkmark.circle.badge.xmark")
-                    }
-                    .disabled(model.purchased.isEmpty)
-                } label: {
-                    Label("shopping.detail.more", systemImage: "ellipsis.circle")
-                }
-                .accessibilityIdentifier("shopping.detail.menu")
+        .safeAreaInset(edge: .bottom) {
+            AddItemBar(model: model) {
+                adding = AddRequest(query: model.draftText)
+                model.draftText = ""
             }
         }
-        .confirmationDialog(Text("shopping.detail.clearPurchased"), isPresented: $confirmClear) {
-            Button("shopping.detail.clearPurchased", role: .destructive) { model.clearPurchased() }
-            Button("common.cancel", role: .cancel) {}
+        .navigationTitle(Text(verbatim: model.listName))
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    adding = AddRequest(query: "")
+                } label: {
+                    Label("shopping.detail.add", systemImage: "plus")
+                }
+                .accessibilityIdentifier("shopping.detail.add")
+            }
         }
         .sheet(item: $editing) { target in
             if let item = model.item(for: target.id) {
                 ShoppingItemFormView(item: item, services: services) { model.reload() }
             }
         }
-        .sensoryFeedback(trigger: model.purchasedCount) { old, new in new > old ? .success : .selection }
+        .sheet(item: $purchasing, onDismiss: { model.reload() }) { target in
+            if let item = model.item(for: target.id) {
+                PurchaseSheet(item: item, services: services)
+            }
+        }
+        .sheet(item: $adding, onDismiss: { model.reload() }) { request in
+            AddItemSheet(list: list, services: services, initialQuery: request.query)
+        }
+        .sensoryFeedback(.success, trigger: boughtCount)
         .shoppingErrorAlert(model.errorMessage) { model.dismissError() }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
                                                         object: services.context)) { _ in model.reload() }
     }
 
-    private var purchasedHeader: some View {
-        Button {
-            withAnimation(reduceMotion ? nil : .snappy) { model.showPurchased.toggle() }
-        } label: {
-            HStack {
-                Text("shopping.detail.purchased \(model.purchased.count)")
-                Spacer()
-                Image(systemName: "chevron.down")
-                    .rotationEffect(model.showPurchased ? .zero : .degrees(-90))
-                    .accessibilityHidden(true)
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("shopping.detail.purchasedToggle")
-        .accessibilityValue(Text(model.showPurchased ? LocalizedStringKey("shopping.detail.expanded")
-                                                     : LocalizedStringKey("shopping.detail.collapsed")))
-    }
-
     private func card(_ row: ShoppingListModel.Row) -> some View {
         HStack(spacing: 4) {
             ShoppingItemCheckbox(row: row) {
-                withAnimation(reduceMotion ? nil : .snappy) { model.toggle(row.id) }
+                withAnimation(reduceMotion ? nil : .snappy) { model.quickPurchase(row.id) }
+                boughtCount += 1
             }
-            if let productID = row.productID {
-                NavigationLink(value: ProductRoute(id: productID)) { ShoppingItemCardContent(row: row) }
-                    .accessibilityHint(Text("shopping.item.openProductHint"))
-                    .accessibilityIdentifier("shopping.item.\(row.name)")
-            } else {
-                Button { editing = EditTarget(id: row.id) } label: { ShoppingItemCardContent(row: row) }
-                    .buttonStyle(.plain)
-                    .accessibilityHint(Text("shopping.item.openFormHint"))
-                    .accessibilityIdentifier("shopping.item.\(row.name)")
-            }
+            Button { purchasing = Target(id: row.id) } label: { ShoppingItemCardContent(row: row) }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("shopping.item.openPurchaseHint"))
+                .accessibilityIdentifier("shopping.item.\(row.name)")
         }
         .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 16))
     }
@@ -133,7 +112,7 @@ struct ShoppingListDetailView: View {
     }
 
     private func editButton(_ row: ShoppingListModel.Row) -> some View {
-        Button { editing = EditTarget(id: row.id) } label: {
+        Button { editing = Target(id: row.id) } label: {
             Label("common.edit", systemImage: "pencil")
         }
         .tint(.accentColor)

@@ -1569,30 +1569,6 @@
         }
       }
     },
-    "undo.item.unpurchase %@" : {
-      "comment" : "Undo toast: one item put back on the shopping list",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "„%@“ ist wieder auf der Liste"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "“%@” is back on the list"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "„%@” visszakerült a listára"
-          }
-        }
-      }
-    },
     "undo.item.usedUp %@" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -7,38 +7,34 @@ import Testing
 struct ShoppingListModelTests {
     let stack: ShoppingTestStack
     let queue = UndoQueue(window: .seconds(3600))
-    let pending = PendingDeletions()
     let locale = Locale(identifier: "en_US")
 
     init() throws { stack = try ShoppingTestStack() }
 
     private func makeModel(_ list: ShoppingList) -> ShoppingListModel {
-        ShoppingListModel(service: stack.service, list: list, undoQueue: queue, pending: pending, locale: locale)
+        ShoppingListModel(service: stack.service, inventory: stack.inventory, list: list, undoQueue: queue,
+                          pending: stack.pending, locale: locale)
     }
 
-    @Test func rowsAreSplitAndDescribed() throws {
+    @Test func rowsDescribeTheItemsStillToBuy() throws {
         let list = try stack.service.createList(name: "Heti", in: stack.space)
         let spar = try stack.makeStore("Spar")
         let deadline = stack.now.date.addingTimeInterval(86_400)
         try stack.service.addItem(to: list, customName: "Alma", quantity: 2, unit: .kilogram, note: "piros",
                                   deadline: deadline, shoppingLocation: spar)
-        let bread = try stack.service.addItem(to: list, customName: "Kenyér")
-        try stack.service.togglePurchased(bread)
+        let legacy = try stack.service.addItem(to: list, customName: "Kenyér")
+        try stack.service.togglePurchased(legacy)            // bought before the 2026-09-25 revision
 
         let model = makeModel(list)
         #expect(model.listName == "Heti")
         #expect(model.remaining.map(\.name) == ["Alma"])
-        #expect(model.purchased.map(\.name) == ["Kenyér"])
         let apple = try #require(model.remaining.first)
         #expect(apple.quantityText == Quantity.format(2, unit: .kilogram, locale: locale))
         #expect(apple.note == "piros")
         #expect(apple.storeName == "Spar")
         #expect(apple.deadline == deadline)
-        #expect(!apple.isPurchased)
-        #expect(model.purchased.first?.isPurchased == true)
-        #expect(model.purchasedCount == 1)
-        #expect(model.totalCount == 2)
         #expect(apple.productID == nil)
+        #expect(model.totalCount == 1)
     }
 
     @Test func productRowsCarryTheProductForTheCard() throws {
@@ -52,20 +48,26 @@ struct ShoppingListModelTests {
         #expect(row.image == Data([1, 2, 3]))
     }
 
-    @Test func tapPurchasesAndUndoRestores() throws {
+    @Test func quickPurchaseHidesAndUndoBringsBackWithoutStock() throws {
         let list = try stack.service.createList(name: "Heti", in: stack.space)
         let bread = try stack.service.addItem(to: list, customName: "Kenyér")
         let model = makeModel(list)
 
-        model.toggle(bread.publicId)
-        #expect(model.purchased.map(\.name) == ["Kenyér"])
+        model.quickPurchase(bread.publicId)
         #expect(model.remaining.isEmpty)
         #expect(queue.pending.count == 1)
+        #expect(queue.pending.first?.kind == .purchase)
 
         queue.undo(try #require(queue.pending.first).id)
         model.reload()
         #expect(model.remaining.map(\.name) == ["Kenyér"])
-        #expect(!bread.isPurchased)
+        #expect(try stack.count(InventoryItem.self) == 0)
+
+        model.quickPurchase(bread.publicId)
+        try queue.commitAll()
+        model.reload()
+        #expect(model.remaining.isEmpty)
+        #expect(try stack.count(InventoryItem.self) == 1)
     }
 
     @Test func deleteHidesAndUndoBringsBack() throws {
@@ -144,16 +146,5 @@ struct ShoppingListModelTests {
         model.addDraft()
         #expect(model.totalCount == 0)
         #expect(model.errorMessage == nil)
-    }
-
-    @Test func clearPurchasedRemovesBoughtItems() throws {
-        let list = try stack.service.createList(name: "Heti", in: stack.space)
-        try stack.service.addItem(to: list, customName: "Alma")
-        let bread = try stack.service.addItem(to: list, customName: "Kenyér")
-        try stack.service.togglePurchased(bread)
-        let model = makeModel(list)
-        model.clearPurchased()
-        #expect(model.purchased.isEmpty)
-        #expect(model.remaining.map(\.name) == ["Alma"])
     }
 }

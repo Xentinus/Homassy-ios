@@ -1,9 +1,12 @@
 import HomassyCore
 import SwiftUI
 
-/// The bottom add bar: a field for a new item and product suggestions as you type.
+/// The bottom quick add bar: a field for a new item, product suggestions as you type, and a button for
+/// the stepwise add sheet.
 struct AddItemBar: View {
     @Bindable var model: ShoppingListModel
+    /// Opens the stepwise add sheet with what has been typed so far.
+    let openSteps: () -> Void
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -22,6 +25,11 @@ struct AddItemBar: View {
                 }
             }
             HStack(spacing: 8) {
+                Button(action: openSteps) {
+                    Image(systemName: "list.number").font(.title3)
+                }
+                .accessibilityLabel(Text("shopping.addItem.steps"))
+                .accessibilityIdentifier("shopping.addItem.steps")
                 TextField("shopping.addItem.placeholder", text: $model.draftText)
                     .textFieldStyle(.roundedBorder)
                     .focused($focused)

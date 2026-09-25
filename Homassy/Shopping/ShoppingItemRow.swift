@@ -1,26 +1,23 @@
 import HomassyCore
 import SwiftUI
 
-/// The purchased checkbox at the front of an item card. It is its own control, so ticking stays one tap
-/// while the rest of the card opens the item (README "Card layout").
+/// The checkbox at the front of an item card: buys the whole quantity into inventory in one tap
+/// (undoable). The rest of the card opens the purchase sheet.
 struct ShoppingItemCheckbox: View {
     let row: ShoppingListModel.Row
     let toggle: () -> Void
 
     var body: some View {
         Button(action: toggle) {
-            Image(systemName: row.isPurchased ? "checkmark.circle.fill" : "circle")
+            Image(systemName: "circle")
                 .font(.title2)
-                .foregroundStyle(row.isPurchased ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+                .foregroundStyle(.secondary)
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
-        .accessibilityLabel(Text(verbatim: row.name))
-        .accessibilityValue(Text(row.isPurchased ? LocalizedStringKey("shopping.item.state.purchased")
-                                                 : LocalizedStringKey("shopping.item.state.open")))
+        .accessibilityLabel(Text("shopping.item.markBought \(row.name)"))
         .accessibilityHint(Text("shopping.item.hint"))
-        .accessibilityAddTraits(row.isPurchased ? .isSelected : [])
         .accessibilityIdentifier("shopping.item.\(row.name).toggle")
     }
 }
@@ -35,8 +32,6 @@ struct ShoppingItemCardContent: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: row.name)
                     .font(.headline)
-                    .strikethrough(row.isPurchased)
-                    .foregroundStyle(row.isPurchased ? .secondary : .primary)
                 HStack(spacing: 8) {
                     Text(verbatim: row.quantityText)
                     if let store = row.storeName {

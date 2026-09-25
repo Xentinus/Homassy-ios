@@ -17,4 +17,11 @@ struct ShoppingListPaletteTests {
         #expect(ShoppingListPalette.colors.count == 8)
         #expect(ShoppingListPalette.colors.allSatisfy { ShoppingListPalette.rgb($0) != nil })
     }
+
+    @Test func customColoursAreAnyHexOutsideThePalette() {
+        #expect(ShoppingListPalette.isCustom("#123456"))
+        #expect(!ShoppingListPalette.isCustom("#e0a458"))
+        #expect(!ShoppingListPalette.isCustom(nil))
+        #expect(!ShoppingListPalette.isCustom("zzz"))
+    }
 }

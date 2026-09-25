@@ -23,6 +23,8 @@ final class ShoppingTestStack {
     let now = TestNow(Date(timeIntervalSince1970: 1_790_000_000))
     let space: Space
     let service: ShoppingService
+    let inventory: InventoryService
+    let pending = PendingDeletions()
     var context: NSManagedObjectContext { persistence.viewContext }
 
     init() throws {
@@ -32,6 +34,8 @@ final class ShoppingTestStack {
         let clock = now
         service = ShoppingService(spaceStore: spaceStore, context: persistence.viewContext, userRecordName: user,
                                   now: { clock.date })
+        inventory = InventoryService(spaceStore: spaceStore, context: persistence.viewContext, userRecordName: user,
+                                     defaultCurrency: "HUF", now: { clock.date })
         try context.save()
     }
 
@@ -71,6 +75,16 @@ final class ShoppingTestStack {
         store.mapItemIdentifier = identifier
         try context.save()
         return store
+    }
+
+    @discardableResult
+    func makeLocation(_ name: String, in target: Space? = nil) throws -> StorageLocation {
+        let owner = target ?? space
+        let location = spaceStore.insert(StorageLocation.self, in: owner, by: user)
+        location.space = owner
+        location.name = name
+        try context.save()
+        return location
     }
 
     func count<T: HomassyEntity>(_ type: T.Type) throws -> Int {

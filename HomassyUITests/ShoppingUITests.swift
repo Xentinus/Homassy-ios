@@ -3,11 +3,14 @@ import XCTest
 final class ShoppingUITests: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
-        XCUIDevice.shared.orientation = .portrait
     }
 
-    override func tearDown() {
-        XCUIDevice.shared.orientation = .portrait
+    @MainActor
+    private func attachScreenshot(_ app: XCUIApplication, named name: String) {
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = name
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
     }
 
     @MainActor
@@ -18,28 +21,120 @@ final class ShoppingUITests: XCTestCase {
         app.addShoppingItem("Napkins")
 
         XCTAssertTrue(app.navigationBars["Weekly"].exists)
-        XCTAssertFalse(app.shoppingItemToggle("Napkins").isSelected)
+        XCTAssertTrue(app.shoppingItemToggle("Napkins").exists)
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(app.buttons["shopping.list.Weekly"].label.contains("1 to buy"))
     }
 
     @MainActor
-    func testCheckboxPurchasesAndUndoRestores() {
+    func testCheckboxBuysAndUndoBringsItBack() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")
         app.openShoppingList(named: "Weekly")
         app.addShoppingItem("Napkins")
 
-        let toggle = app.shoppingItemToggle("Napkins")
-        toggle.tap()
-        XCTAssertTrue(toggle.isSelected)
-        XCTAssertTrue(app.buttons["shopping.detail.purchasedToggle"].exists)
+        app.shoppingItemToggle("Napkins").tap()
+        XCTAssertFalse(app.buttons["shopping.item.Napkins"].waitForExistence(timeout: 1))
 
         let undo = app.buttons["Undo"]
         XCTAssertTrue(undo.waitForExistence(timeout: 3))
         undo.tap()
-        XCTAssertFalse(toggle.isSelected)
-        XCTAssertFalse(app.buttons["shopping.detail.purchasedToggle"].exists)
+        XCTAssertTrue(app.buttons["shopping.item.Napkins"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testCardOpensThePurchaseSheetAndKeepsTheRemainder() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.createShoppingList(named: "Weekly")
+        app.openShoppingList(named: "Weekly")
+        app.addShoppingItem("Napkins")
+
+        // Make it two packs first: swipe right edits.
+        app.buttons["shopping.item.Napkins"].swipeRight()
+        app.buttons["Edit"].tap()
+        let formQuantity = app.textFields["shopping.form.quantity"]
+        XCTAssertTrue(formQuantity.waitForExistence(timeout: 5))
+        formQuantity.tap()
+        formQuantity.typeText(XCUIKeyboardKey.delete.rawValue + "2")
+        app.buttons["shopping.form.save"].tap()
+        XCTAssertTrue(app.buttons["shopping.item.Napkins"].waitForExistence(timeout: 5))
+
+        app.buttons["shopping.item.Napkins"].tap()
+        let quantity = app.textFields["shopping.purchase.quantity"]
+        XCTAssertTrue(quantity.waitForExistence(timeout: 5))
+        XCTAssertEqual(quantity.value as? String, "2")
+        quantity.tap()
+        quantity.typeText(XCUIKeyboardKey.delete.rawValue + "1")
+        let keep = app.switches["shopping.purchase.keepRemainder"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 3))
+        XCTAssertEqual(keep.value as? String, "1")
+        attachScreenshot(app, named: "shopping-purchase-sheet")
+        app.buttons["shopping.purchase.confirm"].tap()
+
+        let card = app.buttons["shopping.item.Napkins"]
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertTrue(card.label.contains("1"), card.label)
+        XCTAssertTrue(app.buttons["Undo"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testStepwiseAdd() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.createShoppingList(named: "Weekly")
+        app.openShoppingList(named: "Weekly")
+
+        app.buttons["shopping.detail.add"].tap()
+        let query = app.textFields["shopping.add.query"]
+        XCTAssertTrue(query.waitForExistence(timeout: 5))
+        query.tap()
+        query.typeText("Mil")
+        let milk = app.buttons["shopping.add.suggestion.Milk"]
+        XCTAssertTrue(milk.waitForExistence(timeout: 5))
+        milk.tap()
+
+        let quantity = app.textFields["shopping.add.quantity"]
+        XCTAssertTrue(quantity.waitForExistence(timeout: 5))
+        quantity.tap()
+        quantity.typeText(XCUIKeyboardKey.delete.rawValue + "2")
+        app.buttons["shopping.add.next"].tap()
+
+        let anyStore = app.buttons["shopping.add.anyStore"]
+        XCTAssertTrue(anyStore.waitForExistence(timeout: 5))
+        attachScreenshot(app, named: "shopping-add-store-step")
+        anyStore.tap()
+        app.buttons["shopping.add.confirm"].tap()
+
+        let card = app.buttons["shopping.item.Milk"]
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertTrue(card.label.contains("2"), card.label)
+    }
+
+    @MainActor
+    func testStepwiseAddOfACustomItemFromTheQuickBar() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.createShoppingList(named: "Weekly")
+        app.openShoppingList(named: "Weekly")
+
+        let field = app.textFields["shopping.addItem.field"]
+        field.tap()
+        field.typeText("Candles")
+        app.buttons["shopping.addItem.steps"].tap()
+        let custom = app.buttons["shopping.add.custom"]
+        XCTAssertTrue(custom.waitForExistence(timeout: 5))
+        custom.tap()
+        app.buttons["shopping.add.next"].tap()
+        XCTAssertTrue(app.buttons["shopping.add.confirm"].waitForExistence(timeout: 5))
+        app.buttons["shopping.add.confirm"].tap()
+        XCTAssertTrue(app.buttons["shopping.item.Candles"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testCustomListColourIsOffered() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.buttons["addMenu"].firstMatch.tap()
+        app.buttons["addMenu.shoppingItem"].firstMatch.tap()
+        XCTAssertTrue(app.textFields["shopping.listEditor.name"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["color.custom"].firstMatch.waitForExistence(timeout: 3))
     }
 
     @MainActor
@@ -74,47 +169,9 @@ final class ShoppingUITests: XCTestCase {
     }
 
     @MainActor
-    func testCustomItemCardOpensTheForm() {
-        let app = XCUIApplication.launchedOnShoppingTab()
-        app.createShoppingList(named: "Weekly")
-        app.openShoppingList(named: "Weekly")
-        app.addShoppingItem("Napkins")
-
-        app.buttons["shopping.item.Napkins"].tap()
-        let name = app.textFields["shopping.form.name"]
-        XCTAssertTrue(name.waitForExistence(timeout: 5))
-        XCTAssertEqual(name.value as? String, "Napkins")
-        XCTAssertFalse(app.shoppingItemToggle("Napkins").isSelected, "opening the card does not tick it")
-    }
-
-    @MainActor
-    func testSuggestionAddsTheProductAndTheCardOpensTheDetail() {
-        let app = XCUIApplication.launchedOnShoppingTab()
-        app.createShoppingList(named: "Weekly")
-        app.openShoppingList(named: "Weekly")
-
-        let field = app.textFields["shopping.addItem.field"]
-        field.tap()
-        field.typeText("Mil")
-        let suggestion = app.buttons["shopping.suggestion.Milk"]
-        XCTAssertTrue(suggestion.waitForExistence(timeout: 5))
-        suggestion.tap()
-        let milk = app.buttons["shopping.item.Milk"]
-        XCTAssertTrue(milk.waitForExistence(timeout: 5))
-        app.addShoppingItem("Napkins")
-
-        let screenshot = XCTAttachment(screenshot: app.screenshot())
-        screenshot.name = "shopping-list-detail"
-        screenshot.lifetime = .keepAlways
-        add(screenshot)
-
-        milk.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["product.detail.stack"].waitForExistence(timeout: 5))
-    }
-
-    @MainActor
     func testRotationKeepsTheOpenListAndShowsTheGrid() {
         let app = XCUIApplication.launchedOnShoppingTab()
+        defer { XCUIDevice.shared.orientation = .portrait }
         app.createShoppingList(named: "Weekly")
         app.createShoppingList(named: "Party")
         app.openShoppingList(named: "Weekly")

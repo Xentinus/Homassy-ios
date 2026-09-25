@@ -1,6 +1,8 @@
 import Foundation
 import Observation
 
+/// One shopping list: the items still to buy, the quick add bar and the item actions.
+/// Bought items leave the list (user decision, 2026-09-25), so there is no bought section.
 @MainActor
 @Observable
 public final class ShoppingListModel {
@@ -11,8 +13,7 @@ public final class ShoppingListModel {
         public let note: String?
         public let storeName: String?
         public let deadline: Date?
-        public let isPurchased: Bool
-        /// Set for product items: the card opens the product detail and shows its photo.
+        /// Set for product items: the card shows the product photo.
         public let productID: UUID?
         public let image: Data?
     }
@@ -24,33 +25,31 @@ public final class ShoppingListModel {
 
     public let list: ShoppingList
     public private(set) var listName = ""
-    public var showPurchased = true
     public var draftText = "" {
         didSet { if draftText != oldValue { refreshSuggestions() } }
     }
     public private(set) var suggestions: [Suggestion] = []
     public private(set) var errorMessage: String?
     private var remainingAll: [Row] = []
-    private var purchasedAll: [Row] = []
 
     @ObservationIgnored private let service: ShoppingService
+    @ObservationIgnored private let inventory: InventoryService
     @ObservationIgnored private let undoQueue: UndoQueue
     @ObservationIgnored private let pending: PendingDeletions
     @ObservationIgnored private let locale: Locale
     @ObservationIgnored private var items: [UUID: ShoppingListItem] = [:]
     @ObservationIgnored private var suggestionProducts: [UUID: Product] = [:]
 
-    /// Items waiting in the delete undo window are filtered out here. `pending` is observable,
+    /// Items waiting in an undo window (deleted or bought) are filtered out here. `pending` is observable,
     /// so views update when an undo reveals them again.
     public var remaining: [Row] { remainingAll.filter { !pending.contains($0.id) } }
-    public var purchased: [Row] { purchasedAll.filter { !pending.contains($0.id) } }
-    public var purchasedCount: Int { purchased.count }
-    public var totalCount: Int { remaining.count + purchased.count }
-    public var canAddDraft: Bool { !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    public var totalCount: Int { remaining.count }
+    public var canAddDraft: Bool { draftText.nilIfBlank != nil }
 
-    public init(service: ShoppingService, list: ShoppingList, undoQueue: UndoQueue, pending: PendingDeletions,
-                locale: Locale = .current) {
+    public init(service: ShoppingService, inventory: InventoryService, list: ShoppingList, undoQueue: UndoQueue,
+                pending: PendingDeletions, locale: Locale = .current) {
         self.service = service
+        self.inventory = inventory
         self.list = list
         self.undoQueue = undoQueue
         self.pending = pending
@@ -61,17 +60,14 @@ public final class ShoppingListModel {
     public func reload() {
         guard !list.isGone else {
             remainingAll = []
-            purchasedAll = []
             items = [:]
             return
         }
         do {
             listName = list.name
             let open = try service.unpurchasedItems(in: list)
-            let done = try service.purchasedItems(in: list)
-            items = Dictionary((open + done).map { ($0.publicId, $0) }, uniquingKeysWith: { first, _ in first })
+            items = Dictionary(open.map { ($0.publicId, $0) }, uniquingKeysWith: { first, _ in first })
             remainingAll = open.map(row(for:))
-            purchasedAll = done.map(row(for:))
         } catch {
             errorMessage = FeatureError.message(for: error)
         }
@@ -79,9 +75,15 @@ public final class ShoppingListModel {
 
     public func item(for id: UUID) -> ShoppingListItem? { items[id] }
 
-    public func toggle(_ id: UUID) {
+    /// The checkbox: buys the whole quantity into inventory, undoable.
+    public func quickPurchase(_ id: UUID) {
         guard let item = items[id] else { return }
-        undoQueue.enqueue(ShoppingActions.togglePurchased(item, service: service))
+        do {
+            undoQueue.enqueue(try ShoppingPurchase.quickPurchase(item, shopping: service, inventory: inventory,
+                                                                 pending: pending))
+        } catch {
+            errorMessage = FeatureError.message(for: error)
+        }
         reload()
     }
 
@@ -102,8 +104,7 @@ public final class ShoppingListModel {
     }
 
     public func addDraft() {
-        let text = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard let text = draftText.nilIfBlank else { return }
         let match = suggestionProducts.values.first {
             $0.name.compare(text, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
         }
@@ -131,15 +132,6 @@ public final class ShoppingListModel {
         reload()
     }
 
-    public func clearPurchased() {
-        do {
-            try service.clearPurchased(in: list)
-        } catch {
-            errorMessage = FeatureError.message(for: error)
-        }
-        reload()
-    }
-
     public func dismissError() { errorMessage = nil }
 
     private func refreshSuggestions() {
@@ -157,6 +149,6 @@ public final class ShoppingListModel {
         Row(id: item.publicId, name: ShoppingService.displayName(of: item),
             quantityText: Quantity.format(item.quantity, unit: item.unit, locale: locale),
             note: item.note, storeName: item.shoppingLocation?.name, deadline: item.deadline,
-            isPurchased: item.isPurchased, productID: item.product?.publicId, image: item.product?.image)
+            productID: item.product?.publicId, image: item.product?.image)
     }
 }

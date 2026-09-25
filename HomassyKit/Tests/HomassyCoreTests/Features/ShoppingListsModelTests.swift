@@ -14,7 +14,7 @@ struct ShoppingListsModelTests {
         return model
     }
 
-    @Test func summariesCountToBuyAndBought() throws {
+    @Test func summariesCountWhatIsLeftToBuy() throws {
         let weekly = try stack.service.createList(name: "Heti", color: "#E0A458", in: stack.space)
         try stack.service.addItem(to: weekly, customName: "Alma")
         let bread = try stack.service.addItem(to: weekly, customName: "Kenyér")
@@ -23,8 +23,8 @@ struct ShoppingListsModelTests {
 
         let model = makeModel()
         #expect(model.summaries == [
-            .init(id: weekly.publicId, name: "Heti", color: "#E0A458", remaining: 1, purchased: 1),
-            .init(id: party.publicId, name: "Buli", color: nil, remaining: 0, purchased: 0)
+            .init(id: weekly.publicId, name: "Heti", color: "#E0A458", remaining: 1),
+            .init(id: party.publicId, name: "Buli", color: nil, remaining: 0)
         ])
         #expect(model.list(for: weekly.publicId) == weekly)
     }
