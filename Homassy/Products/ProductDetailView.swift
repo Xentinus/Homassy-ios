@@ -334,7 +334,7 @@ private struct StockItemRow: View {
                 card
             }
         }
-        .listRowBackground(Color(uiColor: .secondarySystemGroupedBackground).overlay(item.level.cardWash))
+        .listRowBackground(Color(uiColor: .secondarySystemGroupedBackground))
         .accessibilityIdentifier("stock.item")
     }
 

@@ -17,7 +17,7 @@ struct ShoppingItemCard: View {
 
     private var content: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ProductImageTile(data: row.image)
+            ProductImageTile(data: row.image, name: row.name)
             VStack(alignment: .leading, spacing: 4) {
                 Text(verbatim: row.name)
                     .font(.headline)

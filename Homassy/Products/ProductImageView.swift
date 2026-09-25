@@ -15,14 +15,16 @@ struct ProductImageView: View {
     }
 }
 
-/// The picture area at the top of a card: the product photo, or the icon tile.
+/// The picture area at the top of a card: the product photo, or a monogram tile (the icon tile without a name).
 struct ProductImageTile: View {
     let data: Data?
+    /// Without a photo the tile shows this name's first letter on a neutral tile, like Contacts (user choice).
+    var name: String?
 
     var body: some View {
         Color.clear
             .aspectRatio(4 / 3, contentMode: .fit)
-            .overlay { ProductImageContent(data: data, iconScale: nil) }
+            .overlay { ProductImageContent(data: data, iconScale: nil, monogramOf: name) }
             .clipped()
     }
 }
@@ -30,12 +32,22 @@ struct ProductImageTile: View {
 private struct ProductImageContent: View {
     let data: Data?
     let iconScale: CGFloat?
+    var monogramOf: String?
     @State private var image: UIImage?
 
     var body: some View {
         Group {
             if let image {
                 Image(uiImage: image).resizable().scaledToFill()
+            } else if let letter = monogramOf?.trimmingCharacters(in: .whitespacesAndNewlines).first {
+                GeometryReader { proxy in
+                    Text(String(letter).uppercased())
+                        .font(.system(size: min(proxy.size.width, proxy.size.height) * 0.42, weight: .semibold,
+                                      design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .background(Color(uiColor: .tertiarySystemFill))
             } else {
                 GeometryReader { proxy in
                     Image(systemName: "shippingbox")
