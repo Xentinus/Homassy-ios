@@ -19,6 +19,8 @@ struct ProductDetailView: View {
     @State private var pendingTransfer: TransferRequest?
     @State private var feedback = 0
     @State private var chartStore: PriceSummary.StoreLine?
+    /// Set by the edit form's "Delete product"; the delete runs once the form has closed.
+    @State private var deleteRequested = false
 
     /// Which stock item the amount sheet is for, and whether it consumes or moves.
     struct AmountTarget: Identifiable {
@@ -50,9 +52,14 @@ struct ProductDetailView: View {
         .navigationTitle(model?.fields?.name ?? "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
-        .sheet(isPresented: $editing) {
+        .sheet(isPresented: $editing, onDismiss: {
+            guard deleteRequested, let model else { return }
+            deleteRequested = false
+            deleteProduct(model)
+        }) {
             if let product = model?.product {
-                ProductFormSheet(model: ProductFormModel(mode: .edit(product), service: services.products))
+                ProductFormSheet(model: ProductFormModel(mode: .edit(product), service: services.products),
+                                 onDelete: { deleteRequested = true })
             }
         }
         .sheet(item: $amountTarget) { target in
@@ -124,21 +131,12 @@ struct ProductDetailView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         if let model, model.canEdit, model.fields != nil {
+            // Apple's pattern (HIG, user decision 2026-09-25): one Edit button; Delete sits at the bottom of the
+            // edit form, so there is no "More" menu for a single rare action.
             ToolbarItem(placement: .primaryAction) {
                 Button { editing = true } label: { Label("common.edit", systemImage: "pencil") }
                     .labelStyle(.iconOnly)
                     .accessibilityIdentifier("product.detail.edit")
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button(role: .destructive) { deleteProduct(model) } label: {
-                        Label("product.detail.deleteProduct", systemImage: "trash")
-                    }
-                    .accessibilityIdentifier("product.detail.delete")
-                } label: {
-                    Label("product.detail.more", systemImage: "ellipsis.circle")
-                }
-                .accessibilityIdentifier("product.detail.menu")
             }
         }
     }
