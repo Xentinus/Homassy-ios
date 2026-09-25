@@ -47,10 +47,11 @@ final class ArchiveUITests: XCTestCase {
         XCTAssertTrue(products.waitForExistence(timeout: 15))
         attachScreenshot(app, "import preview")
         XCTAssertEqual(products.label, "2")
-        XCTAssertEqual(app.staticTexts["import.count.members"].label, "2")
         XCTAssertEqual(app.staticTexts["import.count.storageLocations"].label, "1")
-
         XCTAssertEqual(app.staticTexts["import.count.inventoryItems"].label, "2")
+        let members = app.staticTexts["import.count.members"]
+        scrollTo(members, in: app)
+        XCTAssertEqual(members.label, "2")
 
         let name = app.textFields["import.newSpaceName"]
         var swipes = 0
@@ -96,19 +97,21 @@ final class ArchiveUITests: XCTestCase {
         }
 
         // Keep only Tej.
-        let pick = app.buttons["import.pickProducts"]
+        let pick = app.buttons["import.pick.products"]
         scrollTo(pick, in: app, up: true)
         pick.tap()
-        let flour = app.buttons["import.product.Liszt"]
+        let flour = app.buttons["import.record.Liszt"]
         XCTAssertTrue(flour.waitForExistence(timeout: 5))
         flour.tap()
         attachScreenshot(app, "product picker")
         XCTAssertFalse(flour.isSelected)
-        XCTAssertTrue(app.buttons["import.product.Tej"].isSelected)
+        XCTAssertTrue(app.buttons["import.record.Tej"].isSelected)
         app.navigationBars.buttons.element(boundBy: 0).tap()
 
         XCTAssertEqual(app.staticTexts["import.count.products"].label, "1")
-        XCTAssertEqual(app.staticTexts["import.count.members"].label, "0")
+        let members = app.staticTexts["import.count.members"]
+        scrollTo(members, in: app)
+        XCTAssertEqual(members.label, "0")
         attachScreenshot(app, "selective preview")
 
         app.buttons["import.confirm"].tap()
@@ -118,5 +121,25 @@ final class ArchiveUITests: XCTestCase {
         app.openTab("Products")
         XCTAssertTrue(app.descendants(matching: .any)["product.row.Tej"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.descendants(matching: .any)["product.row.Liszt"].exists)
+    }
+
+    @MainActor
+    func testPickingMembers() {
+        let app = launch(["-uiTestImportFixture"])
+        XCTAssertTrue(app.staticTexts["import.count.products"].waitForExistence(timeout: 15))
+        let pick = app.buttons["import.pick.members"]
+        scrollTo(pick, in: app)
+        pick.tap()
+        let bela = app.buttons["import.record.Béla"]
+        XCTAssertTrue(bela.waitForExistence(timeout: 5))
+        bela.tap()
+        XCTAssertFalse(bela.isSelected)
+        attachScreenshot(app, "member picker")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        let members = app.staticTexts["import.count.members"]
+        scrollTo(members, in: app)
+        XCTAssertEqual(members.label, "1")
+        XCTAssertEqual(app.switches["import.group.members"].value as? String, "1")
     }
 }

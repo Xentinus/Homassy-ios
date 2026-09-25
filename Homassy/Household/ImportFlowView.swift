@@ -88,14 +88,16 @@ struct ImportFlowView: View {
         Section {
             ForEach(ArchiveSelection.Group.allCases, id: \.self) { group in
                 groupRow(group, preview: preview)
-                if group == .products && !model.productOptions.isEmpty {
+                let options = model.options(for: group)
+                if !options.isEmpty {
                     NavigationLink {
-                        ImportProductPicker(model: model)
+                        ImportRecordPicker(model: model, group: group)
                     } label: {
-                        Text("archive.import.pickProducts \(model.selectedProductIDs.count) \(model.productOptions.count)")
+                        ImportRecordPicker.linkTitle(for: group, picked: model.pickedIDs(for: group).count,
+                                                     total: options.count)
                     }
                     .disabled(model.phase == .importing)
-                    .accessibilityIdentifier("import.pickProducts")
+                    .accessibilityIdentifier("import.pick.\(group.rawValue)")
                 }
             }
         } header: {
@@ -118,8 +120,13 @@ struct ImportFlowView: View {
             .disabled(model.phase == .importing)
 
             if model.choice == .newSpace {
-                TextField("archive.import.newSpaceName", text: $model.newSpaceName)
-                    .accessibilityIdentifier("import.newSpaceName")
+                LabeledContent {
+                    TextField("archive.import.newSpaceName", text: $model.newSpaceName)
+                        .multilineTextAlignment(.trailing)
+                        .accessibilityIdentifier("import.newSpaceName")
+                } label: {
+                    Text("archive.import.newSpaceName")
+                }
             }
         } header: {
             Text("archive.import.mode")

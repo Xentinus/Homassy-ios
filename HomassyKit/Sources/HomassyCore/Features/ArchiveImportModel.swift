@@ -20,13 +20,19 @@ public final class ArchiveImportModel {
         public let name: String
     }
 
-    /// A product in the archive, for the product picker.
-    public struct ProductOption: Identifiable, Hashable, Sendable {
+    /// A record of the archive, for the picker of its group.
+    public struct RecordOption: Identifiable, Hashable, Sendable {
+        public enum Detail: Hashable, Sendable {
+            case text(String)
+            case freezer
+            case items(Int)
+        }
+
         public let id: UUID
-        public let name: String
-        public let brand: String?
-        public let category: String?
-        public let barcode: String?
+        public let title: String
+        public let detail: Detail?
+        /// Extra search terms besides the title (brand, barcode).
+        public let keywords: [String]
     }
 
     public private(set) var phase: Phase = .idle
@@ -34,21 +40,32 @@ public final class ArchiveImportModel {
     public private(set) var targets: [Target] = []
     public private(set) var importedSpace: Space?
     public var newSpaceName = ""
-    public private(set) var productOptions: [ProductOption] = []
     public private(set) var groups = Set(ArchiveSelection.Group.allCases)
-    public private(set) var selectedProductIDs: Set<UUID> = []
+    private var recordOptions: [ArchiveSelection.Group: [RecordOption]] = [:]
+    private var picked: [ArchiveSelection.Group: Set<UUID>] = [:]
     public var choice: Choice = .newSpace {
         didSet { if oldValue != choice { refreshPreview() } }
     }
 
     /// Stock can only come with at least one imported product.
-    public var isStockAvailable: Bool { groups.contains(.products) && !selectedProductIDs.isEmpty }
+    public var isStockAvailable: Bool { groups.contains(.products) && !pickedIDs(for: .products).isEmpty }
 
     public var selection: ArchiveSelection {
         var groups = groups
         if !isStockAvailable { groups.remove(.stock) }
-        let everyProduct = selectedProductIDs.count == productOptions.count
-        return ArchiveSelection(groups: groups, productIDs: everyProduct ? nil : selectedProductIDs)
+        var picks: [ArchiveSelection.Group: Set<UUID>] = [:]
+        for (group, ids) in picked where ids.count < options(for: group).count {
+            picks[group] = ids
+        }
+        return ArchiveSelection(groups: groups, picks: picks)
+    }
+
+    /// The records of `group` in the archive, sorted by title. Empty for stock.
+    public func options(for group: ArchiveSelection.Group) -> [RecordOption] { recordOptions[group] ?? [] }
+
+    /// The ticked records of `group`; none while the group is off.
+    public func pickedIDs(for group: ArchiveSelection.Group) -> Set<UUID> {
+        groups.contains(group) ? picked[group] ?? [] : []
     }
 
     /// True when the selection would import nothing.
@@ -82,12 +99,9 @@ public final class ArchiveImportModel {
             targets = try spaceStore.allSpaces().map { Target(id: $0.publicId, name: $0.name) }
             let loaded = try importer.read(url: url)
             self.loaded = loaded
-            productOptions = loaded.contents.data.products
-                .map { ProductOption(id: $0.publicId, name: $0.name, brand: $0.brand, category: $0.category,
-                                     barcode: $0.barcode) }
-                .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+            recordOptions = Self.options(for: loaded.contents.data)
             groups = Set(ArchiveSelection.Group.allCases)
-            selectedProductIDs = Set(productOptions.map(\.id))
+            picked = recordOptions.mapValues { Set($0.map(\.id)) }
             preview = try importer.preview(loaded)
             newSpaceName = loaded.contents.manifest.spaceName
             choice = .newSpace
@@ -100,19 +114,49 @@ public final class ArchiveImportModel {
     public func setGroup(_ group: ArchiveSelection.Group, isOn: Bool) {
         if isOn {
             groups.insert(group)
-            if group == .products && selectedProductIDs.isEmpty { selectedProductIDs = Set(productOptions.map(\.id)) }
+            if picked[group]?.isEmpty ?? true { picked[group] = Set(options(for: group).map(\.id)) }
         } else {
             groups.remove(group)
         }
         refreshPreview()
     }
 
-    /// Ticks or unticks products in the picker. No product left turns the products group off; ticking one
-    /// turns it back on.
-    public func setProducts(_ ids: Set<UUID>, selected: Bool) {
-        if selected { selectedProductIDs.formUnion(ids) } else { selectedProductIDs.subtract(ids) }
-        if selectedProductIDs.isEmpty { groups.remove(.products) } else { groups.insert(.products) }
+    /// Ticks or unticks records in a group's picker. No record left turns the group off; ticking one while
+    /// the group is off turns it back on with just that record.
+    public func setRecords(_ ids: Set<UUID>, in group: ArchiveSelection.Group, selected: Bool) {
+        var current = pickedIDs(for: group)
+        if selected { current.formUnion(ids) } else { current.subtract(ids) }
+        picked[group] = current
+        if current.isEmpty { groups.remove(group) } else { groups.insert(group) }
         refreshPreview()
+    }
+
+    private static func options(for data: ArchiveData) -> [ArchiveSelection.Group: [RecordOption]] {
+        func sorted(_ options: [RecordOption]) -> [RecordOption] {
+            options.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        }
+        let itemCounts = Dictionary(grouping: data.shoppingListItems, by: \.list).mapValues(\.count)
+        return [
+            .products: sorted(data.products.map { product in
+                let detail = [product.brand, product.category].compactMap { $0 }.joined(separator: " · ")
+                return RecordOption(id: product.publicId, title: product.name,
+                                    detail: detail.isEmpty ? nil : .text(detail),
+                                    keywords: [product.brand, product.barcode].compactMap { $0 })
+            }),
+            .storageLocations: sorted(data.storageLocations.map {
+                RecordOption(id: $0.publicId, title: $0.name, detail: $0.isFreezer ? .freezer : nil, keywords: [])
+            }),
+            .shoppingLocations: sorted(data.shoppingLocations.map {
+                RecordOption(id: $0.publicId, title: $0.name, detail: nil, keywords: [])
+            }),
+            .shoppingLists: sorted(data.shoppingLists.map {
+                RecordOption(id: $0.publicId, title: $0.name, detail: .items(itemCounts[$0.publicId] ?? 0), keywords: [])
+            }),
+            .members: sorted(data.members.map {
+                RecordOption(id: $0.publicId, title: $0.displayName.isEmpty ? $0.userRecordName : $0.displayName,
+                             detail: nil, keywords: [])
+            }),
+        ]
     }
 
     @discardableResult

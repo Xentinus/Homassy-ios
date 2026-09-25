@@ -108,3 +108,62 @@ struct ArchiveSelectionTests {
         }
     }
 }
+
+@Suite("Archive selection picks")
+struct ArchiveSelectionPickTests {
+    let sample = ArchiveSamples.sampleV1.data
+
+    @Test func pickedMembersOnly() {
+        let result = sample.filtered(by: ArchiveSelection(groups: [.members], picks: [.members: [ArchiveSamples.annaMemberID]]))
+        #expect(result.data.members.map(\.publicId) == [ArchiveSamples.annaMemberID])
+    }
+
+    @Test func pickedListsBringOnlyTheirItems() {
+        let none = sample.filtered(by: ArchiveSelection(groups: [.shoppingLists], picks: [.shoppingLists: []]))
+        #expect(none.data.shoppingLists.isEmpty)
+        #expect(none.data.shoppingListItems.isEmpty)
+        #expect(none.isEmpty)
+
+        let weekly = sample.filtered(by: ArchiveSelection(groups: [.shoppingLists],
+                                                          picks: [.shoppingLists: [ArchiveSamples.weeklyListID]]))
+        #expect(weekly.data.shoppingListItems.count == 2)
+    }
+
+    @Test func unpickedPlacesStillComeWhenStockNeedsThem() {
+        let selection = ArchiveSelection(groups: [.products, .stock, .storageLocations, .shoppingLocations],
+                                         picks: [.storageLocations: [], .shoppingLocations: []])
+        let result = sample.filtered(by: selection)
+        #expect(result.data.storageLocations.map(\.publicId) == [ArchiveSamples.fridgeID])
+        #expect(result.data.shoppingLocations.map(\.publicId) == [ArchiveSamples.sparID])
+        #expect(result.autoIncluded == [.storageLocations: 1, .shoppingLocations: 1])
+    }
+
+    @Test func pickedPlacesAreNotCountedAsAutomatic() {
+        let selection = ArchiveSelection(groups: [.products, .stock, .storageLocations],
+                                         picks: [.storageLocations: [ArchiveSamples.fridgeID]])
+        let result = sample.filtered(by: selection)
+        #expect(result.data.storageLocations.map(\.publicId) == [ArchiveSamples.fridgeID])
+        #expect(result.autoIncluded[.storageLocations] == nil)
+    }
+
+    @Test func unpickedStoresWithoutReferencesStayOut() {
+        let result = sample.filtered(by: ArchiveSelection(groups: [.shoppingLocations], picks: [.shoppingLocations: []]))
+        #expect(result.data.shoppingLocations.isEmpty)
+        #expect(result.isEmpty)
+    }
+
+    @Test func productIDsIsThePickOfProducts() {
+        var selection = ArchiveSelection(groups: [.products], productIDs: [ArchiveSamples.milkID])
+        #expect(selection.picks[.products] == [ArchiveSamples.milkID])
+        selection.productIDs = nil
+        #expect(selection.picks[.products] == nil)
+    }
+
+    @Test func pickedSubsetsValidate() throws {
+        let selection = ArchiveSelection(groups: Set(ArchiveSelection.Group.allCases),
+                                         picks: [.products: [ArchiveSamples.flourID], .storageLocations: [],
+                                                 .shoppingLocations: [], .shoppingLists: [ArchiveSamples.weeklyListID],
+                                                 .members: []])
+        try ArchiveValidator.validate(sample.filtered(by: selection).data)
+    }
+}

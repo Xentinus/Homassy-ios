@@ -990,30 +990,7 @@
         }
       }
     },
-    "archive.import.pickProducts %lld %lld" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Produkte auswählen · %1$lld / %2$lld"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose products · %1$lld / %2$lld"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Termékek kiválasztása · %1$lld / %2$lld"
-          }
-        }
-      }
-    },
-    "archive.import.products.all" : {
+    "archive.import.pick.all" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -1036,7 +1013,30 @@
         }
       }
     },
-    "archive.import.products.none" : {
+    "archive.import.pick.members %lld %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mitglieder auswählen · %1$lld / %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose members · %1$lld / %2$lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tagok kiválasztása · %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "archive.import.pick.none" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -1055,6 +1055,213 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Egyik sem"
+          }
+        }
+      }
+    },
+    "archive.import.pick.products %lld %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Produkte auswählen · %1$lld / %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose products · %1$lld / %2$lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termékek kiválasztása · %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "archive.import.pick.shoppingLists %lld %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einkaufslisten auswählen · %1$lld / %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose shopping lists · %1$lld / %2$lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bevásárlólisták kiválasztása · %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "archive.import.pick.shoppingLocations %lld %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geschäfte auswählen · %1$lld / %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose stores · %1$lld / %2$lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Üzletek kiválasztása · %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "archive.import.pick.storageLocations %lld %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagerorte auswählen · %1$lld / %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose storage locations · %1$lld / %2$lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tárolóhelyek kiválasztása · %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "archive.import.pickTitle.members" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mitglieder auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose members"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tagok kiválasztása"
+          }
+        }
+      }
+    },
+    "archive.import.pickTitle.products" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Produkte auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose products"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termékek kiválasztása"
+          }
+        }
+      }
+    },
+    "archive.import.pickTitle.shoppingLists" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einkaufslisten auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose shopping lists"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bevásárlólisták kiválasztása"
+          }
+        }
+      }
+    },
+    "archive.import.pickTitle.shoppingLocations" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geschäfte auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose stores"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Üzletek kiválasztása"
+          }
+        }
+      }
+    },
+    "archive.import.pickTitle.storageLocations" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagerorte auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose storage locations"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tárolóhelyek kiválasztása"
           }
         }
       }
@@ -1082,25 +1289,25 @@
         }
       }
     },
-    "archive.import.products.title" : {
+    "archive.import.search" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Produkte auswählen"
+            "value" : "Suchen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose products"
+            "value" : "Search"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Termékek kiválasztása"
+            "value" : "Keresés"
           }
         }
       }
