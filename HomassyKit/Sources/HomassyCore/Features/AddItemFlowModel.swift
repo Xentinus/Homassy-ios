@@ -59,7 +59,7 @@ public final class AddItemFlowModel {
         }
     }
 
-    public func unitLabel(_ unit: MeasureUnit) -> String { Quantity.format(1, unit: unit, locale: locale) }
+    public func unitLabel(_ unit: MeasureUnit) -> String { unit.name(for: quantity ?? 1, locale: locale) }
 
     public func chooseProduct(_ id: UUID) {
         guard let product = suggestionProducts[id] else { return }

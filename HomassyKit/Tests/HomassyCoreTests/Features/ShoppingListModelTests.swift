@@ -97,54 +97,18 @@ struct ShoppingListModelTests {
         #expect(makeModel(list).remaining.map(\.name) == ["C", "A", "B"])
     }
 
-    @Test func addDraftCreatesACustomItemAndClearsTheField() throws {
+    @Test func dragOntoAnotherCardMovesIt() throws {
         let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let a = try stack.service.addItem(to: list, customName: "A")
+        try stack.service.addItem(to: list, customName: "B")
+        let c = try stack.service.addItem(to: list, customName: "C")
         let model = makeModel(list)
-        #expect(!model.canAddDraft)
-        model.draftText = "  Kenyér "
-        #expect(model.canAddDraft)
-        model.addDraft()
-        #expect(model.draftText.isEmpty)
-        #expect(model.remaining.map(\.name) == ["Kenyér"])
-        let firstID = try #require(model.remaining.first).id
-        let item = try #require(model.item(for: firstID))
-        #expect(item.customName == "Kenyér")
-        #expect(item.product == nil)
-    }
 
-    @Test func addDraftThatNamesAProductUsesTheProduct() throws {
-        let milk = try stack.makeProduct("Tej", unit: .liter)
-        let list = try stack.service.createList(name: "Heti", in: stack.space)
-        let model = makeModel(list)
-        model.draftText = "tej"
-        #expect(model.suggestions.map(\.name) == ["Tej"])
-        model.addDraft()
-        let firstID = try #require(model.remaining.first).id
-        let item = try #require(model.item(for: firstID))
-        #expect(item.product == milk)
-        #expect(item.unit == .liter)
-        #expect(model.suggestions.isEmpty)
-    }
-
-    @Test func addSuggestionAddsThatProduct() throws {
-        let sourCream = try stack.makeProduct("Tejföl")
-        try stack.makeProduct("Tej")
-        let list = try stack.service.createList(name: "Heti", in: stack.space)
-        let model = makeModel(list)
-        model.draftText = "tej"
-        let suggestion = try #require(model.suggestions.first { $0.name == "Tejföl" })
-        model.addSuggestion(suggestion.id)
-        let firstID = try #require(model.remaining.first).id
-        #expect(model.item(for: firstID)?.product == sourCream)
-        #expect(model.draftText.isEmpty)
-    }
-
-    @Test func blankDraftDoesNothing() throws {
-        let list = try stack.service.createList(name: "Heti", in: stack.space)
-        let model = makeModel(list)
-        model.draftText = "   "
-        model.addDraft()
-        #expect(model.totalCount == 0)
-        #expect(model.errorMessage == nil)
+        model.moveItem(c.publicId, onto: a.publicId)
+        #expect(model.remaining.map(\.name) == ["C", "A", "B"])
+        model.moveItem(c.publicId, onto: try #require(model.remaining.last).id)
+        #expect(model.remaining.map(\.name) == ["A", "B", "C"])
+        model.moveItem(a.publicId, onto: a.publicId)
+        #expect(model.remaining.map(\.name) == ["A", "B", "C"])
     }
 }

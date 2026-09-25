@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// One shopping list: the items still to buy, the quick add bar and the item actions.
+/// One shopping list: the items still to buy and the item actions (adding is `AddItemFlowModel`).
 /// Bought items leave the list (user decision, 2026-09-25), so there is no bought section.
 @MainActor
 @Observable
@@ -18,17 +18,8 @@ public final class ShoppingListModel {
         public let image: Data?
     }
 
-    public struct Suggestion: Identifiable, Equatable, Sendable {
-        public let id: UUID
-        public let name: String
-    }
-
     public let list: ShoppingList
     public private(set) var listName = ""
-    public var draftText = "" {
-        didSet { if draftText != oldValue { refreshSuggestions() } }
-    }
-    public private(set) var suggestions: [Suggestion] = []
     public private(set) var errorMessage: String?
     private var remainingAll: [Row] = []
 
@@ -38,13 +29,11 @@ public final class ShoppingListModel {
     @ObservationIgnored private let pending: PendingDeletions
     @ObservationIgnored private let locale: Locale
     @ObservationIgnored private var items: [UUID: ShoppingListItem] = [:]
-    @ObservationIgnored private var suggestionProducts: [UUID: Product] = [:]
 
     /// Items waiting in an undo window (deleted or bought) are filtered out here. `pending` is observable,
     /// so views update when an undo reveals them again.
     public var remaining: [Row] { remainingAll.filter { !pending.contains($0.id) } }
     public var totalCount: Int { remaining.count }
-    public var canAddDraft: Bool { draftText.nilIfBlank != nil }
 
     public init(service: ShoppingService, inventory: InventoryService, list: ShoppingList, undoQueue: UndoQueue,
                 pending: PendingDeletions, locale: Locale = .current) {
@@ -103,47 +92,14 @@ public final class ShoppingListModel {
         reload()
     }
 
-    public func addDraft() {
-        guard let text = draftText.nilIfBlank else { return }
-        let match = suggestionProducts.values.first {
-            $0.name.compare(text, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
-        }
-        do {
-            if let match {
-                try service.addItem(to: list, product: match)
-            } else {
-                try service.addItem(to: list, customName: text)
-            }
-            draftText = ""
-        } catch {
-            errorMessage = FeatureError.message(for: error)
-        }
-        reload()
-    }
-
-    public func addSuggestion(_ id: UUID) {
-        guard let product = suggestionProducts[id] else { return }
-        do {
-            try service.addItem(to: list, product: product)
-            draftText = ""
-        } catch {
-            errorMessage = FeatureError.message(for: error)
-        }
-        reload()
+    /// Drag and drop on the card grid: moves `id` to where `target` is.
+    public func moveItem(_ id: UUID, onto target: UUID) {
+        let ids = remaining.map(\.id)
+        guard id != target, let from = ids.firstIndex(of: id), let to = ids.firstIndex(of: target) else { return }
+        moveRemaining(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
     }
 
     public func dismissError() { errorMessage = nil }
-
-    private func refreshSuggestions() {
-        guard let space = list.space else {
-            suggestions = []
-            suggestionProducts = [:]
-            return
-        }
-        let products = (try? service.productSuggestions(matching: draftText, in: space)) ?? []
-        suggestionProducts = Dictionary(products.map { ($0.publicId, $0) }, uniquingKeysWith: { first, _ in first })
-        suggestions = products.map { Suggestion(id: $0.publicId, name: $0.name) }
-    }
 
     private func row(for item: ShoppingListItem) -> Row {
         Row(id: item.publicId, name: ShoppingService.displayName(of: item),

@@ -6,17 +6,21 @@ final class FakeStoreSearch: StoreSearching {
     enum Call: Equatable, Sendable {
         case nearby(latitude: Double, longitude: Double, radius: Double)
         case search(text: String, latitude: Double, longitude: Double)
+        case places(text: String)
     }
     struct Failure: Error {}
 
     let nearbyResults: [StoreResult]
     let searchResults: [String: [StoreResult]]
+    let placeResults: [String: [PlaceResult]]
     let fails: Bool
     private let recorded = Mutex<[Call]>([])
 
-    init(nearby: [StoreResult] = [], search: [String: [StoreResult]] = [:], fails: Bool = false) {
+    init(nearby: [StoreResult] = [], search: [String: [StoreResult]] = [:], places: [String: [PlaceResult]] = [:],
+         fails: Bool = false) {
         nearbyResults = nearby
         searchResults = search
+        placeResults = places
         self.fails = fails
     }
 
@@ -32,6 +36,12 @@ final class FakeStoreSearch: StoreSearching {
         recorded.withLock { $0.append(.search(text: text, latitude: latitude, longitude: longitude)) }
         if fails { throw Failure() }
         return searchResults[text] ?? []
+    }
+
+    func places(text: String, latitude: Double, longitude: Double) async throws -> [PlaceResult] {
+        recorded.withLock { $0.append(.places(text: text)) }
+        if fails { throw Failure() }
+        return placeResults[text] ?? []
     }
 }
 

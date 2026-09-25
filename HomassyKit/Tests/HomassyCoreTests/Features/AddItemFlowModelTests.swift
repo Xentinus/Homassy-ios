@@ -33,6 +33,7 @@ struct AddItemFlowModelTests {
         #expect(model.chosenName == "Tej")
         #expect(model.unit == .liter)
         #expect(model.stepNumber == 2)
+        #expect(model.unitLabel(.liter) == "liter")                   // no amount in the unit picker
 
         model.quantityText = "2"
         model.next()

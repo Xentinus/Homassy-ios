@@ -2,8 +2,9 @@ import HomassyCore
 import MapKit
 import SwiftUI
 
-/// Picks a store from Apple Maps: recent stores, nearby shops on an interactive map (any shop on the map
-/// can be tapped and chosen), or a name search.
+/// Picks a store from Apple Maps: recent stores, or shops on an interactive map that follows the user's panning
+/// (any shop on the map can be tapped and chosen). The search finds shops by name and addresses, which move
+/// the map there.
 struct StorePickerView: View {
     let onPick: (ShoppingLocation?) -> Void
 
@@ -12,6 +13,7 @@ struct StorePickerView: View {
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var mapSelection: MapSelection<String>?
     @State private var placeCard: MKMapItem?
+    @State private var areaSearch: Task<Void, Never>?
     @Environment(\.dismiss) private var dismiss
 
     /// The When-In-Use authorizer is app-only (P4-02), so the picker owns it.
@@ -28,10 +30,19 @@ struct StorePickerView: View {
         NavigationStack {
             List {
                 if model.isShowingSearch {
-                    Section {
-                        ForEach(model.searchResults) { resultRow($0) }
-                    } header: {
-                        Text("store.search.results")
+                    if !model.placeResults.isEmpty {
+                        Section {
+                            ForEach(model.placeResults) { placeRow($0) }
+                        } header: {
+                            Text("store.search.places")
+                        }
+                    }
+                    if !model.searchResults.isEmpty {
+                        Section {
+                            ForEach(model.searchResults) { resultRow($0) }
+                        } header: {
+                            Text("store.search.results")
+                        }
                     }
                 } else {
                     Section {
@@ -81,7 +92,12 @@ struct StorePickerView: View {
             .onChange(of: model.tab) { _, tab in
                 if tab == .nearby { Task { await model.loadNearby() } }
             }
-            .onChange(of: model.nearby) { _, _ in position = .automatic }
+            .onChange(of: model.cameraTarget) { _, target in
+                guard let target else { return }
+                position = .region(MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: target.latitude, longitude: target.longitude),
+                    latitudinalMeters: 1_500, longitudinalMeters: 1_500))
+            }
             .onChange(of: mapSelection) { _, selection in Task { await resolve(selection) } }
             .overlay { if model.isLoading { ProgressView("store.loading") } }
             .mapItemDetailSheet(item: $placeCard)
@@ -129,15 +145,19 @@ struct StorePickerView: View {
             .frame(height: 320)
             .listRowInsets(EdgeInsets())
             .onMapCameraChange(frequency: .onEnd) { context in
-                model.mapCenter = Coordinate(latitude: context.region.center.latitude,
-                                             longitude: context.region.center.longitude)
+                let center = Coordinate(latitude: context.region.center.latitude,
+                                        longitude: context.region.center.longitude)
+                let radius = context.region.span.latitudeDelta * 111_000 / 2
+                areaSearch?.cancel()
+                areaSearch = Task {
+                    try? await Task.sleep(for: .milliseconds(400))
+                    guard !Task.isCancelled else { return }
+                    await model.searchArea(center: center, radiusMeters: radius)
+                }
             }
             .accessibilityIdentifier("store.map")
             Text("store.map.hint").font(.footnote).foregroundStyle(.secondary)
             ForEach(model.nearby) { resultRow($0) }
-            Button { Task { await model.loadNearby() } } label: {
-                Label("store.searchHere", systemImage: "arrow.clockwise")
-            }
         }
     }
 
@@ -167,6 +187,25 @@ struct StorePickerView: View {
         }
         .padding()
         .background(.bar)
+    }
+
+    /// An address or town from the search: moves the map there, and the shops around it load.
+    private func placeRow(_ place: PlaceResult) -> some View {
+        Button {
+            Task { await model.goTo(place) }
+        } label: {
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: place.title).foregroundStyle(.primary)
+                    if let subtitle = place.subtitle {
+                        Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            } icon: {
+                Image(systemName: "mappin.and.ellipse")
+            }
+        }
+        .accessibilityIdentifier("store.place.\(place.title)")
     }
 
     private func resultRow(_ result: StoreResult) -> some View {

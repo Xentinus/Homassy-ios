@@ -27,7 +27,7 @@ struct ShoppingItemFormModelTests {
         #expect(model.deadline == deadline)
         #expect(model.store == .init(id: spar.publicId, name: "Spar"))
         #expect(model.space == stack.space)
-        #expect(model.unitLabel(.kilogram) == Quantity.format(1, unit: .kilogram, locale: locale))
+        #expect(model.unitLabel(.kilogram) == "kilograms")                  // the name only, for 1.5
         #expect(model.units == MeasureUnit.allCases)
     }
 

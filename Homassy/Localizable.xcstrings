@@ -4578,98 +4578,6 @@
         }
       }
     },
-    "shopping.addItem.add" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hinzufügen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hozzáadás"
-          }
-        }
-      }
-    },
-    "shopping.addItem.placeholder" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Eintrag hinzufügen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add an item"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tétel hozzáadása"
-          }
-        }
-      }
-    },
-    "shopping.addItem.steps" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schritt für Schritt hinzufügen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add step by step"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hozzáadás lépésenként"
-          }
-        }
-      }
-    },
-    "shopping.addItem.suggestion %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ hinzufügen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add %@"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ hozzáadása"
-          }
-        }
-      }
-    },
     "shopping.detail.add" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4699,19 +4607,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Füge unten den ersten Eintrag hinzu."
+            "value" : "Tippe auf +, um den ersten Eintrag hinzuzufügen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add the first item below."
+            "value" : "Tap + to add the first item."
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add hozzá lent az első tételt."
+            "value" : "Koppints a + gombra az első tétel hozzáadásához."
           }
         }
       }
@@ -4735,29 +4643,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A lista üres"
-          }
-        }
-      }
-    },
-    "shopping.detail.toBuy" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zu kaufen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To buy"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Megveendő"
           }
         }
       }
@@ -6344,19 +6229,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tippe auf ein Geschäft auf der Karte, um es zu wählen."
+            "value" : "Verschiebe die Karte, um die Geschäfte dort zu sehen, oder tippe auf ein Geschäft auf der Karte."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap any shop on the map to choose it."
+            "value" : "Move the map to see the shops there, or tap any shop on the map."
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Koppints bármelyik üzletre a térképen a kiválasztáshoz."
+            "value" : "Mozgasd a térképet, és megjelennek az ott lévő üzletek, vagy koppints bármelyik üzletre a térképen."
           }
         }
       }
@@ -6407,25 +6292,48 @@
         }
       }
     },
+    "store.search.places" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orte"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Places"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Helyek"
+          }
+        }
+      }
+    },
     "store.search.prompt" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geschäfte suchen"
+            "value" : "Geschäfte oder Adressen suchen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Search shops"
+            "value" : "Search shops or addresses"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Üzlet keresése"
+            "value" : "Üzlet vagy cím keresése"
           }
         }
       }
@@ -6449,29 +6357,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Találatok"
-          }
-        }
-      }
-    },
-    "store.searchHere" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In diesem Bereich suchen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Search this area"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keresés ezen a területen"
           }
         }
       }

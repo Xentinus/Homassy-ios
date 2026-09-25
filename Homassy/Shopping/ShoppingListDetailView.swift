@@ -2,9 +2,9 @@ import CoreData
 import HomassyCore
 import SwiftUI
 
-/// One list: the items still to buy by sort order, with the quick add bar at the bottom. Each item is a card:
-/// the checkbox buys the whole quantity into inventory (undoable), a tap on the card opens the purchase sheet,
-/// swipe left deletes (undoable), swipe right edits, drag reorders. Bought items leave the list.
+/// One list: a card grid of the items still to buy, by sort order. The checkbox buys the whole quantity into
+/// inventory (undoable), a tap on the card opens the purchase sheet, long press offers Edit and Delete
+/// (undoable), dragging reorders. `+` opens the stepwise add. Bought items leave the list.
 struct ShoppingListDetailView: View {
     struct Target: Identifiable { let id: UUID }
     /// Opens the add sheet, carrying what was typed in the quick bar.
@@ -21,6 +21,7 @@ struct ShoppingListDetailView: View {
     @State private var adding: AddRequest?
     @State private var boughtCount = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(list: ShoppingList, services: ServiceContainer, undoQueue: UndoQueue) {
         self.list = list
@@ -31,19 +32,15 @@ struct ShoppingListDetailView: View {
     }
 
     var body: some View {
-        List {
-            Section {
+        ScrollView {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
                 ForEach(model.remaining) { row in
                     card(row)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) { deleteButton(row) }
-                        .swipeActions(edge: .leading) { editButton(row) }
                 }
-                .onMove { model.moveRemaining(fromOffsets: $0, toOffset: $1) }
-            } header: {
-                if !model.remaining.isEmpty { Text("shopping.detail.toBuy") }
             }
+            .padding()
         }
-        .listRowSpacing(8)
+        .background(Color(uiColor: .systemGroupedBackground))
         .overlay {
             if model.totalCount == 0 {
                 ContentUnavailableView {
@@ -51,12 +48,6 @@ struct ShoppingListDetailView: View {
                 } description: {
                     Text("shopping.detail.empty.message")
                 }
-            }
-        }
-        .safeAreaInset(edge: .bottom) {
-            AddItemBar(model: model) {
-                adding = AddRequest(query: model.draftText)
-                model.draftText = ""
             }
         }
         .navigationTitle(Text(verbatim: model.listName))
@@ -89,18 +80,34 @@ struct ShoppingListDetailView: View {
                                                         object: services.context)) { _ in model.reload() }
     }
 
+    private var columns: [GridItem] {
+        dynamicTypeSize.isAccessibilitySize
+            ? [GridItem(.flexible())]
+            : [GridItem(.adaptive(minimum: 160), spacing: 12, alignment: .top)]
+    }
+
+    /// Long press opens Edit and Delete; dragging a card onto another reorders.
     private func card(_ row: ShoppingListModel.Row) -> some View {
-        HStack(spacing: 4) {
-            ShoppingItemCheckbox(row: row) {
-                withAnimation(reduceMotion ? nil : .snappy) { model.quickPurchase(row.id) }
-                boughtCount += 1
-            }
-            Button { purchasing = Target(id: row.id) } label: { ShoppingItemCardContent(row: row) }
-                .buttonStyle(.plain)
-                .accessibilityHint(Text("shopping.item.openPurchaseHint"))
-                .accessibilityIdentifier("shopping.item.\(row.name)")
+        ShoppingItemCard(row: row) {
+            purchasing = Target(id: row.id)
+        } buy: {
+            withAnimation(reduceMotion ? nil : .snappy) { model.quickPurchase(row.id) }
+            boughtCount += 1
         }
-        .listRowInsets(EdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 16))
+        .contextMenu {
+            editButton(row)
+            deleteButton(row)
+        }
+        .accessibilityActions {
+            editButton(row)
+            deleteButton(row)
+        }
+        .draggable(row.id.uuidString)
+        .dropDestination(for: String.self) { ids, _ in
+            guard let dragged = ids.first.flatMap(UUID.init(uuidString:)) else { return false }
+            withAnimation(reduceMotion ? nil : .snappy) { model.moveItem(dragged, onto: row.id) }
+            return true
+        }
     }
 
     private func deleteButton(_ row: ShoppingListModel.Row) -> some View {
@@ -115,6 +122,5 @@ struct ShoppingListDetailView: View {
         Button { editing = Target(id: row.id) } label: {
             Label("common.edit", systemImage: "pencil")
         }
-        .tint(.accentColor)
     }
 }
