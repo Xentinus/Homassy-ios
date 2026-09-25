@@ -58,8 +58,8 @@ final class HouseholdSharingUITests: XCTestCase {
         app.launch()
         app.openTab("Household")
         XCTAssertTrue(app.navigationBars["Household"].waitForExistence(timeout: 10))
-        // Personal has no Sharing section.
-        XCTAssertFalse(app.staticTexts["household.sharing.role"].exists)
+        // Personal has no Members section.
+        XCTAssertFalse(app.buttons["household.sharing.manage"].exists)
 
         createHousehold(in: app)
         app.buttons["household.new.done"].tap()
@@ -67,9 +67,10 @@ final class HouseholdSharingUITests: XCTestCase {
         let switcher = app.buttons["spaceSwitcher"].firstMatch
         XCTAssertTrue(switcher.waitForExistence(timeout: 5))
         XCTAssertEqual(switcher.label, "Test flat")
-        let role = app.staticTexts["household.sharing.role"]
-        XCTAssertTrue(role.waitForExistence(timeout: 5))
-        XCTAssertEqual(role.label, "Your role, Owner")
+        let me = app.descendants(matching: .any)["member.row.me"].firstMatch
+        XCTAssertTrue(me.waitForExistence(timeout: 5))
+        XCTAssertTrue(me.label.contains("Anna"), me.label)
+        XCTAssertTrue(me.label.contains("Owner"), me.label)
         XCTAssertTrue(app.buttons["archive.export"].exists)
         attachScreenshot(app, "household tab owner")
 
@@ -91,7 +92,7 @@ final class HouseholdSharingUITests: XCTestCase {
         let backToPersonal = NSPredicate(format: "label == %@", "Personal")
         expectation(for: backToPersonal, evaluatedWith: switcher)
         waitForExpectations(timeout: 5)
-        XCTAssertFalse(app.staticTexts["household.sharing.role"].exists)
+        XCTAssertFalse(app.buttons["household.sharing.manage"].exists)
     }
 
     @MainActor

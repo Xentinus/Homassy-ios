@@ -290,6 +290,7 @@ public final class ArchiveImporter {
             member.displayName = dto.displayName
             member.colorSeed = dto.colorSeed
             member.avatar = try image(dto.avatar)
+            member.colorKey = dto.colorKey
         }
         try afterApplying?(.members)
 

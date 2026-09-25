@@ -44,6 +44,11 @@ public enum MemberColor {
         selectablePresets.first { $0.key == key }
     }
 
+    /// A member's colour: the hand-picked key when it is known, otherwise the automatic one from the seed.
+    public static func resolve(key: String?, seed: String) -> Preset {
+        key.flatMap(preset(forKey:)) ?? preset(for: seed)
+    }
+
     /// `pickMemberColor`: FNV-1a of the normalised seed, modulo the palette size.
     public static func preset(for seed: String) -> Preset {
         presets[Int(fnv1a(normalise(seed)) % UInt32(presets.count))]

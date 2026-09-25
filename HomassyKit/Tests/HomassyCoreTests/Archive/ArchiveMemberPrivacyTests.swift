@@ -161,4 +161,27 @@ struct ArchiveMemberPrivacyTests {
         #expect(services.ownsSpace(owned))
         #expect(!services.ownsSpace(joined))
     }
+
+    // MARK: Member colour pick (P5-03)
+
+    @Test func aPickedMemberColourTravelsThroughTheArchive() throws {
+        let seeded = try seedWithPhotos()
+        seeded.mine.colorKey = "mocha"
+        try stack.context.save()
+
+        let exporter = ArchiveExporter(context: stack.context, userRecordName: stack.user)
+        let url = try exporter.export(space: seeded.space)
+        let copy = try stack.importer().importArchive(url: url, mode: .asNewSpace(name: "Másolat")).space
+
+        let members = try stack.fetch(Member.self, "space == %@", copy)
+        #expect(members.first { $0.userRecordName == stack.user }?.colorKey == "mocha")
+        #expect(members.first { $0.userRecordName == "_anna" }?.colorKey == nil)
+    }
+
+    @Test func anUnpickedColourIsLeftOutOfTheFile() throws {
+        let seeded = try seedWithPhotos()
+        let contents = try ArchiveExporter(context: stack.context).snapshot(of: seeded.space).contents
+        let json = String(decoding: try ArchiveCodec.encode(contents).data, as: UTF8.self)
+        #expect(!json.contains("colorKey"))
+    }
 }

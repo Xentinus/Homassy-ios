@@ -23,6 +23,8 @@ public final class ServiceContainer {
     public let archive: ArchiveServices?
     /// Households: create, share, leave, delete. Nil only in package tests that build the container without it.
     public let sharing: SharingService?
+    /// Member records: names, photos, colours. Built from `sharing` when the container has one.
+    public let members: MemberService?
 
     public init(spaceStore: SpaceStore, context: NSManagedObjectContext, userRecordName: String,
                 canEdit: @escaping @MainActor (Space) -> Bool = { _ in true },
@@ -38,6 +40,8 @@ public final class ServiceContainer {
             permission = canEdit
         }
         self.sharing = sharing
+        members = sharing.map { MemberService(persistence: $0.persistence, spaceStore: spaceStore,
+                                              sharing: $0, userRecordName: userRecordName) }
         self.spaceStore = spaceStore
         self.context = context
         self.userRecordName = userRecordName

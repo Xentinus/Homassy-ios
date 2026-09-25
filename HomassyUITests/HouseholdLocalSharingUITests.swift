@@ -17,6 +17,9 @@ final class HouseholdLocalSharingUITests: XCTestCase {
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap()
         name.typeText("Test flat")
+        let owner = app.textFields["household.new.ownerName"]
+        owner.tap()
+        owner.typeText("Anna")          // named, so member setup (P5-03) is not offered
         app.buttons["household.new.create"].tap()
         let done = app.buttons["household.new.done"]
         XCTAssertTrue(done.waitForExistence(timeout: 5))

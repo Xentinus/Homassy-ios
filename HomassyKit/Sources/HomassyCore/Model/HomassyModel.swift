@@ -21,6 +21,7 @@ public enum HomassyModel {
             string("displayName"),
             string("colorSeed"),
             binary("avatar"),
+            string("colorKey"),        // P5-03: hand-picked MemberColor key; nil = automatic from colorSeed
         ])
         let product = entity(Product.self, [
             string("name", default: ""),

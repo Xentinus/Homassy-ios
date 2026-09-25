@@ -99,6 +99,8 @@ public struct MemberDTO: ArchiveRecord {
     public var displayName: String
     public var colorSeed: String
     public var avatar: String?
+    /// P5-03 colour pick; left out of the file when nil, so files without picks keep the v1 shape.
+    public var colorKey: String? = nil
 }
 
 public struct ProductDTO: ArchiveRecord {

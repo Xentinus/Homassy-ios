@@ -1,3 +1,5 @@
+import Combine
+import CoreData
 import HomassyCore
 import SwiftUI
 
@@ -6,6 +8,8 @@ struct RootView: View {
     @Environment(AppModel.self) private var app
     @State private var exportTarget: Space?
     @State private var inbox = ShareInvitationInbox.shared
+    @State private var memberSetupSpace: MemberSetupTarget?
+    private let memberSetupSkips = MemberSetupSkips()
 
     var body: some View {
         Group {
@@ -49,6 +53,18 @@ struct RootView: View {
                         }
                     }
                     .environment(app.shareAcceptance)
+                    .onChange(of: app.selection.selectedSpaceID, initial: true) { evaluateMemberSetup() }
+                    .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)
+                        .receive(on: RunLoop.main)) { _ in
+                        evaluateMemberSetup()       // a joined space's share and permissions arrive with the import
+                    }
+                    .sheet(item: $memberSetupSpace) { target in
+                        if let members = services.members {
+                            MemberSetupView(service: members, space: target.space, userRecordName: services.userRecordName) {
+                                memberSetupSkips.skip(target.space.publicId)
+                            }
+                        }
+                    }
                     .environment(services)
                     .expiryNotifications(services.notifications, context: services.context)
             } else if app.bootstrapError != nil {
@@ -68,4 +84,20 @@ struct RootView: View {
         guard app.shareAcceptance.state == .idle, let next = inbox.takeNext() else { return }
         Task { await app.shareAcceptance.accept(next) }
     }
+
+    /// First visit to an editable shared household without a named member record: ask for name, photo, colour.
+    private func evaluateMemberSetup() {
+        guard memberSetupSpace == nil, let services = app.services,
+              let members = services.members, let sharing = services.sharing,
+              let id = app.selection.selectedSpaceID, !memberSetupSkips.isSkipped(id),
+              let space = sharing.space(withPublicId: id),
+              members.needsSetup(in: space) else { return }
+        memberSetupSpace = MemberSetupTarget(space: space)
+    }
+}
+
+/// A space waiting for first-visit member setup (`Space` itself is not Identifiable).
+private struct MemberSetupTarget: Identifiable {
+    let space: Space
+    var id: NSManagedObjectID { space.objectID }
 }
