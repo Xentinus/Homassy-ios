@@ -25,5 +25,8 @@ struct ArchiveInboxTests {
 
     @Test func archiveTypeIdentifier() {
         #expect(UTType.homassyArchive.identifier == "com.homassy.archive")
+        // Not an archive to the system, otherwise Files unpacks it on tap instead of opening Homassy.
+        #expect(UTType.homassyArchive.conforms(to: .data))
+        #expect(!UTType.homassyArchive.conforms(to: .archive))
     }
 }

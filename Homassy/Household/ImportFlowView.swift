@@ -86,20 +86,22 @@ struct ImportFlowView: View {
         }
 
         Section {
-            ForEach(ArchiveEntity.allCases, id: \.self) { entity in
-                let counts = preview.counts(for: entity)
-                LabeledContent {
-                    Text(counts.total, format: .number)
-                        .accessibilityIdentifier("import.count.\(entity.rawValue)")
-                } label: {
-                    Text(Self.title(for: entity))
-                    if preview.isMerge {
-                        Text("archive.import.breakdown \(counts.toCreate) \(counts.toUpdate) \(counts.unchanged)")
+            ForEach(ArchiveSelection.Group.allCases, id: \.self) { group in
+                groupRow(group, preview: preview)
+                if group == .products && !model.productOptions.isEmpty {
+                    NavigationLink {
+                        ImportProductPicker(model: model)
+                    } label: {
+                        Text("archive.import.pickProducts \(model.selectedProductIDs.count) \(model.productOptions.count)")
                     }
+                    .disabled(model.phase == .importing)
+                    .accessibilityIdentifier("import.pickProducts")
                 }
             }
         } header: {
             Text("archive.import.contents")
+        } footer: {
+            contentsFooter(preview)
         }
 
         Section {
@@ -131,17 +133,82 @@ struct ImportFlowView: View {
         }
     }
 
-    static func title(for entity: ArchiveEntity) -> LocalizedStringKey {
-        switch entity {
-        case .members: "archive.entity.members"
+    /// One group: its name, what else it holds, the count of its main entity and the toggle.
+    @ViewBuilder private func groupRow(_ group: ArchiveSelection.Group, preview: ImportPreview) -> some View {
+        let entity = Self.mainEntity(of: group)
+        let counts = preview.counts(for: entity)
+        let isOn = model.groups.contains(group) && (group != .stock || model.isStockAvailable)
+        let automatic = isOn ? 0 : preview.autoIncluded[entity] ?? 0
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Self.title(for: group))
+                Group {
+                    switch group {
+                    case .stock:
+                        Text("archive.import.stock.detail \(preview.counts(for: .consumptionLogs).total) \(preview.counts(for: .inventoryEvents).total)")
+                    case .shoppingLists:
+                        Text("archive.import.lists.detail \(preview.counts(for: .shoppingListItems).total)")
+                    default:
+                        EmptyView()
+                    }
+                    if preview.isMerge && counts.total > 0 {
+                        Text("archive.import.breakdown \(counts.toCreate) \(counts.toUpdate) \(counts.unchanged)")
+                    }
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            Group {
+                if automatic > 0 {
+                    Text("archive.import.auto \(automatic)")
+                } else {
+                    Text(counts.total, format: .number)
+                }
+            }
+            .foregroundStyle(.secondary)
+            .accessibilityIdentifier("import.count.\(entity.rawValue)")
+            Toggle(isOn: Binding(get: { isOn }, set: { model.setGroup(group, isOn: $0) })) {
+                Text(Self.title(for: group))
+            }
+            .labelsHidden()
+            .disabled(model.phase == .importing || (group == .stock && !model.isStockAvailable))
+            .accessibilityIdentifier("import.group.\(group.rawValue)")
+        }
+    }
+
+    @ViewBuilder private func contentsFooter(_ preview: ImportPreview) -> some View {
+        let storage = preview.autoIncluded[.storageLocations] ?? 0
+        let stores = preview.autoIncluded[.shoppingLocations] ?? 0
+        VStack(alignment: .leading, spacing: 4) {
+            if storage > 0 { Text("archive.import.auto.storageLocations \(storage)") }
+            if stores > 0 { Text("archive.import.auto.shoppingLocations \(stores)") }
+            if preview.unlinkedListItems > 0 { Text("archive.import.unlinked \(preview.unlinkedListItems)") }
+            if model.isSelectionEmpty {
+                Text("archive.import.nothingSelected").accessibilityIdentifier("import.nothingSelected")
+            }
+        }
+    }
+
+    static func mainEntity(of group: ArchiveSelection.Group) -> ArchiveEntity {
+        switch group {
+        case .products: .products
+        case .stock: .inventoryItems
+        case .storageLocations: .storageLocations
+        case .shoppingLocations: .shoppingLocations
+        case .shoppingLists: .shoppingLists
+        case .members: .members
+        }
+    }
+
+    static func title(for group: ArchiveSelection.Group) -> LocalizedStringKey {
+        switch group {
         case .products: "archive.entity.products"
+        case .stock: "archive.group.stock"
         case .storageLocations: "archive.entity.storageLocations"
         case .shoppingLocations: "archive.entity.shoppingLocations"
         case .shoppingLists: "archive.entity.shoppingLists"
-        case .inventoryItems: "archive.entity.inventoryItems"
-        case .consumptionLogs: "archive.entity.consumptionLogs"
-        case .inventoryEvents: "archive.entity.inventoryEvents"
-        case .shoppingListItems: "archive.entity.shoppingListItems"
+        case .members: "archive.entity.members"
         }
     }
 }

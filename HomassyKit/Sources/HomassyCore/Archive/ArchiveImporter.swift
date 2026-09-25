@@ -22,7 +22,12 @@ public struct EntityImportCounts: Equatable, Sendable {
 public struct ImportPreview: Equatable, Sendable {
     public let manifest: ArchiveManifest
     public let isMerge: Bool
+    /// Counts of the selected part of the archive (everything, unless a selection narrows it).
     public let counts: [ArchiveEntity: EntityImportCounts]
+    /// Records of groups left out that come along because selected records reference them.
+    public var autoIncluded: [ArchiveEntity: Int] = [:]
+    /// Shopping list items that arrive without their product, because it is not imported.
+    public var unlinkedListItems = 0
 
     public func counts(for entity: ArchiveEntity) -> EntityImportCounts { counts[entity] ?? EntityImportCounts() }
     public var totalToCreate: Int { counts.values.reduce(0) { $0 + $1.toCreate } }
@@ -72,21 +77,39 @@ public final class ArchiveImporter {
         self.now = now
     }
 
-    /// Reads and validates the archive and reports what an import would do. Writes nothing.
-    public func preview(url: URL, mergeInto target: Space? = nil) throws -> ImportPreview {
+    /// Reads the archive and validates all of it. Preview and import can then run on it repeatedly.
+    public func read(url: URL) throws -> ArchivePackage.Loaded {
         let loaded = try ArchivePackage.read(url)
         try ArchiveValidator.validate(loaded.contents.data)
-        let plan = try makePlan(for: loaded.contents.data, target: target)
-        return ImportPreview(manifest: loaded.contents.manifest, isMerge: target != nil, counts: plan.counts)
+        return loaded
     }
 
-    /// Applies the archive in one save. Any error rolls the context back, so nothing is written.
+    /// Reads and validates the archive and reports what an import would do. Writes nothing.
+    public func preview(url: URL, mergeInto target: Space? = nil) throws -> ImportPreview {
+        try preview(read(url: url), mergeInto: target)
+    }
+
+    /// What importing `selection` of `loaded` would do. Writes nothing.
+    public func preview(_ loaded: ArchivePackage.Loaded, mergeInto target: Space? = nil,
+                        selection: ArchiveSelection = .everything) throws -> ImportPreview {
+        let filtered = try filter(loaded, by: selection)
+        let plan = try makePlan(for: filtered.data, target: target)
+        return ImportPreview(manifest: loaded.contents.manifest, isMerge: target != nil, counts: plan.counts,
+                             autoIncluded: filtered.autoIncluded, unlinkedListItems: filtered.unlinkedListItems)
+    }
+
     @discardableResult
     public func importArchive(url: URL, mode: ImportMode) throws -> ImportResult {
         guard !context.hasChanges else { throw ArchiveError.unsavedChanges }
-        let loaded = try ArchivePackage.read(url)
-        let data = loaded.contents.data
-        try ArchiveValidator.validate(data)
+        return try importArchive(read(url: url), mode: mode)
+    }
+
+    /// Applies `selection` of the archive in one save. Any error rolls the context back, so nothing is written.
+    @discardableResult
+    public func importArchive(_ loaded: ArchivePackage.Loaded, mode: ImportMode,
+                              selection: ArchiveSelection = .everything) throws -> ImportResult {
+        guard !context.hasChanges else { throw ArchiveError.unsavedChanges }
+        let data = try filter(loaded, by: selection).data
         do {
             let space: Space
             let plan: Plan
@@ -105,6 +128,13 @@ public final class ArchiveImporter {
             context.rollback()
             throw error
         }
+    }
+
+    /// The selected part, validated again: the filter must never produce dangling references.
+    private func filter(_ loaded: ArchivePackage.Loaded, by selection: ArchiveSelection) throws -> ArchiveFilterResult {
+        let filtered = loaded.contents.data.filtered(by: selection)
+        try ArchiveValidator.validate(filtered.data)
+        return filtered
     }
 
     // MARK: Planning
