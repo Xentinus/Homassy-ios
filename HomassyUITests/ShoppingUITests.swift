@@ -84,6 +84,26 @@ final class ShoppingUITests: XCTestCase {
     }
 
     @MainActor
+    func testADeadlineWithinTwoWeeksIsShownOnTheCard() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.createShoppingList(named: "Weekly")
+        app.openShoppingList(named: "Weekly")
+        app.addShoppingItem("Napkins")
+        app.addShoppingItem("Candles")
+
+        app.shoppingItemMenu("Napkins", action: "Edit")
+        let deadline = app.switches["shopping.form.hasDeadline"]
+        XCTAssertTrue(deadline.waitForExistence(timeout: 5))
+        deadline.switches.firstMatch.tap()                    // defaults to tomorrow
+        app.buttons["shopping.form.save"].tap()
+
+        let card = app.buttons["shopping.item.Napkins"]
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        XCTAssertTrue(card.label.contains("Needed by"), card.label)
+        attachScreenshot(app, named: "shopping-deadline-card")
+    }
+
+    @MainActor
     func testStepwiseAdd() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")

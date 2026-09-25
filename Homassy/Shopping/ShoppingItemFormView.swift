@@ -37,6 +37,7 @@ struct ShoppingItemFormView: View {
                 }
                 Section {
                     Toggle("shopping.form.hasDeadline", isOn: $model.hasDeadline.animation())
+                        .accessibilityIdentifier("shopping.form.hasDeadline")
                     if model.hasDeadline {
                         DatePicker("shopping.form.deadline", selection: $model.deadline, displayedComponents: .date)
                     }
