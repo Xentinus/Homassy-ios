@@ -16,10 +16,14 @@ struct ProductFormSheet: View {
     }
     @Environment(\.dismiss) private var dismiss
     private let onSaved: (Product) -> Void
+    /// Editing only: the red "Delete product" at the bottom of the form (Apple's Contacts pattern, user
+    /// decision 2026-09-25). The sheet closes first; the caller deletes with the undo toast.
+    private let onDelete: (() -> Void)?
 
-    init(model: ProductFormModel, onSaved: @escaping (Product) -> Void = { _ in }) {
+    init(model: ProductFormModel, onSaved: @escaping (Product) -> Void = { _ in }, onDelete: (() -> Void)? = nil) {
         _model = State(initialValue: model)
         self.onSaved = onSaved
+        self.onDelete = onDelete
     }
 
     var body: some View {
@@ -80,6 +84,17 @@ struct ProductFormSheet: View {
                 }
                 if let error = model.errorMessage {
                     Section { Text(error).foregroundStyle(.red) }
+                }
+                if model.isEditing, let onDelete {
+                    Section {
+                        Button(role: .destructive) {
+                            dismiss()
+                            onDelete()
+                        } label: {
+                            Text("product.detail.deleteProduct").frame(maxWidth: .infinity)
+                        }
+                        .accessibilityIdentifier("product.form.delete")
+                    }
                 }
             }
             .navigationTitle(model.isEditing ? "product.form.edit" : "product.form.new")

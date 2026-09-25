@@ -142,8 +142,10 @@ final class ProductsUITests: XCTestCase {
     func testDeleteProductFromDetailAndUndo() {
         let app = openProducts()
         openDetail("Bread", in: app)
-        app.buttons["product.detail.menu"].tap()
-        app.buttons["product.detail.delete"].tap()
+        app.buttons["product.detail.edit"].tap()
+        let delete = app.buttons["product.form.delete"]
+        for _ in 0..<4 where !delete.exists { app.swipeUp() }
+        delete.tap()
         let bread = app.buttons["product.row.Bread"]
         XCTAssertTrue(app.buttons["product.row.Milk"].waitForExistence(timeout: 5))
         XCTAssertFalse(bread.exists)

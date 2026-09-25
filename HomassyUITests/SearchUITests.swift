@@ -77,12 +77,19 @@ final class SearchUITests: XCTestCase {
         XCTAssertTrue(app.buttons["product.row.Milk"].isHittable)
     }
 
-    func testDetailEditIsAnIcon() {
+    /// Apple's pattern (user decision 2026-09-25): the detail has one Edit icon and no "More" menu;
+    /// deleting the product sits at the bottom of the edit form.
+    func testDetailHasOneEditIconAndDeleteIsInTheForm() {
         let app = launch()
         app.openTab("Products")
         app.buttons["product.row.Milk"].tap()
         let edit = app.buttons["product.detail.edit"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5))
-        XCTAssertFalse(app.navigationBars["Milk"].staticTexts["Edit"].exists, "no Edit text next to the menu")
+        XCTAssertFalse(app.navigationBars["Milk"].staticTexts["Edit"].exists, "the edit button is an icon")
+        XCTAssertFalse(app.buttons["product.detail.menu"].exists, "no More menu")
+        edit.tap()
+        let delete = app.buttons["product.form.delete"]
+        for _ in 0..<4 where !delete.exists { app.swipeUp() }
+        XCTAssertTrue(delete.exists)
     }
 }
