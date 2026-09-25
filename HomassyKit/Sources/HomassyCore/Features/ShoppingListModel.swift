@@ -24,7 +24,6 @@ public final class ShoppingListModel {
     private var remainingAll: [Row] = []
 
     @ObservationIgnored private let service: ShoppingService
-    @ObservationIgnored private let inventory: InventoryService
     @ObservationIgnored private let undoQueue: UndoQueue
     @ObservationIgnored private let pending: PendingDeletions
     @ObservationIgnored private let locale: Locale
@@ -35,10 +34,9 @@ public final class ShoppingListModel {
     public var remaining: [Row] { remainingAll.filter { !pending.contains($0.id) } }
     public var totalCount: Int { remaining.count }
 
-    public init(service: ShoppingService, inventory: InventoryService, list: ShoppingList, undoQueue: UndoQueue,
+    public init(service: ShoppingService, list: ShoppingList, undoQueue: UndoQueue,
                 pending: PendingDeletions, locale: Locale = .current) {
         self.service = service
-        self.inventory = inventory
         self.list = list
         self.undoQueue = undoQueue
         self.pending = pending
@@ -63,18 +61,6 @@ public final class ShoppingListModel {
     }
 
     public func item(for id: UUID) -> ShoppingListItem? { items[id] }
-
-    /// The checkbox: buys the whole quantity into inventory, undoable.
-    public func quickPurchase(_ id: UUID) {
-        guard let item = items[id] else { return }
-        do {
-            undoQueue.enqueue(try ShoppingPurchase.quickPurchase(item, shopping: service, inventory: inventory,
-                                                                 pending: pending))
-        } catch {
-            errorMessage = FeatureError.message(for: error)
-        }
-        reload()
-    }
 
     public func delete(_ id: UUID) {
         guard let item = items[id] else { return }

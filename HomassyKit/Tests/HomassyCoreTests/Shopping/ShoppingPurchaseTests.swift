@@ -166,41 +166,53 @@ struct ShoppingPurchaseTests {
         #expect(!stack.context.hasChanges)
     }
 
-    @Test func quickPurchaseUsesTheItemStoreAndTheLastLocation() throws {
+    @Test func defaultStorageLocationIsTheLastOneUsed() throws {
         let milk = try stack.makeProduct("Tej", unit: .liter)
-        let spar = try stack.makeStore("Spar")
         let pantry = try stack.makeLocation("Kamra")
         let fridge = try stack.makeLocation("Hűtő")
         try inventory.addStock(product: milk, quantity: 1, unit: .liter, expiresAt: nil, purchasedAt: nil, price: nil,
                                currency: nil, storageLocation: pantry, shoppingLocation: nil)
-        stack.now.advance(seconds: 60)
         try inventory.addStock(product: milk, quantity: 1, unit: .liter, expiresAt: nil, purchasedAt: nil, price: nil,
                                currency: nil, storageLocation: fridge, shoppingLocation: nil)
         #expect(ShoppingPurchase.defaultStorageLocation(for: milk, inventory: inventory) == fridge)
         #expect(ShoppingPurchase.defaultStorageLocation(for: nil, inventory: inventory) == nil)
-
-        let list = try shopping.createList(name: "Heti", in: stack.space)
-        let item = try shopping.addItem(to: list, product: milk, quantity: 2, shoppingLocation: spar)
-        try ShoppingPurchase.quickPurchase(item, shopping: shopping, inventory: inventory, pending: pending).commit()
-
-        let bought = try #require(try stock().first { $0.shoppingLocation == spar })
-        #expect(bought.quantity == 2)
-        #expect(bought.storageLocation == fridge)
-        #expect(bought.price == nil)
-        #expect(bought.expiresAt == nil)
-        #expect(try shopping.items(in: list).isEmpty)
     }
 
-    @Test func quickPurchaseThroughTheUndoQueue() throws {
+    @Test func withoutInventoryTheItemOnlyLeavesTheList() throws {
+        let list = try shopping.createList(name: "Heti", in: stack.space)
+        let item = try shopping.addItem(to: list, customName: "Szalvéta", quantity: 2)
+        let foreignStore = try stack.makeStore("Idegen", in: try stack.makeOtherSpace())
+
+        // The store and inventory fields are ignored, so a foreign store does not matter.
+        let action = try buy(item, PurchaseDetails(quantity: 2, storeID: foreignStore.publicId, addToInventory: false))
+        #expect(pending.contains(item.publicId))
+        try action.commit()
+        #expect(try shopping.items(in: list).isEmpty)
+        #expect(try stack.count(InventoryItem.self) == 0)
+        #expect(try stack.count(Product.self) == 0)
+    }
+
+    @Test func withoutInventoryARemainderStays() throws {
+        let list = try shopping.createList(name: "Heti", in: stack.space)
+        let item = try shopping.addItem(to: list, customName: "Szalvéta", quantity: 3)
+        let action = try buy(item, PurchaseDetails(quantity: 1, keepRemainder: true, addToInventory: false))
+        #expect(item.quantity == 2)
+        action.revert()
+        #expect(item.quantity == 3)
+        #expect(try stack.count(InventoryItem.self) == 0)
+        #expect(!stack.context.hasChanges)
+    }
+
+    @Test func purchaseThroughTheUndoQueue() throws {
         let list = try shopping.createList(name: "Heti", in: stack.space)
         let item = try shopping.addItem(to: list, customName: "Szalvéta")
         let queue = UndoQueue(window: .seconds(3600))
-        queue.enqueue(try ShoppingPurchase.quickPurchase(item, shopping: shopping, inventory: inventory, pending: pending))
+        queue.enqueue(try buy(item, PurchaseDetails(quantity: 1)))
         queue.undo(try #require(queue.pending.first).id)
         #expect(try stack.count(InventoryItem.self) == 0)
         #expect(try shopping.items(in: list) == [item])
 
-        queue.enqueue(try ShoppingPurchase.quickPurchase(item, shopping: shopping, inventory: inventory, pending: pending))
+        queue.enqueue(try buy(item, PurchaseDetails(quantity: 1)))
         try queue.commitAll()
         #expect(try shopping.items(in: list).isEmpty)
         #expect(try stack.count(InventoryItem.self) == 1)

@@ -108,4 +108,19 @@ struct PurchaseFormModelTests {
         #expect(model.errorMessage != nil)
         #expect(try stack.count(InventoryItem.self) == 0)
     }
+
+    @Test func switchingInventoryOffOnlyRemovesTheItem() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let item = try stack.service.addItem(to: list, customName: "Alma")
+        let model = makeModel(item)
+        #expect(model.addToInventory)
+        model.addToInventory = false
+        model.priceText = "sok"                                  // ignored without inventory
+        model.applySuggestion(.place(StoreSamples.aldiNyugati, distance: 40))
+        let action = try #require(model.purchase())
+        try action.commit()
+        #expect(try stack.service.items(in: list).isEmpty)
+        #expect(try stack.count(InventoryItem.self) == 0)
+        #expect(try stack.count(ShoppingLocation.self) == 0)     // the suggested place is not stored either
+    }
 }

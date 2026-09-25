@@ -21,19 +21,26 @@ final class ShoppingUITests: XCTestCase {
         app.addShoppingItem("Napkins")
 
         XCTAssertTrue(app.navigationBars["Weekly"].exists)
-        XCTAssertTrue(app.shoppingItemToggle("Napkins").exists)
+        XCTAssertTrue(app.buttons["shopping.item.Napkins"].exists)
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(app.buttons["shopping.list.Weekly"].label.contains("1 to buy"))
     }
 
     @MainActor
-    func testCheckboxBuysAndUndoBringsItBack() {
+    func testPurchaseWithoutInventoryOnlyRemovesTheItemAndUndoBringsItBack() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")
         app.openShoppingList(named: "Weekly")
         app.addShoppingItem("Napkins")
 
-        app.shoppingItemToggle("Napkins").tap()
+        app.buttons["shopping.item.Napkins"].tap()
+        let inventory = app.switches["shopping.purchase.addToInventory"]
+        XCTAssertTrue(inventory.waitForExistence(timeout: 5))
+        XCTAssertEqual(inventory.value as? String, "1", "adding to inventory is the default")
+        XCTAssertTrue(app.buttons["store.suggestion"].exists)
+        inventory.switches.firstMatch.tap()
+        XCTAssertFalse(app.buttons["store.suggestion"].waitForExistence(timeout: 1), "no store without inventory")
+        app.buttons["shopping.purchase.confirm"].tap()
         XCTAssertFalse(app.buttons["shopping.item.Napkins"].waitForExistence(timeout: 1))
 
         let undo = app.buttons["Undo"]

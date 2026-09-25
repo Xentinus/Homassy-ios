@@ -4900,52 +4900,6 @@
         }
       }
     },
-    "shopping.item.hint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kauft die ganze Menge und legt sie in den Vorrat"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Buys the whole amount and adds it to the inventory"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A teljes mennyiséget megvettnek jelöli és készletbe teszi"
-          }
-        }
-      }
-    },
-    "shopping.item.markBought %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ als gekauft markieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mark %@ as bought"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ megvéve"
-          }
-        }
-      }
-    },
     "shopping.item.openPurchaseHint" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5287,6 +5241,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Még nincs mit mutatni"
+          }
+        }
+      }
+    },
+    "shopping.purchase.addToInventory" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In den Vorrat legen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to inventory"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Készletbe tétel"
+          }
+        }
+      }
+    },
+    "shopping.purchase.addToInventory.off" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Eintrag wird nur von der Liste entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The item is only removed from the list."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A tétel csak lekerül a listáról."
           }
         }
       }

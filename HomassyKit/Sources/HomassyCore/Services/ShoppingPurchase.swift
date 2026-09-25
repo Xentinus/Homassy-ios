@@ -1,7 +1,7 @@
 import CoreData
 import Foundation
 
-/// What the user bought of one list item (the purchase sheet; the checkbox uses defaults).
+/// What the user bought of one list item (the purchase sheet).
 public struct PurchaseDetails: Sendable, Equatable {
     public var quantity: Decimal
     /// `ShoppingLocation.publicId`; nil means no store.
@@ -13,9 +13,12 @@ public struct PurchaseDetails: Sendable, Equatable {
     public var expiresAt: Date?
     /// `StorageLocation.publicId`; nil means no location.
     public var storageLocationID: UUID?
+    /// Off: the item only leaves the list (or shrinks to the remainder); nothing goes into inventory.
+    public var addToInventory: Bool
 
     public init(quantity: Decimal, storeID: UUID? = nil, keepRemainder: Bool = true, price: Decimal? = nil,
-                currency: String? = nil, expiresAt: Date? = nil, storageLocationID: UUID? = nil) {
+                currency: String? = nil, expiresAt: Date? = nil, storageLocationID: UUID? = nil,
+                addToInventory: Bool = true) {
         self.quantity = quantity
         self.storeID = storeID
         self.keepRemainder = keepRemainder
@@ -23,40 +26,25 @@ public struct PurchaseDetails: Sendable, Equatable {
         self.currency = currency
         self.expiresAt = expiresAt
         self.storageLocationID = storageLocationID
+        self.addToInventory = addToInventory
     }
 }
 
-/// Buying a list item puts it straight into inventory (user decision, 2026-09-25). The change is applied
-/// at once and saved on commit; the list item leaves the list on commit unless a remainder stays.
+/// Buying a list item (the purchase sheet) puts it into inventory unless the user switches that off
+/// (user decisions, 2026-09-25). The change is applied at once and saved on commit; the list item leaves
+/// the list on commit unless a remainder stays.
 @MainActor
 public enum ShoppingPurchase {
     public static func purchase(_ item: ShoppingListItem, details: PurchaseDetails, shopping: ShoppingService,
                                 inventory: InventoryService, pending: PendingDeletions) throws -> UndoableAction {
         guard !item.isGone, let space = item.shoppingList?.space, !space.isGone else { throw ServiceError.notFound }
-        guard shopping.canEdit(space), inventory.canEdit(space) else { throw ServiceError.readOnlySpace }
+        guard shopping.canEdit(space) else { throw ServiceError.readOnlySpace }
         guard details.quantity > 0 else { throw ServiceError.quantityMustBePositive }
         let purchasedAt = inventory.currentDate()
-        if let expiresAt = details.expiresAt,
-           inventory.calendar.startOfDay(for: expiresAt) < inventory.calendar.startOfDay(for: purchasedAt) {
-            throw ServiceError.expiryBeforePurchase
-        }
-        let store = try details.storeID.map { try entity(ShoppingLocation.self, $0, in: space, context: shopping.context) }
-        let location = try details.storageLocationID.map {
-            try entity(StorageLocation.self, $0, in: space, context: shopping.context)
-        }
-
-        let (product, createdProduct) = try resolveProduct(for: item, userRecordName: shopping.userRecordName,
-                                                           spaceStore: shopping.spaceStore)
-        let stock: InventoryItem
-        do {
-            stock = try inventory.addStock(product: product, quantity: details.quantity, unit: item.unit,
-                                           expiresAt: details.expiresAt, purchasedAt: purchasedAt,
-                                           price: details.price, currency: details.currency,
-                                           storageLocation: location, shoppingLocation: store, commit: false)
-        } catch {
-            if createdProduct { shopping.context.delete(product) }
-            throw error
-        }
+        let added = details.addToInventory
+            ? try addStock(for: item, details: details, in: space, purchasedAt: purchasedAt,
+                           shopping: shopping, inventory: inventory)
+            : nil
 
         let previous = (quantity: item.quantity, updatedAt: item.updatedAt, updatedBy: item.updatedBy)
         let keepsItem = details.keepRemainder && details.quantity < item.quantity
@@ -73,9 +61,11 @@ public enum ShoppingPurchase {
             kind: .purchase,
             entityIDs: [id],
             revert: {
-                for event in stock.inventoryEventSet { inventory.discard(event) }
-                inventory.discard(stock)
-                if createdProduct { inventory.discard(product) }
+                if let added {
+                    for event in added.stock.inventoryEventSet { inventory.discard(event) }
+                    inventory.discard(added.stock)
+                    if added.createdProduct { inventory.discard(added.product) }
+                }
                 if !item.isGone {
                     item.quantity = previous.quantity
                     item.updatedAt = previous.updatedAt
@@ -91,16 +81,33 @@ public enum ShoppingPurchase {
             })
     }
 
-    /// The checkbox: the whole quantity at the item's store, no price or expiry, into the location
-    /// the product was last stocked in.
-    public static func quickPurchase(_ item: ShoppingListItem, shopping: ShoppingService,
-                                     inventory: InventoryService, pending: PendingDeletions) throws -> UndoableAction {
-        let details = PurchaseDetails(
-            quantity: item.quantity,
-            storeID: item.shoppingLocation?.publicId,
-            keepRemainder: false,
-            storageLocationID: defaultStorageLocation(for: item.product, inventory: inventory)?.publicId)
-        return try purchase(item, details: details, shopping: shopping, inventory: inventory, pending: pending)
+    /// Validates and adds the stock (not saved); a product created for a custom item is removed again
+    /// when adding fails.
+    private static func addStock(for item: ShoppingListItem, details: PurchaseDetails, in space: Space,
+                                 purchasedAt: Date, shopping: ShoppingService,
+                                 inventory: InventoryService) throws -> (stock: InventoryItem, product: Product,
+                                                                        createdProduct: Bool) {
+        guard inventory.canEdit(space) else { throw ServiceError.readOnlySpace }
+        if let expiresAt = details.expiresAt,
+           inventory.calendar.startOfDay(for: expiresAt) < inventory.calendar.startOfDay(for: purchasedAt) {
+            throw ServiceError.expiryBeforePurchase
+        }
+        let store = try details.storeID.map { try entity(ShoppingLocation.self, $0, in: space, context: shopping.context) }
+        let location = try details.storageLocationID.map {
+            try entity(StorageLocation.self, $0, in: space, context: shopping.context)
+        }
+        let (product, createdProduct) = try resolveProduct(for: item, userRecordName: shopping.userRecordName,
+                                                           spaceStore: shopping.spaceStore)
+        do {
+            let stock = try inventory.addStock(product: product, quantity: details.quantity, unit: item.unit,
+                                               expiresAt: details.expiresAt, purchasedAt: purchasedAt,
+                                               price: details.price, currency: details.currency,
+                                               storageLocation: location, shoppingLocation: store, commit: false)
+            return (stock, product, createdProduct)
+        } catch {
+            if createdProduct { shopping.context.delete(product) }
+            throw error
+        }
     }
 
     /// The location of the product's most recently added open stock item that has one.

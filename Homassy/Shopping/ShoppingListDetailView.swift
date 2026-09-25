@@ -2,9 +2,9 @@ import CoreData
 import HomassyCore
 import SwiftUI
 
-/// One list: a card grid of the items still to buy, by sort order. The checkbox buys the whole quantity into
-/// inventory (undoable), a tap on the card opens the purchase sheet, long press offers Edit and Delete
-/// (undoable), dragging reorders. `+` opens the stepwise add. Bought items leave the list.
+/// One list: a card grid of the items still to buy, by sort order. A tap on a card opens the purchase sheet,
+/// long press offers Edit and Delete (undoable), dragging reorders. `+` opens the stepwise add.
+/// Bought items leave the list.
 struct ShoppingListDetailView: View {
     struct Target: Identifiable { let id: UUID }
     /// Opens the add sheet, carrying what was typed in the quick bar.
@@ -19,15 +19,13 @@ struct ShoppingListDetailView: View {
     @State private var editing: Target?
     @State private var purchasing: Target?
     @State private var adding: AddRequest?
-    @State private var boughtCount = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(list: ShoppingList, services: ServiceContainer, undoQueue: UndoQueue) {
         self.list = list
         self.services = services
-        _model = State(initialValue: ShoppingListModel(service: services.shopping, inventory: services.inventory,
-                                                       list: list, undoQueue: undoQueue,
+        _model = State(initialValue: ShoppingListModel(service: services.shopping, list: list, undoQueue: undoQueue,
                                                        pending: services.pendingDeletions))
     }
 
@@ -74,7 +72,7 @@ struct ShoppingListDetailView: View {
         .sheet(item: $adding, onDismiss: { model.reload() }) { request in
             AddItemSheet(list: list, services: services, initialQuery: request.query)
         }
-        .sensoryFeedback(.success, trigger: boughtCount)
+        .sensoryFeedback(trigger: model.totalCount) { old, new in new < old ? .success : nil }
         .shoppingErrorAlert(model.errorMessage) { model.dismissError() }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
                                                         object: services.context)) { _ in model.reload() }
@@ -88,12 +86,7 @@ struct ShoppingListDetailView: View {
 
     /// Long press opens Edit and Delete; dragging a card onto another reorders.
     private func card(_ row: ShoppingListModel.Row) -> some View {
-        ShoppingItemCard(row: row) {
-            purchasing = Target(id: row.id)
-        } buy: {
-            withAnimation(reduceMotion ? nil : .snappy) { model.quickPurchase(row.id) }
-            boughtCount += 1
-        }
+        ShoppingItemCard(row: row) { purchasing = Target(id: row.id) }
         .contextMenu {
             editButton(row)
             deleteButton(row)

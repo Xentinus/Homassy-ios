@@ -1,8 +1,8 @@
 import Foundation
 import Observation
 
-/// The purchase sheet: how much was bought, from where, whether the rest stays on the list, and the
-/// optional price, expiry and storage location. Confirming puts the stock into inventory (undoable).
+/// The purchase sheet: how much was bought, whether the rest stays on the list, and whether it goes into
+/// inventory (default on) with the store, price, expiry and storage location. Confirming is undoable.
 @MainActor
 @Observable
 public final class PurchaseFormModel {
@@ -16,6 +16,8 @@ public final class PurchaseFormModel {
     public let unit: MeasureUnit
     public var quantityText: String
     public var keepRemainder = true
+    /// On by default; off, the item only leaves the list (user decision, 2026-09-25).
+    public var addToInventory = true
     public var priceText = ""
     public var currency: String
     public var hasExpiry = false
@@ -92,7 +94,7 @@ public final class PurchaseFormModel {
             return nil
         }
         var price: Decimal?
-        if let text = priceText.nilIfBlank {
+        if addToInventory, let text = priceText.nilIfBlank {
             guard let parsed = Quantity.parse(text, locale: locale) else {
                 errorMessage = coreLocalized("form.invalidPrice")
                 return nil
@@ -101,10 +103,11 @@ public final class PurchaseFormModel {
         }
         do {
             guard let space else { throw ServiceError.notFound }
-            let store = try selection.resolve(locations: locations, space: space)
+            let store = addToInventory ? try selection.resolve(locations: locations, space: space) : nil
             let details = PurchaseDetails(quantity: quantity, storeID: store?.publicId, keepRemainder: keepRemainder,
                                           price: price, currency: currency.nilIfBlank,
-                                          expiresAt: hasExpiry ? expiresAt : nil, storageLocationID: storageLocationID)
+                                          expiresAt: hasExpiry ? expiresAt : nil, storageLocationID: storageLocationID,
+                                          addToInventory: addToInventory)
             return try ShoppingPurchase.purchase(item, details: details, shopping: shopping, inventory: inventory,
                                                  pending: pending)
         } catch {
