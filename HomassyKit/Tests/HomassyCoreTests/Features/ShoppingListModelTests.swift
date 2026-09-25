@@ -1,0 +1,159 @@
+import Foundation
+import Testing
+@testable import HomassyCore
+
+@MainActor
+@Suite("Shopping list model")
+struct ShoppingListModelTests {
+    let stack: ShoppingTestStack
+    let queue = UndoQueue(window: .seconds(3600))
+    let pending = PendingDeletions()
+    let locale = Locale(identifier: "en_US")
+
+    init() throws { stack = try ShoppingTestStack() }
+
+    private func makeModel(_ list: ShoppingList) -> ShoppingListModel {
+        ShoppingListModel(service: stack.service, list: list, undoQueue: queue, pending: pending, locale: locale)
+    }
+
+    @Test func rowsAreSplitAndDescribed() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let spar = try stack.makeStore("Spar")
+        let deadline = stack.now.date.addingTimeInterval(86_400)
+        try stack.service.addItem(to: list, customName: "Alma", quantity: 2, unit: .kilogram, note: "piros",
+                                  deadline: deadline, shoppingLocation: spar)
+        let bread = try stack.service.addItem(to: list, customName: "Kenyér")
+        try stack.service.togglePurchased(bread)
+
+        let model = makeModel(list)
+        #expect(model.listName == "Heti")
+        #expect(model.remaining.map(\.name) == ["Alma"])
+        #expect(model.purchased.map(\.name) == ["Kenyér"])
+        let apple = try #require(model.remaining.first)
+        #expect(apple.quantityText == Quantity.format(2, unit: .kilogram, locale: locale))
+        #expect(apple.note == "piros")
+        #expect(apple.storeName == "Spar")
+        #expect(apple.deadline == deadline)
+        #expect(!apple.isPurchased)
+        #expect(model.purchased.first?.isPurchased == true)
+        #expect(model.purchasedCount == 1)
+        #expect(model.totalCount == 2)
+        #expect(apple.productID == nil)
+    }
+
+    @Test func productRowsCarryTheProductForTheCard() throws {
+        let milk = try stack.makeProduct("Tej", unit: .liter)
+        milk.image = Data([1, 2, 3])
+        try stack.context.save()
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        try stack.service.addItem(to: list, product: milk)
+        let row = try #require(makeModel(list).remaining.first)
+        #expect(row.productID == milk.publicId)
+        #expect(row.image == Data([1, 2, 3]))
+    }
+
+    @Test func tapPurchasesAndUndoRestores() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let bread = try stack.service.addItem(to: list, customName: "Kenyér")
+        let model = makeModel(list)
+
+        model.toggle(bread.publicId)
+        #expect(model.purchased.map(\.name) == ["Kenyér"])
+        #expect(model.remaining.isEmpty)
+        #expect(queue.pending.count == 1)
+
+        queue.undo(try #require(queue.pending.first).id)
+        model.reload()
+        #expect(model.remaining.map(\.name) == ["Kenyér"])
+        #expect(!bread.isPurchased)
+    }
+
+    @Test func deleteHidesAndUndoBringsBack() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let bread = try stack.service.addItem(to: list, customName: "Kenyér")
+        let model = makeModel(list)
+
+        model.delete(bread.publicId)
+        #expect(model.remaining.isEmpty)
+        queue.undo(try #require(queue.pending.first).id)
+        #expect(model.remaining.map(\.name) == ["Kenyér"])
+
+        model.delete(bread.publicId)
+        try queue.commitAll()
+        model.reload()
+        #expect(model.totalCount == 0)
+        #expect(try stack.service.items(in: list).isEmpty)
+    }
+
+    @Test func moveRemainingPersists() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        for name in ["A", "B", "C"] { try stack.service.addItem(to: list, customName: name) }
+        let model = makeModel(list)
+
+        model.moveRemaining(fromOffsets: IndexSet([2]), toOffset: 0)
+        #expect(model.remaining.map(\.name) == ["C", "A", "B"])
+        #expect(makeModel(list).remaining.map(\.name) == ["C", "A", "B"])
+    }
+
+    @Test func addDraftCreatesACustomItemAndClearsTheField() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let model = makeModel(list)
+        #expect(!model.canAddDraft)
+        model.draftText = "  Kenyér "
+        #expect(model.canAddDraft)
+        model.addDraft()
+        #expect(model.draftText.isEmpty)
+        #expect(model.remaining.map(\.name) == ["Kenyér"])
+        let firstID = try #require(model.remaining.first).id
+        let item = try #require(model.item(for: firstID))
+        #expect(item.customName == "Kenyér")
+        #expect(item.product == nil)
+    }
+
+    @Test func addDraftThatNamesAProductUsesTheProduct() throws {
+        let milk = try stack.makeProduct("Tej", unit: .liter)
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let model = makeModel(list)
+        model.draftText = "tej"
+        #expect(model.suggestions.map(\.name) == ["Tej"])
+        model.addDraft()
+        let firstID = try #require(model.remaining.first).id
+        let item = try #require(model.item(for: firstID))
+        #expect(item.product == milk)
+        #expect(item.unit == .liter)
+        #expect(model.suggestions.isEmpty)
+    }
+
+    @Test func addSuggestionAddsThatProduct() throws {
+        let sourCream = try stack.makeProduct("Tejföl")
+        try stack.makeProduct("Tej")
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let model = makeModel(list)
+        model.draftText = "tej"
+        let suggestion = try #require(model.suggestions.first { $0.name == "Tejföl" })
+        model.addSuggestion(suggestion.id)
+        let firstID = try #require(model.remaining.first).id
+        #expect(model.item(for: firstID)?.product == sourCream)
+        #expect(model.draftText.isEmpty)
+    }
+
+    @Test func blankDraftDoesNothing() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let model = makeModel(list)
+        model.draftText = "   "
+        model.addDraft()
+        #expect(model.totalCount == 0)
+        #expect(model.errorMessage == nil)
+    }
+
+    @Test func clearPurchasedRemovesBoughtItems() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        try stack.service.addItem(to: list, customName: "Alma")
+        let bread = try stack.service.addItem(to: list, customName: "Kenyér")
+        try stack.service.togglePurchased(bread)
+        let model = makeModel(list)
+        model.clearPurchased()
+        #expect(model.purchased.isEmpty)
+        #expect(model.remaining.map(\.name) == ["Alma"])
+    }
+}

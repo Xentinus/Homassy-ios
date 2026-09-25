@@ -860,6 +860,29 @@
         }
       }
     },
+    "shopping.error.generic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etwas ist schiefgelaufen. Versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong. Try again."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valami hiba történt. Próbáld újra."
+          }
+        }
+      }
+    },
     "space.personal.name" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1086,6 +1109,75 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sárga"
+          }
+        }
+      }
+    },
+    "store.message.failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Karten ist gerade nicht erreichbar."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Maps can’t be reached right now."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Az Apple Térkép most nem érhető el."
+          }
+        }
+      }
+    },
+    "store.message.needsLocation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erlaube den Standortzugriff oder verschiebe die Karte dorthin, wo du einkaufst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow location access, or move the map to where you shop."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engedélyezd a helyhozzáférést, vagy mozgasd a térképet oda, ahol vásárolsz."
+          }
+        }
+      }
+    },
+    "store.message.noResults" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier wurden keine Geschäfte gefunden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No shops found here."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Itt nem található üzlet."
           }
         }
       }
