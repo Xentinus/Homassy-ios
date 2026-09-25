@@ -3175,6 +3175,29 @@
         }
       }
     },
+    "household.sharing.cloudNeeded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud erforderlich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud needed"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud szükséges"
+          }
+        }
+      }
+    },
     "household.sharing.delete" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3217,6 +3240,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kilépés a háztartásból"
+          }
+        }
+      }
+    },
+    "household.sharing.manage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mitglieder und Teilen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Members and sharing"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tagok és megosztás"
           }
         }
       }
@@ -5080,6 +5126,75 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Betűmutató"
+          }
+        }
+      }
+    },
+    "share.accept.failed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beitritt zum Haushalt fehlgeschlagen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't join the household"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nem sikerült csatlakozni a háztartáshoz"
+          }
+        }
+      }
+    },
+    "share.accept.joining" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haushalt wird beigetreten …"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Joining household…"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Csatlakozás a háztartáshoz…"
+          }
+        }
+      }
+    },
+    "share.accept.retry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erneut versuchen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Újra"
           }
         }
       }

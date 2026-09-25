@@ -184,6 +184,29 @@ public final class SharingService {
         NSManagedObjectContext.mergeChanges(fromRemoteContextSave: [NSDeletedObjectsKey: Array(ids)], into: [context])
     }
 
+    // MARK: UICloudSharingController hooks
+
+    /// The sharing UI saved the share. NSPersistentCloudKitContainer also observes this itself
+    /// (iOS 16.4+); persisting keeps its cached copy current immediately.
+    public func saveUpdatedShare(_ share: CKShare, for space: Space) async throws {
+        _ = try await cloud.persistUpdatedShare(share, in: spaceStore.store(for: space))
+    }
+
+    /// The sharing UI stopped sharing (owner) or removed the current user (participant).
+    /// `zoneID` is captured when the controller opens, because the share may already be gone.
+    public func sharingStopped(for space: Space, zoneID: CKRecordZone.ID, wasOwner: Bool) async throws {
+        guard space.managedObjectContext != nil, !space.isDeleted else { return }
+        if wasOwner {
+            context.refresh(space, mergeChanges: true)   // data stays; household becomes unshared
+            return
+        }
+        do {
+            try await purge(space, zoneID: zoneID, in: persistence.sharedStore)
+        } catch let error as CKError where error.code == .zoneNotFound || error.code == .userDeletedZone {
+            // The container already removed the zone.
+        }
+    }
+
     // MARK: Private
 
     private func nextHouseholdSortOrder() throws -> Int32 {

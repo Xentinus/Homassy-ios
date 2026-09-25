@@ -48,6 +48,8 @@ final class AppModel {
     let persistence: PersistenceController
     /// The one cloud-sharing object; it also answers SpaceStore's share lookups.
     let cloudSharing: any CloudSharing
+    /// Accepts share invitations; exists before the account check, since a cold-start invitation arrives early.
+    let shareAcceptance: ShareAcceptanceModel
     let spaceStore: SpaceStore
     let accountGate: AccountGateModel
     let introduction: IntroductionModel
@@ -65,6 +67,8 @@ final class AppModel {
          introduction: IntroductionModel) {
         self.persistence = persistence
         cloudSharing = Self.makeCloudSharing(persistence: persistence)
+        shareAcceptance = ShareAcceptanceModel(persistence: persistence, cloud: cloudSharing,
+                                               containerIdentifier: Self.containerIdentifier)
         spaceStore = SpaceStore(persistence: persistence, sharing: cloudSharing)
         accountGate = AccountGateModel(provider: accountProvider, defaults: defaults)
         self.introduction = introduction

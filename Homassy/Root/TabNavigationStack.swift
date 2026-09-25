@@ -38,6 +38,9 @@ struct TabNavigationStack<Root: View>: View {
         .onAppear {
             guard !restored else { return }
             restored = true
+            #if DEBUG
+            if UITestHooks.ignoresRestoredSceneState { return }
+            #endif
             path = NavigationPathCoding.decode(storedPath)
         }
         .onChange(of: path) { _, newPath in

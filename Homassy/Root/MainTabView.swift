@@ -57,6 +57,9 @@ struct MainTabView: View {
             Text(verbatim: archiveRouter.errorMessage ?? "")
         }
         .task { backupReminder.recordFirstUseIfNeeded() }
+        #if DEBUG
+        .task { if UITestHooks.ignoresRestoredSceneState { selectedTab = .inventory } }
+        #endif
     }
 }
 
