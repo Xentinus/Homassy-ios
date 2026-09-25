@@ -1,0 +1,21 @@
+{
+  "appVersion" : "1.0 (1)",
+  "counts" : {
+    "consumptionLogs" : 1,
+    "images" : 0,
+    "inventoryEvents" : 4,
+    "inventoryItems" : 2,
+    "members" : 2,
+    "products" : 2,
+    "shoppingListItems" : 2,
+    "shoppingLists" : 1,
+    "shoppingLocations" : 1,
+    "storageLocations" : 1
+  },
+  "exportedAt" : "2026-09-24T10:00:00.000+02:00",
+  "locale" : "hu-HU",
+  "schemaVersion" : 1,
+  "spaceKind" : "household",
+  "spaceName" : "Otthon",
+  "timeZone" : "Europe/Budapest"
+}

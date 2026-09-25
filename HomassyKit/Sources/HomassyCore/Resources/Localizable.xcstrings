@@ -1,6 +1,75 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "archive.error.damaged" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Datei ist beschädigt oder kein Homassy-Archiv."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This file is damaged or is not a Homassy archive."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez a fájl sérült, vagy nem Homassy-archívum."
+          }
+        }
+      }
+    },
+    "archive.error.newerVersion" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Datei wurde mit einer neueren Version von Homassy erstellt. Aktualisiere die App und versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This file was made by a newer version of Homassy. Update the app, then try again."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ezt a fájlt a Homassy egy újabb verziója készítette. Frissítsd az alkalmazást, majd próbáld újra."
+          }
+        }
+      }
+    },
+    "archive.error.unsavedChanges" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließe die letzte Änderung ab oder mache sie rückgängig und versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish or undo the last change, then try again."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fejezd be vagy vond vissza az utolsó módosítást, majd próbáld újra."
+          }
+        }
+      }
+    },
     "error.expiryBeforePurchase" : {
       "extractionState" : "manual",
       "localizations" : {

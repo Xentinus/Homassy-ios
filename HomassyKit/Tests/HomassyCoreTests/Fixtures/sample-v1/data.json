@@ -1,0 +1,235 @@
+{
+  "consumptionLogs" : [
+    {
+      "consumedAt" : "2026-09-21T07:30:00.000+02:00",
+      "createdAt" : "2026-09-21T07:30:00.000+02:00",
+      "createdBy" : "_member0002",
+      "inventoryItem" : "60000000-0000-4000-8000-000000000001",
+      "publicId" : "70000000-0000-4000-8000-000000000001",
+      "quantity" : "0.5",
+      "remaining" : "1.5",
+      "updatedAt" : "2026-09-21T07:30:00.000+02:00",
+      "updatedBy" : "_member0002"
+    }
+  ],
+  "inventoryEvents" : [
+    {
+      "createdAt" : "2026-09-20T17:50:00.000+02:00",
+      "createdBy" : "_owner0001",
+      "inventoryItem" : "60000000-0000-4000-8000-000000000001",
+      "kind" : "added",
+      "occurredAt" : "2026-09-20T17:50:00.000+02:00",
+      "product" : "30000000-0000-4000-8000-000000000001",
+      "publicId" : "A0000000-0000-4000-8000-000000000001",
+      "quantity" : "2",
+      "toLocationName" : "Hűtő",
+      "unit" : "liter",
+      "updatedAt" : "2026-09-20T17:50:00.000+02:00",
+      "updatedBy" : "_owner0001"
+    },
+    {
+      "createdAt" : "2026-09-21T07:30:00.000+02:00",
+      "createdBy" : "_member0002",
+      "fromLocationName" : "Hűtő",
+      "inventoryItem" : "60000000-0000-4000-8000-000000000001",
+      "kind" : "consumed",
+      "occurredAt" : "2026-09-21T07:30:00.000+02:00",
+      "product" : "30000000-0000-4000-8000-000000000001",
+      "publicId" : "A0000000-0000-4000-8000-000000000002",
+      "quantity" : "0.5",
+      "unit" : "liter",
+      "updatedAt" : "2026-09-21T07:30:00.000+02:00",
+      "updatedBy" : "_member0002"
+    },
+    {
+      "createdAt" : "2026-03-05T11:05:00.000+01:00",
+      "createdBy" : "_owner0001",
+      "inventoryItem" : "60000000-0000-4000-8000-000000000002",
+      "kind" : "added",
+      "occurredAt" : "2026-03-05T11:05:00.000+01:00",
+      "product" : "30000000-0000-4000-8000-000000000002",
+      "publicId" : "A0000000-0000-4000-8000-000000000003",
+      "quantity" : "0.1",
+      "unit" : "kilogram",
+      "updatedAt" : "2026-03-05T11:05:00.000+01:00",
+      "updatedBy" : "_owner0001"
+    },
+    {
+      "createdAt" : "2026-09-10T20:00:00.000+02:00",
+      "createdBy" : "_member0002",
+      "fromLocationName" : "Hűtő",
+      "kind" : "deleted",
+      "occurredAt" : "2026-09-10T20:00:00.000+02:00",
+      "product" : "30000000-0000-4000-8000-000000000001",
+      "publicId" : "A0000000-0000-4000-8000-000000000004",
+      "quantity" : "1",
+      "unit" : "liter",
+      "updatedAt" : "2026-09-10T20:00:00.000+02:00",
+      "updatedBy" : "_member0002"
+    }
+  ],
+  "inventoryItems" : [
+    {
+      "createdAt" : "2026-09-20T17:50:00.000+02:00",
+      "createdBy" : "_owner0001",
+      "currency" : "HUF",
+      "expiresAt" : "2026-09-28T00:00:00.000+02:00",
+      "isFullyConsumed" : false,
+      "price" : "459",
+      "product" : "30000000-0000-4000-8000-000000000001",
+      "publicId" : "60000000-0000-4000-8000-000000000001",
+      "purchasedAt" : "2026-09-20T17:40:00.000+02:00",
+      "quantity" : "1.5",
+      "shoppingLocation" : "50000000-0000-4000-8000-000000000001",
+      "storageLocation" : "40000000-0000-4000-8000-000000000001",
+      "unit" : "liter",
+      "updatedAt" : "2026-09-21T07:30:00.000+02:00",
+      "updatedBy" : "_member0002"
+    },
+    {
+      "createdAt" : "2026-03-05T11:05:00.000+01:00",
+      "createdBy" : "_owner0001",
+      "currency" : "EUR",
+      "isFullyConsumed" : false,
+      "price" : "1.99",
+      "product" : "30000000-0000-4000-8000-000000000002",
+      "publicId" : "60000000-0000-4000-8000-000000000002",
+      "purchasedAt" : "2026-03-05T11:00:00.000+01:00",
+      "quantity" : "0.1",
+      "unit" : "kilogram",
+      "updatedAt" : "2026-03-05T11:05:00.000+01:00",
+      "updatedBy" : "_owner0001"
+    }
+  ],
+  "members" : [
+    {
+      "colorSeed" : "_owner0001",
+      "createdAt" : "2026-01-10T09:00:00.000+01:00",
+      "createdBy" : "_owner0001",
+      "displayName" : "Béla",
+      "publicId" : "20000000-0000-4000-8000-000000000001",
+      "updatedAt" : "2026-01-10T09:00:00.000+01:00",
+      "updatedBy" : "_owner0001",
+      "userRecordName" : "_owner0001"
+    },
+    {
+      "colorSeed" : "_member0002",
+      "createdAt" : "2026-02-01T12:00:00.000+01:00",
+      "createdBy" : "_member0002",
+      "displayName" : "Anna",
+      "publicId" : "20000000-0000-4000-8000-000000000002",
+      "updatedAt" : "2026-02-01T12:00:00.000+01:00",
+      "updatedBy" : "_member0002",
+      "userRecordName" : "_member0002"
+    }
+  ],
+  "products" : [
+    {
+      "barcode" : "5998200110039",
+      "brand" : "Mizo",
+      "category" : "Tejtermék",
+      "createdAt" : "2026-01-12T10:00:00.000+01:00",
+      "createdBy" : "_owner0001",
+      "defaultUnit" : "liter",
+      "isFavorite" : true,
+      "name" : "Tej",
+      "publicId" : "30000000-0000-4000-8000-000000000001",
+      "updatedAt" : "2026-09-01T08:15:00.000+02:00",
+      "updatedBy" : "_member0002",
+      "url" : "https://www.mizo.hu/termekek/tej"
+    },
+    {
+      "category" : "Alapanyag",
+      "createdAt" : "2026-01-12T10:05:00.000+01:00",
+      "createdBy" : "_owner0001",
+      "defaultUnit" : "kilogram",
+      "isFavorite" : false,
+      "name" : "Liszt",
+      "notes" : "BL55",
+      "publicId" : "30000000-0000-4000-8000-000000000002",
+      "updatedAt" : "2026-01-12T10:05:00.000+01:00",
+      "updatedBy" : "_owner0001"
+    }
+  ],
+  "shoppingListItems" : [
+    {
+      "createdAt" : "2026-09-18T19:00:00.000+02:00",
+      "createdBy" : "_member0002",
+      "deadline" : "2026-09-26T00:00:00.000+02:00",
+      "isPurchased" : false,
+      "list" : "80000000-0000-4000-8000-000000000001",
+      "note" : "Laktózmentes",
+      "product" : "30000000-0000-4000-8000-000000000001",
+      "publicId" : "90000000-0000-4000-8000-000000000001",
+      "quantity" : "2",
+      "shoppingLocation" : "50000000-0000-4000-8000-000000000001",
+      "sortOrder" : 0,
+      "unit" : "liter",
+      "updatedAt" : "2026-09-18T19:00:00.000+02:00",
+      "updatedBy" : "_member0002"
+    },
+    {
+      "createdAt" : "2026-09-18T19:01:00.000+02:00",
+      "createdBy" : "_member0002",
+      "customName" : "Kenyér",
+      "isPurchased" : true,
+      "list" : "80000000-0000-4000-8000-000000000001",
+      "publicId" : "90000000-0000-4000-8000-000000000002",
+      "purchasedAt" : "2026-09-20T17:42:00.000+02:00",
+      "quantity" : "1",
+      "sortOrder" : 1,
+      "unit" : "piece",
+      "updatedAt" : "2026-09-20T17:42:00.000+02:00",
+      "updatedBy" : "_owner0001"
+    }
+  ],
+  "shoppingLists" : [
+    {
+      "color" : "#E0A458",
+      "createdAt" : "2026-01-15T08:00:00.000+01:00",
+      "createdBy" : "_owner0001",
+      "name" : "Heti bevásárlás",
+      "publicId" : "80000000-0000-4000-8000-000000000001",
+      "sortOrder" : 0,
+      "updatedAt" : "2026-09-20T17:42:00.000+02:00",
+      "updatedBy" : "_member0002"
+    }
+  ],
+  "shoppingLocations" : [
+    {
+      "createdAt" : "2026-03-05T10:55:00.000+01:00",
+      "createdBy" : "_owner0001",
+      "lastUsedAt" : "2026-09-20T17:45:00.000+02:00",
+      "latitude" : 47.4979,
+      "longitude" : 19.0402,
+      "mapItemIdentifier" : "I6FD7682FD36BB3BE",
+      "name" : "Spar Market",
+      "publicId" : "50000000-0000-4000-8000-000000000001",
+      "updatedAt" : "2026-09-20T17:45:00.000+02:00",
+      "updatedBy" : "_owner0001"
+    }
+  ],
+  "space" : {
+    "createdAt" : "2026-01-10T09:00:00.000+01:00",
+    "createdBy" : "_owner0001",
+    "kind" : "household",
+    "name" : "Otthon",
+    "publicId" : "10000000-0000-4000-8000-000000000001",
+    "sortOrder" : 1,
+    "updatedAt" : "2026-09-20T18:30:00.000+02:00",
+    "updatedBy" : "_owner0001"
+  },
+  "storageLocations" : [
+    {
+      "color" : "#4A90D9",
+      "createdAt" : "2026-01-10T09:05:00.000+01:00",
+      "createdBy" : "_owner0001",
+      "isFreezer" : false,
+      "name" : "Hűtő",
+      "publicId" : "40000000-0000-4000-8000-000000000001",
+      "sortOrder" : 0,
+      "updatedAt" : "2026-01-10T09:05:00.000+01:00",
+      "updatedBy" : "_owner0001"
+    }
+  ]
+}
