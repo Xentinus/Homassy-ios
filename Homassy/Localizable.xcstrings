@@ -300,75 +300,6 @@
         }
       }
     },
-    "archive.entity.consumptionLogs" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verbrauchsverlauf"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Consumption history"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fogyasztási előzmények"
-          }
-        }
-      }
-    },
-    "archive.entity.inventoryEvents" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verlaufseinträge"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "History entries"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Előzmény-bejegyzések"
-          }
-        }
-      }
-    },
-    "archive.entity.inventoryItems" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bestandsartikel"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Inventory items"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Készletelemek"
-          }
-        }
-      }
-    },
     "archive.entity.members" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -411,29 +342,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Termékek"
-          }
-        }
-      }
-    },
-    "archive.entity.shoppingListItems" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Listeneinträge"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "List items"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Listaelemek"
           }
         }
       }
@@ -553,6 +461,29 @@
         }
       }
     },
+    "archive.group.stock" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bestand"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stock"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Készlet"
+          }
+        }
+      }
+    },
     "archive.import.appVersion" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -572,6 +503,75 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Alkalmazásverzió"
+          }
+        }
+      }
+    },
+    "archive.import.auto %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld · automatisch"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld · automatic"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld · automatikus"
+          }
+        }
+      }
+    },
+    "archive.import.auto.shoppingLocations %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wegen Bestand und Listen hinzugefügte Geschäfte: %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stores added for the stock and lists: %lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A készlet és a listák miatt bekerülő üzletek: %lld"
+          }
+        }
+      }
+    },
+    "archive.import.auto.storageLocations %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wegen des Bestands hinzugefügte Lagerorte: %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storage locations added for the stock: %lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A készlet miatt bekerülő tárolóhelyek: %lld"
           }
         }
       }
@@ -783,6 +783,29 @@
         }
       }
     },
+    "archive.import.lists.detail %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einträge: %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Items: %lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tételek: %lld"
+          }
+        }
+      }
+    },
     "archive.import.loading" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -944,6 +967,144 @@
         }
       }
     },
+    "archive.import.nothingSelected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle mindestens etwas zum Importieren aus."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose at least one thing to import."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Válassz ki legalább egy dolgot az importáláshoz."
+          }
+        }
+      }
+    },
+    "archive.import.pickProducts %lld %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Produkte auswählen · %1$lld / %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose products · %1$lld / %2$lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termékek kiválasztása · %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "archive.import.products.all" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Összes"
+          }
+        }
+      }
+    },
+    "archive.import.products.none" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Egyik sem"
+          }
+        }
+      }
+    },
+    "archive.import.products.search" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name, Marke oder Barcode"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name, brand or barcode"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Név, márka vagy vonalkód"
+          }
+        }
+      }
+    },
+    "archive.import.products.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Produkte auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose products"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termékek kiválasztása"
+          }
+        }
+      }
+    },
     "archive.import.source" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -967,6 +1128,29 @@
         }
       }
     },
+    "archive.import.stock.detail %lld %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbrauch: %1$lld · Verlauf: %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consumption: %1$lld · History: %2$lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fogyasztás: %1$lld · Előzmények: %2$lld"
+          }
+        }
+      }
+    },
     "archive.import.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -986,6 +1170,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Importálás"
+          }
+        }
+      }
+    },
+    "archive.import.unlinked %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listeneinträge ohne Produkt: %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "List items arriving without a product: %lld"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termék nélkül érkező listatételek: %lld"
           }
         }
       }
