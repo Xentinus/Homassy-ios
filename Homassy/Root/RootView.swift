@@ -54,6 +54,7 @@ struct RootView: View {
                     }
                     .environment(app.shareAcceptance)
                     .environment(attributionTracker(services))
+                    .environment(services.syncStatus)
                     .environment(\.memberLookup, memberLookup(services))
                     .onChange(of: app.selection.selectedSpaceID, initial: true) { evaluateMemberSetup() }
                     .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)

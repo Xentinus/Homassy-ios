@@ -207,6 +207,38 @@ public final class SharingService {
         }
     }
 
+    // MARK: Sync problems (P5-05)
+
+    /// The joined household whose share lives in `zone`.
+    public func space(inZone zone: ZoneReference) -> Space? {
+        let request = NSFetchRequest<Space>(entityName: "Space")
+        request.affectedStores = [persistence.sharedStore]
+        let spaces = (try? context.fetch(request)) ?? []
+        return spaces.first { space in
+            guard let zoneID = cloud.share(for: space)?.recordID.zoneID else { return false }
+            return ZoneReference(zoneID) == zone
+        }
+    }
+
+    /// Removes a joined household's local copy after its zone disappeared. A zone that is
+    /// already gone on the server is not an error.
+    public func removeLocalCopy(of space: Space) async throws {
+        guard spaceStore.store(for: space) === persistence.sharedStore else { throw SharingError.notParticipant }
+        let zoneID = cloud.share(for: space)?.recordID.zoneID
+        guard let zoneID else {
+            for id in ObjectGraph.objectIDs(reachableFrom: space) {
+                context.delete(try context.existingObject(with: id))
+            }
+            try context.save()
+            return
+        }
+        do {
+            try await purge(space, zoneID: zoneID, in: persistence.sharedStore)
+        } catch let error as CKError where error.code == .zoneNotFound || error.code == .userDeletedZone {
+            // Already gone on the server; the container clears the local graph on its next pass.
+        }
+    }
+
     // MARK: Private
 
     private func nextHouseholdSortOrder() throws -> Int32 {

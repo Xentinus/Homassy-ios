@@ -9,6 +9,7 @@ struct MainTabView: View {
     @Environment(BackupReminder.self) private var backupReminder
     @Environment(UndoQueue.self) private var undoQueue
     @Environment(SpaceSelection.self) private var selection
+    @Environment(SyncStatusModel.self) private var syncStatus
 
     @ViewBuilder
     private var inventoryRoot: some View {
@@ -37,6 +38,8 @@ struct MainTabView: View {
             Tab(AppTab.household.title, systemImage: AppTab.household.systemImage, value: AppTab.household) {
                 TabNavigationStack(tab: .household) { HouseholdView() }
             }
+            // A persistent sync problem: the details wait at the top of the Household tab (P5-05).
+            .badge(syncStatus.bannerProblem == nil ? nil : Text(verbatim: "!"))
             Tab(AppTab.search.title, systemImage: AppTab.search.systemImage, value: AppTab.search, role: .search) {
                 TabNavigationStack(tab: .search) { SearchView() }
             }
@@ -67,14 +70,14 @@ struct MainTabView: View {
 #Preview("Portrait") {
     let model = AppModel.preview()
     MainTabView().environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!).environment(model.services!.attribution)
+        .environment(model.services!).environment(model.services!.attribution).environment(model.services!.syncStatus)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
     let model = AppModel.preview()
     MainTabView().environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!).environment(model.services!.attribution)
+        .environment(model.services!).environment(model.services!.attribution).environment(model.services!.syncStatus)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 #endif

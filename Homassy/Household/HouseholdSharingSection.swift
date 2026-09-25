@@ -40,11 +40,21 @@ struct HouseholdSpaceSections: View {
             if let sharing = services.sharing, space.kind == .household {
                 let role = sharing.role(for: space)
                 sharingSection(sharing, role: role)
+                iCloudSection
                 ArchiveSection(space: space)
                 destructiveSection(sharing, role: role)
             } else {
+                iCloudSection
                 ArchiveSection(space: space)
             }
+        }
+    }
+
+    private var iCloudSection: some View {
+        Section {
+            SyncStatusRow()
+        } header: {
+            Text(verbatim: "iCloud")
         }
     }
 
