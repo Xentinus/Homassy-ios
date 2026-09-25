@@ -46,6 +46,8 @@ final class AppModel {
     }
 
     let persistence: PersistenceController
+    /// The one cloud-sharing object; it also answers SpaceStore's share lookups.
+    let cloudSharing: any CloudSharing
     let spaceStore: SpaceStore
     let accountGate: AccountGateModel
     let introduction: IntroductionModel
@@ -62,7 +64,8 @@ final class AppModel {
          defaults: UserDefaults = AppModel.appDefaults,
          introduction: IntroductionModel) {
         self.persistence = persistence
-        spaceStore = SpaceStore(persistence: persistence, sharing: ContainerShareLookup(container: persistence.container))
+        cloudSharing = Self.makeCloudSharing(persistence: persistence)
+        spaceStore = SpaceStore(persistence: persistence, sharing: cloudSharing)
         accountGate = AccountGateModel(provider: accountProvider, defaults: defaults)
         self.introduction = introduction
     }
@@ -115,11 +118,30 @@ final class AppModel {
                              defaults: seen,
                              introduction: IntroductionModel(defaults: seen, notifications: UITestNotificationAuthorizer()))
         model.personalSpace = try? model.spaceStore.bootstrapPersonalSpace(userRecordName: UITestHooks.userRecordName)
-        model.services = ServiceContainer(spaceStore: model.spaceStore, context: model.persistence.viewContext,
-                                          userRecordName: UITestHooks.userRecordName, persistence: model.persistence)
+        model.services = ServiceContainer(
+            spaceStore: model.spaceStore, context: model.persistence.viewContext,
+            userRecordName: UITestHooks.userRecordName, persistence: model.persistence,
+            sharing: SharingService(persistence: model.persistence, spaceStore: model.spaceStore,
+                                    cloud: model.cloudSharing, userRecordName: UITestHooks.userRecordName))
         return model
     }
     #endif
+
+    /// ContainerCloudSharing only in CLOUDKIT_ENABLED builds outside UI tests; LocalCloudSharing otherwise.
+    static func makeCloudSharing(persistence: PersistenceController) -> any CloudSharing {
+        #if DEBUG
+        if UITestHooks.isActive {
+            let suite = "uiTest.localSharing"
+            UserDefaults.standard.removePersistentDomain(forName: suite)
+            return LocalCloudSharing(persistence: persistence, defaults: UserDefaults(suiteName: suite) ?? .standard)
+        }
+        #endif
+        #if CLOUDKIT_ENABLED
+        return ContainerCloudSharing(container: persistence.container)
+        #else
+        return LocalCloudSharing(persistence: persistence, defaults: appDefaults)
+        #endif
+    }
 
     /// Creates or finds the Personal space once the account is known. Safe to call repeatedly.
     func bootstrapPersonalSpace() {
@@ -148,9 +170,11 @@ final class AppModel {
               let personalSpace, let userRecordName = accountGate.userRecordName else { return }
         isBuildingServices = true
         defer { isBuildingServices = false }
+        let sharingService = SharingService(persistence: persistence, spaceStore: spaceStore,
+                                            cloud: cloudSharing, userRecordName: userRecordName)
         let container = ServiceContainer(spaceStore: spaceStore, context: persistence.viewContext,
                                          userRecordName: userRecordName, notificationCenter: Self.notificationCenter,
-                                         persistence: persistence)
+                                         persistence: persistence, sharing: sharingService)
         #if DEBUG
         if UITestHooks.isSeeded {
             try? await UITestSeed.populate(container, in: personalSpace)

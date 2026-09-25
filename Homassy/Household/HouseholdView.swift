@@ -2,7 +2,7 @@ import HomassyCore
 import SwiftUI
 
 /// The Household tab root: settings of the selected space. P2-05 adds storage locations;
-/// P5 adds members, sharing and sync status.
+/// P5-01 adds sharing and delete/leave; P5 adds members and sync status.
 struct HouseholdView: View {
     @Environment(ServiceContainer.self) private var services
     @Environment(SpaceSelection.self) private var selection
@@ -21,7 +21,7 @@ struct HouseholdView: View {
             }
 
             if let space = services.activeSpace(selectedID: selection.selectedSpaceID) {
-                ArchiveSection(space: space)
+                HouseholdSpaceSections(space: space)
             }
         }
         .navigationTitle(AppTab.household.title)

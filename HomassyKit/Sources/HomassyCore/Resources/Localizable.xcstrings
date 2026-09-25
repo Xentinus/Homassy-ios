@@ -884,6 +884,144 @@
         }
       }
     },
+    "sharing.error.cloudUnavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teilen braucht iCloud – verfügbar in der veröffentlichten App."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sharing needs iCloud — available in the released app."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A megosztáshoz iCloud kell – a kiadott alkalmazásban érhető el."
+          }
+        }
+      }
+    },
+    "sharing.error.createdButNotShared" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Haushalt wurde erstellt, konnte aber noch nicht geteilt werden. Versuche es im Tab „Haushalt“ erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The household was created but couldn't be shared yet. Try sharing it again from the Household tab."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A háztartás létrejött, de még nem sikerült megosztani. Próbáld újra a Háztartás lapon."
+          }
+        }
+      }
+    },
+    "sharing.error.notOwner" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nur der Eigentümer des Haushalts kann das tun."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the household's owner can do this."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ezt csak a háztartás tulajdonosa teheti meg."
+          }
+        }
+      }
+    },
+    "sharing.error.notParticipant" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Haushalt gehört dir. Lösche ihn, statt ihn zu verlassen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You own this household. Delete it instead of leaving."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ennek a háztartásnak te vagy a tulajdonosa. Kilépés helyett töröld."
+          }
+        }
+      }
+    },
+    "sharing.error.notShared" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Haushalt ist noch nicht geteilt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This household isn't shared yet."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez a háztartás még nincs megosztva."
+          }
+        }
+      }
+    },
+    "sharing.error.personalSpace" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das ist für deinen persönlichen Bereich nicht verfügbar."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This isn't available for your Personal space."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez a Személyes teredben nem érhető el."
+          }
+        }
+      }
+    },
     "shopping.error.generic" : {
       "extractionState" : "manual",
       "localizations" : {

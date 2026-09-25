@@ -47,7 +47,7 @@ final class NavigationShellUITests: XCTestCase {
     }
 
     @MainActor
-    func testSpaceSwitcherListsPersonalAndDisabledNewHousehold() throws {
+    func testSpaceSwitcherListsPersonalAndNewHousehold() throws {
         let app = XCUIApplication.homassy()
         app.launch()
         XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
@@ -60,7 +60,7 @@ final class NavigationShellUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Personal"].firstMatch.waitForExistence(timeout: 5))
         let newHousehold = app.buttons["New household"].firstMatch
         XCTAssertTrue(newHousehold.exists)
-        XCTAssertFalse(newHousehold.isEnabled)
+        XCTAssertTrue(newHousehold.isEnabled)      // live since P5-01
     }
 
     /// Shopping's `+` menu is live since P4-03.

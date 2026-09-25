@@ -4,6 +4,7 @@ import Testing
 
 /// The rules NSPersistentCloudKitContainer enforces when it loads a CloudKit-backed store.
 /// This checks them without CloudKit, so a bad model fails in `swift test` instead of at launch.
+@MainActor
 struct CloudKitModelRulesTests {
     private var entities: [NSEntityDescription] { HomassyModel.shared.entities }
 

@@ -4,6 +4,7 @@ import SwiftUI
 /// Routes between the account check, the gate and the main shell.
 struct RootView: View {
     @Environment(AppModel.self) private var app
+    @State private var exportTarget: Space?
 
     var body: some View {
         Group {
@@ -35,6 +36,8 @@ struct RootView: View {
         case .available:
             if let services = app.services {
                 MainTabView()
+                    .environment(\.requestExport, ExportRequestAction { space in exportTarget = space })
+                    .archiveExporting($exportTarget)
                     .environment(services)
                     .expiryNotifications(services.notifications, context: services.context)
             } else if app.bootstrapError != nil {
