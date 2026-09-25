@@ -32,6 +32,23 @@ public struct StoreResult: Sendable, Equatable, Hashable, Identifiable {
 public protocol StoreSearching: Sendable {
     func nearby(latitude: Double, longitude: Double, radiusMeters: Double) async throws -> [StoreResult]
     func search(text: String, latitude: Double, longitude: Double) async throws -> [StoreResult]
+    /// Addresses and places (streets, towns) for moving the map there.
+    func places(text: String, latitude: Double, longitude: Double) async throws -> [PlaceResult]
+}
+
+/// An address or place from a search; the store picker moves the map to it.
+public struct PlaceResult: Sendable, Equatable, Hashable, Identifiable {
+    public var id: String
+    public var title: String
+    public var subtitle: String?
+    public var coordinate: Coordinate
+
+    public init(id: String, title: String, subtitle: String? = nil, coordinate: Coordinate) {
+        self.id = id
+        self.title = title
+        self.subtitle = subtitle
+        self.coordinate = coordinate
+    }
 }
 
 public struct Coordinate: Sendable, Equatable, Hashable {

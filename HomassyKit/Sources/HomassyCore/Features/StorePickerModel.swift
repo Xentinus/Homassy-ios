@@ -28,6 +28,8 @@ public final class StorePickerModel {
     }
 
     public static let nearbyRadiusMeters: Double = 2_000
+    /// The area search follows the visible map, within these bounds.
+    public static let areaRadiusRange: ClosedRange<Double> = 250...5_000
 
     public var tab: Tab = .recent
     public var query = ""
@@ -35,15 +37,19 @@ public final class StorePickerModel {
     public private(set) var recent: [RecentStore] = []
     public private(set) var nearby: [StoreResult] = []
     public private(set) var searchResults: [StoreResult] = []
+    /// Addresses and places matching the query; picking one moves the map there.
+    public private(set) var placeResults: [PlaceResult] = []
+    /// Where the view should move the map (the user's position, or a place from the search).
+    public private(set) var cameraTarget: Coordinate?
     public private(set) var isLoading = false
     public private(set) var message: Message?
     public private(set) var userCoordinate: Coordinate?
     /// A shop tapped on the map (a result marker or any Apple Maps place), waiting for "Choose".
     public private(set) var selectedPlace: StoreResult?
 
-    /// Where to search: the user, else the map the user is looking at, else the last store used.
-    public var searchCenter: Coordinate? { userCoordinate ?? mapCenter ?? recent.lazy.compactMap(\.coordinate).first }
-    public var isShowingSearch: Bool { !searchResults.isEmpty }
+    /// Where to search: the map the user is looking at, else the user, else the last store used.
+    public var searchCenter: Coordinate? { mapCenter ?? userCoordinate ?? recent.lazy.compactMap(\.coordinate).first }
+    public var isShowingSearch: Bool { !searchResults.isEmpty || !placeResults.isEmpty }
 
     @ObservationIgnored private let search: any StoreSearching
     @ObservationIgnored private let locations: ShoppingLocationService
@@ -79,14 +85,17 @@ public final class StorePickerModel {
 
         var access = location.access
         if access == .notDetermined { access = await location.requestWhenInUse() }
+        var fresh: Coordinate?
         if access == .authorized, let coordinate = await location.currentCoordinate() {
             userCoordinate = coordinate
+            fresh = coordinate
         }
-        guard let center = searchCenter else {
+        guard let center = fresh ?? searchCenter else {
             nearby = []
             message = .needsLocation
             return
         }
+        if fresh != nil { cameraTarget = center }
         do {
             nearby = try await search.nearby(latitude: center.latitude, longitude: center.longitude,
                                              radiusMeters: Self.nearbyRadiusMeters)
@@ -97,10 +106,35 @@ public final class StorePickerModel {
         }
     }
 
+    /// The map was moved: shops in the visible area (radius clamped to `areaRadiusRange`).
+    public func searchArea(center: Coordinate, radiusMeters: Double) async {
+        mapCenter = center
+        let radius = min(max(radiusMeters, Self.areaRadiusRange.lowerBound), Self.areaRadiusRange.upperBound)
+        do {
+            let found = try await search.nearby(latitude: center.latitude, longitude: center.longitude,
+                                                radiusMeters: radius)
+            guard !Task.isCancelled else { return }
+            nearby = found
+            message = found.isEmpty ? .noResults : nil
+        } catch {
+            guard !Task.isCancelled else { return }
+            message = .failed
+        }
+    }
+
+    /// Moves the map to a place from the search and shows the shops around it.
+    public func goTo(_ place: PlaceResult) async {
+        tab = .nearby
+        clearSearch()
+        cameraTarget = place.coordinate
+        await searchArea(center: place.coordinate, radiusMeters: Self.nearbyRadiusMeters)
+    }
+
     public func runSearch() async {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
             searchResults = []
+            placeResults = []
             return
         }
         guard let center = searchCenter else {
@@ -110,17 +144,27 @@ public final class StorePickerModel {
         isLoading = true
         defer { isLoading = false }
         message = nil
-        do {
-            searchResults = try await search.search(text: text, latitude: center.latitude, longitude: center.longitude)
-            if searchResults.isEmpty { message = .noResults }
-        } catch {
-            searchResults = []
+        async let shops = Self.result { try await self.search.search(text: text, latitude: center.latitude,
+                                                                     longitude: center.longitude) }
+        async let places = Self.result { try await self.search.places(text: text, latitude: center.latitude,
+                                                                      longitude: center.longitude) }
+        let (shopResult, placeResult) = await (shops, places)
+        searchResults = (try? shopResult.get()) ?? []
+        placeResults = (try? placeResult.get()) ?? []
+        if case .failure = shopResult, case .failure = placeResult {
             message = .failed
+        } else if searchResults.isEmpty && placeResults.isEmpty {
+            message = .noResults
         }
+    }
+
+    private static func result<T: Sendable>(_ work: () async throws -> T) async -> Result<T, any Error> {
+        do { return .success(try await work()) } catch { return .failure(error) }
     }
 
     public func clearSearch() {
         searchResults = []
+        placeResults = []
         if message == .noResults { message = nil }
     }
 

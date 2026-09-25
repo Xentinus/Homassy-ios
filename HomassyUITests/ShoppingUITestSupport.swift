@@ -24,16 +24,33 @@ extension XCUIApplication {
 
     func openShoppingList(named name: String) {
         buttons["shopping.list.\(name)"].tap()
-        XCTAssertTrue(textFields["shopping.addItem.field"].waitForExistence(timeout: 5))
+        XCTAssertTrue(buttons["shopping.detail.add"].waitForExistence(timeout: 5))
     }
 
-    /// Adds a custom item (a name that is not one of the seeded products) through the add bar.
+    /// Adds an item through the stepwise sheet: a custom name (not one of the seeded products), 1 piece, any store.
     func addShoppingItem(_ name: String) {
-        let field = textFields["shopping.addItem.field"]
-        field.tap()
-        field.typeText(name + "\n")
+        buttons["shopping.detail.add"].tap()
+        let query = textFields["shopping.add.query"]
+        XCTAssertTrue(query.waitForExistence(timeout: 5))
+        query.tap()
+        query.typeText(name)
+        buttons["shopping.add.next"].tap()
+        XCTAssertTrue(textFields["shopping.add.quantity"].waitForExistence(timeout: 5))
+        buttons["shopping.add.next"].tap()
+        let confirm = buttons["shopping.add.confirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
         XCTAssertTrue(buttons["shopping.item.\(name)"].waitForExistence(timeout: 5))
     }
+
+    /// Long-press menu on an item card.
+    func shoppingItemMenu(_ name: String, action: String) {
+        buttons["shopping.item.\(name)"].press(forDuration: 1.0)
+        let item = buttons[action].firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: 3))
+        item.tap()
+    }
+
 
     func shoppingItemToggle(_ name: String) -> XCUIElement { buttons["shopping.item.\(name).toggle"] }
 }

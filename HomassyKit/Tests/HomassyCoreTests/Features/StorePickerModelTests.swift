@@ -75,8 +75,9 @@ struct StorePickerModelTests {
         model.mapCenter = StoreSamples.deak
         model.query = "  aldi "
         await model.runSearch()
-        #expect(search.calls == [.search(text: "aldi", latitude: StoreSamples.deak.latitude,
-                                         longitude: StoreSamples.deak.longitude)])
+        #expect(search.calls.contains(.search(text: "aldi", latitude: StoreSamples.deak.latitude,
+                                              longitude: StoreSamples.deak.longitude)))
+        #expect(search.calls.contains(.places(text: "aldi")))      // addresses are searched in parallel
         #expect(model.searchResults == [StoreSamples.aldiNyugati])
         #expect(model.isShowingSearch)
 
@@ -84,7 +85,7 @@ struct StorePickerModelTests {
         model.clearSearch()
         #expect(!model.isShowingSearch)
         await model.runSearch()
-        #expect(search.calls.count == 1)
+        #expect(search.calls.count == 2)
     }
 
     @Test func failuresAreReported() async {
@@ -137,5 +138,53 @@ struct StorePickerModelTests {
         model.select(StoreSamples.sparAstoria)
         model.clearSelection()
         #expect(model.selectedPlace == nil)
+    }
+
+    @Test func movingTheMapSearchesTheVisibleArea() async {
+        let search = FakeStoreSearch(nearby: [StoreSamples.lidlBuda])
+        let model = StorePickerModel(search: search, locations: locations, location: FakeLocation(access: .denied),
+                                     space: stack.space, initialTab: .nearby)
+        let buda = Coordinate(latitude: 47.48, longitude: 19.02)
+        await model.searchArea(center: buda, radiusMeters: 50_000)
+        #expect(model.mapCenter == buda)
+        #expect(model.nearby == [StoreSamples.lidlBuda])
+        #expect(search.calls == [.nearby(latitude: 47.48, longitude: 19.02,
+                                         radius: StorePickerModel.areaRadiusRange.upperBound)])
+        await model.searchArea(center: buda, radiusMeters: 10)
+        #expect(search.calls.last == .nearby(latitude: 47.48, longitude: 19.02,
+                                             radius: StorePickerModel.areaRadiusRange.lowerBound))
+    }
+
+    @Test func searchFindsShopsAndPlacesAndAPlaceMovesTheMap() async {
+        let andrassy = PlaceResult(id: "andrassy", title: "Andrássy út 1", subtitle: "Budapest",
+                                   coordinate: Coordinate(latitude: 47.5, longitude: 19.06))
+        let search = FakeStoreSearch(nearby: [StoreSamples.sparAstoria],
+                                     search: ["andrássy": [StoreSamples.aldiNyugati]], places: ["andrássy": [andrassy]])
+        let model = StorePickerModel(search: search, locations: locations, location: FakeLocation(access: .denied),
+                                     space: stack.space)
+        model.mapCenter = StoreSamples.deak
+        model.query = "andrássy"
+        await model.runSearch()
+        #expect(model.searchResults == [StoreSamples.aldiNyugati])
+        #expect(model.placeResults == [andrassy])
+        #expect(model.isShowingSearch)
+
+        await model.goTo(andrassy)
+        #expect(model.tab == .nearby)
+        #expect(model.cameraTarget == andrassy.coordinate)
+        #expect(model.mapCenter == andrassy.coordinate)
+        #expect(!model.isShowingSearch)
+        #expect(model.nearby == [StoreSamples.sparAstoria])
+    }
+
+    @Test func onlyPlacesFoundIsNotAFailure() async {
+        let place = PlaceResult(id: "p", title: "Szeged", coordinate: Coordinate(latitude: 46.25, longitude: 20.15))
+        let model = StorePickerModel(search: FakeStoreSearch(places: ["szeged": [place]]), locations: locations,
+                                     location: FakeLocation(access: .denied), space: stack.space)
+        model.mapCenter = StoreSamples.deak
+        model.query = "szeged"
+        await model.runSearch()
+        #expect(model.placeResults == [place])
+        #expect(model.message == nil)
     }
 }

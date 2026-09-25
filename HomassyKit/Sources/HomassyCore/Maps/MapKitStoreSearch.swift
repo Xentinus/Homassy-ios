@@ -17,6 +17,15 @@ public struct MapKitStoreSearch: StoreSearching {
         return try await Self.runSearch(query: query, latitude: latitude, longitude: longitude)
     }
 
+    /// Region for address searches: wide, so a town or a street across the country is found too.
+    public static let placeSearchRadiusMeters: Double = 200_000
+
+    public func places(text: String, latitude: Double, longitude: Double) async throws -> [PlaceResult] {
+        let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return [] }
+        return try await Self.runPlaces(query: query, latitude: latitude, longitude: longitude)
+    }
+
     public static func rank(_ results: [StoreResult], latitude: Double, longitude: Double) -> [StoreResult] {
         var seen = Set<String>()
         return results
@@ -47,6 +56,30 @@ public struct MapKitStoreSearch: StoreSearching {
                                             longitudinalMeters: searchRadiusMeters)
         let response = try await MKLocalSearch(request: request).start()
         return rank(response.mapItems.compactMap(StoreResult.init(mapItem:)), latitude: latitude, longitude: longitude)
+    }
+}
+
+extension MapKitStoreSearch {
+    @MainActor
+    private static func runPlaces(query: String, latitude: Double, longitude: Double) async throws -> [PlaceResult] {
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = query
+        request.resultTypes = .address
+        request.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                                            latitudinalMeters: placeSearchRadiusMeters,
+                                            longitudinalMeters: placeSearchRadiusMeters)
+        let response = try await MKLocalSearch(request: request).start()
+        var seen = Set<String>()
+        return response.mapItems.compactMap { item -> PlaceResult? in
+            let coordinate = item.location.coordinate
+            let title = item.name ?? item.address?.shortAddress ?? ""
+            guard !title.isEmpty else { return nil }
+            let id = item.identifier?.rawValue ?? "\(coordinate.latitude),\(coordinate.longitude)"
+            guard seen.insert(id).inserted else { return nil }
+            let subtitle = item.address?.fullAddress
+            return PlaceResult(id: id, title: title, subtitle: subtitle == title ? nil : subtitle,
+                               coordinate: Coordinate(latitude: coordinate.latitude, longitude: coordinate.longitude))
+        }
     }
 }
 

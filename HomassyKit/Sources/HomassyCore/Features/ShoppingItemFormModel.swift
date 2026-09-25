@@ -44,7 +44,7 @@ public final class ShoppingItemFormModel {
     }
 
     public func unitLabel(_ unit: MeasureUnit) -> String {
-        Quantity.format(1, unit: unit, locale: locale)
+        unit.name(for: Quantity.parse(quantityText, locale: locale) ?? 1, locale: locale)
     }
 
     public func setStore(_ location: ShoppingLocation?) {
