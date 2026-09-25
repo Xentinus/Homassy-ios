@@ -1,9 +1,11 @@
+import Combine
 import CoreData
 import HomassyCore
 import SwiftUI
 
-/// The selected space's Sharing, Backup and Delete/Leave sections. Sharing and Delete/Leave are shown
-/// only for households; the destructive action sits alone at the bottom of the list (HIG).
+/// The selected space's Members, Backup and Delete/Leave sections. Members and Delete/Leave are shown
+/// only for households; the destructive action sits alone at the bottom of the list (HIG). Members holds
+/// everything about people: the member list, former members, the user's own name/photo/colour and sharing.
 struct HouseholdSpaceSections: View {
     let space: Space
 
@@ -17,8 +19,23 @@ struct HouseholdSpaceSections: View {
     @State private var errorMessage: String?
     @State private var sharingPresentation: SharingPresentation?
     @State private var showsCloudNotice = false
+    @State private var editingSelf = false
+    @State private var showsFormer = false
+    /// Bumped on every view-context change: member rows are computed, not observed.
+    @State private var revision = 0
 
     var body: some View {
+        let _ = revision
+        Group {
+            content
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
+                                                        object: services.context)) { _ in
+            revision += 1
+        }
+    }
+
+    @ViewBuilder private var content: some View {
         if space.managedObjectContext != nil {
             if let sharing = services.sharing, space.kind == .household {
                 let role = sharing.role(for: space)
@@ -32,11 +49,29 @@ struct HouseholdSpaceSections: View {
     }
 
     private func sharingSection(_ sharing: SharingService, role: HouseholdRole) -> some View {
-        Section {
-            LabeledContent("household.sharing.role") {
-                Text(role.title)
+        let rows = services.members?.memberRows(in: space) ?? []
+        let current = rows.filter { $0.status != .departed }
+        let former = rows.filter { $0.status == .departed }
+        return Section {
+            ForEach(current) { MemberRowView(row: $0) }
+            if !former.isEmpty {
+                DisclosureGroup(isExpanded: $showsFormer) {
+                    ForEach(former) { MemberRowView(row: $0) }
+                } label: {
+                    Text("member.former \(former.count)")
+                }
+                .accessibilityIdentifier("member.former")
             }
-            .accessibilityIdentifier("household.sharing.role")
+            if let members = services.members, sharing.canEdit(space) {
+                let needsName = members.needsSetup(in: space) || members.currentMember(in: space) == nil
+                Button(needsName ? "member.setYourName" : "member.editSelf",
+                       systemImage: needsName ? "person.crop.circle.badge.plus" : "pencil") { editingSelf = true }
+                    .accessibilityIdentifier("member.editSelf")
+                    // Its own sheet: the section already presents the sharing controller.
+                    .sheet(isPresented: $editingSelf) {
+                        MemberSetupView(service: members, space: space, userRecordName: services.userRecordName)
+                    }
+            }
             if role == .notShared {
                 Button("household.sharing.share", systemImage: "person.2.badge.plus") {
                     run {
@@ -62,7 +97,7 @@ struct HouseholdSpaceSections: View {
             .accessibilityIdentifier("household.sharing.zoneCheck")
             #endif
         } header: {
-            Text("household.sharing.title")
+            Text("member.section.title")
         }
         .disabled(isWorking)
         .sheet(item: $sharingPresentation) { presentation in
@@ -151,12 +186,33 @@ struct HouseholdSpaceSections: View {
     }
 }
 
-extension HouseholdRole {
-    var title: LocalizedStringKey {
-        switch self {
-        case .owner: "household.role.owner"
-        case .participant: "household.role.participant"
-        case .notShared: "household.role.notShared"
+/// One member: avatar with the colour ring, name, "You", and the role or status.
+struct MemberRowView: View {
+    let row: MemberRow
+
+    var body: some View {
+        HStack(spacing: 12) {
+            MemberAvatar(name: row.displayName, colorSeed: row.colorSeed, colorKey: row.colorKey, avatar: row.avatar)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(verbatim: row.displayName)
+                    if row.isCurrentUser {
+                        Text("member.you").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Text(subtitle).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(row.isCurrentUser ? "member.row.me" : "member.row")
+    }
+
+    private var subtitle: LocalizedStringKey {
+        switch row.status {
+        case .invited: "member.status.invited"
+        case .departed: "member.status.departed"
+        case .active:
+            if row.isOwner { "household.role.owner" } else if row.permission == .readOnly { "member.status.viewOnly" } else { "member.status.canEdit" }
         }
     }
 }

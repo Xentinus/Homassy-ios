@@ -21,8 +21,16 @@ extension Color {
     /// The member accent for `seed` (a member's `colorSeed`, or a user record name), adapting to light and dark
     /// without needing the colour scheme. The one helper every member ring, border and dot uses (P5-03, P5-04).
     static func memberAccent(seed: String) -> Color {
-        let preset = MemberColor.preset(for: seed)
-        return Color(uiColor: UIColor { traits in
+        memberAccent(MemberColor.preset(for: seed))
+    }
+
+    /// The member's hand-picked colour (P5-03) when set, otherwise the automatic one from the seed.
+    static func memberAccent(seed: String, key: String?) -> Color {
+        memberAccent(MemberColor.resolve(key: key, seed: seed))
+    }
+
+    static func memberAccent(_ preset: MemberColorPreset) -> Color {
+        Color(uiColor: UIColor { traits in
             UIColor(Color(hex: traits.userInterfaceStyle == .dark ? preset.dark : preset.light))
         })
     }

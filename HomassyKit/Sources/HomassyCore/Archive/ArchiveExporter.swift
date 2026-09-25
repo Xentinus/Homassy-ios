@@ -81,7 +81,7 @@ public final class ArchiveExporter {
                                      createdBy: m.createdBy, updatedBy: m.updatedBy,
                                      userRecordName: m.userRecordName ?? "", displayName: m.displayName ?? "",
                                      colorSeed: m.colorSeed ?? m.userRecordName ?? "",
-                                     avatar: keepsPhoto ? imageReference(m.avatar) : nil))
+                                     avatar: keepsPhoto ? imageReference(m.avatar) : nil, colorKey: m.colorKey))
         }
 
         var products: [ProductDTO] = []

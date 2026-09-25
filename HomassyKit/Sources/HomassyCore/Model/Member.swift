@@ -13,6 +13,8 @@ public final class Member: NSManagedObject, HomassyEntity {
     @NSManaged public var displayName: String?
     @NSManaged public var colorSeed: String?
     @NSManaged public var avatar: Data?
+    /// A hand-picked `MemberColor` key (Mocha included); nil means automatic from `colorSeed`.
+    @NSManaged public var colorKey: String?
 
     @NSManaged public var space: Space?
 

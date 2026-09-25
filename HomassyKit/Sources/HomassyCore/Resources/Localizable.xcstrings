@@ -580,6 +580,29 @@
         }
       }
     },
+    "member.newMember" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neues Mitglied"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New member"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Új tag"
+          }
+        }
+      }
+    },
     "notification.body %@ %@" : {
       "extractionState" : "manual",
       "localizations" : {

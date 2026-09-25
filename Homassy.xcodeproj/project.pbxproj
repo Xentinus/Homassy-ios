@@ -345,7 +345,7 @@
 				INFOPLIST_FILE = Homassy/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Homassy;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.shopping";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Homassy uses the camera to scan barcodes and to take product photos.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Homassy uses the camera to scan barcodes and to take product and member photos.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Homassy uses your location only to find shops near you. It is not stored or shared.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -392,7 +392,7 @@
 				INFOPLIST_FILE = Homassy/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Homassy;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.shopping";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Homassy uses the camera to scan barcodes and to take product photos.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Homassy uses the camera to scan barcodes and to take product and member photos.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Homassy uses your location only to find shops near you. It is not stored or shared.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
