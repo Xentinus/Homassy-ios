@@ -28,6 +28,8 @@ public struct ImportPreview: Equatable, Sendable {
     public var autoIncluded: [ArchiveEntity: Int] = [:]
     /// Shopping list items that arrive without their product, because it is not imported.
     public var unlinkedListItems = 0
+    /// Members left out because only the household's owner brings other members along (P5-02a).
+    public var withheldMembers = 0
 
     public func counts(for entity: ArchiveEntity) -> EntityImportCounts { counts[entity] ?? EntityImportCounts() }
     public var totalToCreate: Int { counts.values.reduce(0) { $0 + $1.toCreate } }
@@ -64,6 +66,7 @@ public final class ArchiveImporter {
     private let persistence: PersistenceController
     private let spaceStore: SpaceStore
     private let userRecordName: String
+    private let canEdit: @MainActor (Space) -> Bool
     private let now: () -> Date
     private var context: NSManagedObjectContext { persistence.viewContext }
 
@@ -71,11 +74,26 @@ public final class ArchiveImporter {
     var afterApplying: ((ArchiveEntity) throws -> Void)?
 
     public init(persistence: PersistenceController, spaceStore: SpaceStore, userRecordName: String,
+                canEdit: @escaping @MainActor (Space) -> Bool = { _ in true },
                 now: @escaping () -> Date = { Date() }) {
         self.persistence = persistence
         self.spaceStore = spaceStore
         self.userRecordName = userRecordName
+        self.canEdit = canEdit
         self.now = now
+    }
+
+    /// Merging writes into the target, so it needs write access (a read-only joined household has none).
+    public func canMerge(into space: Space) -> Bool { canEdit(space) }
+
+    /// The part of the archive this user may import. Other members come along only when the user owned
+    /// the source household; anyone else brings just their own member record. An import never invites
+    /// anyone: members are cosmetic records, membership is a CloudKit share participant.
+    public func importable(_ data: ArchiveData) -> ArchiveData {
+        guard data.space.createdBy != userRecordName else { return data }
+        var data = data
+        data.members = data.members.filter { $0.userRecordName == userRecordName }
+        return data
     }
 
     /// Reads the archive and validates all of it. Preview and import can then run on it repeatedly.
@@ -93,10 +111,13 @@ public final class ArchiveImporter {
     /// What importing `selection` of `loaded` would do. Writes nothing.
     public func preview(_ loaded: ArchivePackage.Loaded, mergeInto target: Space? = nil,
                         selection: ArchiveSelection = .everything) throws -> ImportPreview {
+        if let target { guard canMerge(into: target) else { throw ServiceError.readOnlySpace } }
         let filtered = try filter(loaded, by: selection)
         let plan = try makePlan(for: filtered.data, target: target)
+        let all = loaded.contents.data.members.count
         return ImportPreview(manifest: loaded.contents.manifest, isMerge: target != nil, counts: plan.counts,
-                             autoIncluded: filtered.autoIncluded, unlinkedListItems: filtered.unlinkedListItems)
+                             autoIncluded: filtered.autoIncluded, unlinkedListItems: filtered.unlinkedListItems,
+                             withheldMembers: all - importable(loaded.contents.data).members.count)
     }
 
     @discardableResult
@@ -110,6 +131,7 @@ public final class ArchiveImporter {
     public func importArchive(_ loaded: ArchivePackage.Loaded, mode: ImportMode,
                               selection: ArchiveSelection = .everything) throws -> ImportResult {
         guard !context.hasChanges else { throw ArchiveError.unsavedChanges }
+        if case .merge(let target) = mode, !canMerge(into: target) { throw ServiceError.readOnlySpace }
         let data = try filter(loaded, by: selection).data
         do {
             let space: Space
@@ -133,7 +155,7 @@ public final class ArchiveImporter {
 
     /// The selected part, validated again: the filter must never produce dangling references.
     private func filter(_ loaded: ArchivePackage.Loaded, by selection: ArchiveSelection) throws -> ArchiveFilterResult {
-        let filtered = loaded.contents.data.filtered(by: selection)
+        let filtered = importable(loaded.contents.data).filtered(by: selection)
         try ArchiveValidator.validate(filtered.data)
         return filtered
     }

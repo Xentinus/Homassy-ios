@@ -39,6 +39,24 @@ final class ArchiveUITests: XCTestCase {
         XCTAssertTrue(picker, "the .fileExporter sheet did not appear")
     }
 
+    /// P5-02a: someone else's household brings no other members; the footer says why.
+    @MainActor
+    func testSomeoneElsesArchiveWithholdsMembers() {
+        let app = launch(["-uiTestImportFixtureForeign"])
+
+        let products = app.staticTexts["import.count.products"]
+        XCTAssertTrue(products.waitForExistence(timeout: 15))
+        XCTAssertEqual(products.label, "2")
+        let members = app.staticTexts["import.count.members"]
+        scrollTo(members, in: app)
+        XCTAssertEqual(members.label, "0")
+        XCTAssertFalse(app.switches["import.group.members"].isEnabled)
+        let withheld = app.staticTexts["import.membersWithheld"]
+        scrollTo(withheld, in: app)
+        XCTAssertTrue(withheld.label.contains("Members left out: 2"))
+        attachScreenshot(app, "members withheld")
+    }
+
     @MainActor
     func testOpenedArchiveShowsPreviewCountsAndImports() {
         let app = launch(["-uiTestImportFixture"])

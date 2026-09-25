@@ -96,10 +96,10 @@ public final class ArchiveImportModel {
 
     public func load(url: URL) {
         do {
-            targets = try spaceStore.allSpaces().map { Target(id: $0.publicId, name: $0.name) }
+            targets = try spaceStore.allSpaces().filter(importer.canMerge(into:)).map { Target(id: $0.publicId, name: $0.name) }
             let loaded = try importer.read(url: url)
             self.loaded = loaded
-            recordOptions = Self.options(for: loaded.contents.data)
+            recordOptions = Self.options(for: importer.importable(loaded.contents.data))
             groups = Set(ArchiveSelection.Group.allCases)
             picked = recordOptions.mapValues { Set($0.map(\.id)) }
             preview = try importer.preview(loaded)

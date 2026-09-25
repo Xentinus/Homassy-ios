@@ -52,7 +52,8 @@ public final class ServiceContainer {
         notifications = ExpiryNotificationCoordinator(
             context: context, center: notificationCenter,
             locale: Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en"))
-        archive = persistence.map { ArchiveServices(persistence: $0, spaceStore: spaceStore, userRecordName: userRecordName) }
+        archive = persistence.map { ArchiveServices(persistence: $0, spaceStore: spaceStore, userRecordName: userRecordName,
+                                                          canEdit: permission) }
     }
 
     /// The selected space, or Personal when nothing (or something that no longer exists) is selected.
