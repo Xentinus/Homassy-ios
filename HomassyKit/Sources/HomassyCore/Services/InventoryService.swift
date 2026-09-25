@@ -36,7 +36,7 @@ public final class InventoryService {
     @discardableResult
     public func addStock(product: Product, quantity: Decimal, unit: MeasureUnit, expiresAt: Date?, purchasedAt: Date?,
                          price: Decimal?, currency: String?, storageLocation: StorageLocation?,
-                         shoppingLocation: ShoppingLocation?) throws -> InventoryItem {
+                         shoppingLocation: ShoppingLocation?, commit: Bool = true) throws -> InventoryItem {
         guard !product.isGone, let space = product.space else { throw ServiceError.notFound }
         try ensureEditable(space)
         try validate(quantity: quantity, expiresAt: expiresAt, purchasedAt: purchasedAt)
@@ -56,7 +56,7 @@ public final class InventoryService {
         item.storageLocation = storageLocation
         item.shoppingLocation = shoppingLocation
         record(.added, for: item, in: space, quantity: quantity, to: storageLocation?.name)
-        try context.save()
+        if commit { try context.save() }
         return item
     }
 

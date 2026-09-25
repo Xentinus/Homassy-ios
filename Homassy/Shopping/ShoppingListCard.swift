@@ -1,7 +1,7 @@
 import HomassyCore
 import SwiftUI
 
-/// One list on the lists overview: its colour dot, name, and to-buy / bought counts.
+/// One list on the lists overview: its colour dot, name, and how many items are left to buy.
 struct ShoppingListCard: View {
     let summary: ShoppingListsModel.Summary
 
@@ -13,11 +13,8 @@ struct ShoppingListCard: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: summary.name).font(.headline).lineLimit(2)
-                HStack(spacing: 8) {
-                    Text("shopping.lists.remaining \(summary.remaining)")
-                    if summary.purchased > 0 { Text("shopping.lists.purchased \(summary.purchased)") }
-                }
-                .font(.subheadline)
+                Text("shopping.lists.remaining \(summary.remaining)")
+                    .font(.subheadline)
                 .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)

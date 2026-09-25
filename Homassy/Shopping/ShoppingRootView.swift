@@ -8,7 +8,7 @@ struct ShoppingListRoute: Hashable, Codable {
     let id: UUID
 }
 
-/// The Shopping tab root: the active space's lists, the list detail and, from a product item, the product detail.
+/// The Shopping tab root: the active space's lists and the list detail.
 struct ShoppingRootView: View {
     @Environment(ServiceContainer.self) private var services
     @Environment(SpaceSelection.self) private var selection
@@ -24,7 +24,6 @@ struct ShoppingRootView: View {
             }
         }
         .navigationDestination(for: ShoppingListRoute.self) { ShoppingListDestination(id: $0.id) }
-        .navigationDestination(for: ProductRoute.self) { ProductDetailView(productID: $0.id) }
     }
 
     private var currentSpace: Space? { services.activeSpace(selectedID: selection.selectedSpaceID) }

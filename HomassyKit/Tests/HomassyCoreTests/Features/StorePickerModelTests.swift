@@ -122,4 +122,20 @@ struct StorePickerModelTests {
         model.deleteRecent(lidl.publicId)
         #expect(model.recent.map(\.name) == ["Aldi Nyugati"])
     }
+
+    @Test func aPlaceTappedOnTheMapIsChosenWithPickSelected() throws {
+        let model = StorePickerModel(search: FakeStoreSearch(), locations: locations,
+                                     location: FakeLocation(access: .denied), space: stack.space, initialTab: .nearby)
+        #expect(model.tab == .nearby)
+        #expect(model.pickSelected() == nil)
+        model.select(StoreSamples.lidlBuda)
+        #expect(model.selectedPlace == StoreSamples.lidlBuda)
+        let stored = try #require(model.pickSelected())
+        #expect(stored.mapItemIdentifier == StoreSamples.lidlBuda.mapItemIdentifier)
+        #expect(model.selectedPlace == nil)
+        #expect(model.recent.map(\.name) == ["Lidl Buda"])
+        model.select(StoreSamples.sparAstoria)
+        model.clearSelection()
+        #expect(model.selectedPlace == nil)
+    }
 }

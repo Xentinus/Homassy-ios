@@ -10,10 +10,6 @@ public enum UndoTitle {
         String(localized: "undo.item.purchase \(name)", bundle: .module, comment: "Undo toast: one item marked purchased")
     }
 
-    public static func unpurchased(_ name: String) -> String {
-        String(localized: "undo.item.unpurchase \(name)", bundle: .module, comment: "Undo toast: one item put back on the shopping list")
-    }
-
     public static func moved(_ name: String) -> String {
         String(localized: "undo.item.move \(name)", bundle: .module, comment: "Undo toast: one item moved")
     }

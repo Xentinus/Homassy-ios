@@ -57,6 +57,7 @@ struct ListEditorSheet: View {
                             .accessibilityLabel(Text("shopping.listEditor.colorOption \(index + 1)"))
                             .accessibilityAddTraits(color == hex ? .isSelected : [])
                         }
+                        customSwatch
                     }
                     .padding(.vertical, 4)
                 } header: {
@@ -76,6 +77,29 @@ struct ListEditorSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    /// Any other colour from the system colour picker, stored as `#rrggbb` (the same pattern as storage locations).
+    private var customSwatch: some View {
+        let selected = ShoppingListPalette.isCustom(color)
+        let selection = Binding<Color>(
+            get: { selected ? ListColor.color(color) : Palette.mocha700 },
+            set: { color = ListColor.hex(from: $0) })
+        return ZStack {
+            ColorPicker(selection: selection, supportsOpacity: false) {
+                Text("shopping.listEditor.custom")
+            }
+            .labelsHidden()
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityIdentifier("color.custom")
+            if selected {
+                Circle()
+                    .strokeBorder(Color.primary, lineWidth: 3)
+                    .frame(width: 44, height: 44)
+                    .allowsHitTesting(false)
+            }
+        }
+        .frame(width: 44, height: 44)
     }
 
     private func save() {

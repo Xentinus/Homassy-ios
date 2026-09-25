@@ -53,7 +53,7 @@ public struct MapKitStoreSearch: StoreSearching {
 extension StoreResult {
     /// Map items without a stable identifier cannot be stored and are skipped.
     @MainActor
-    init?(mapItem: MKMapItem) {
+    public init?(mapItem: MKMapItem) {
         guard let identifier = mapItem.identifier?.rawValue, let name = mapItem.name, !name.isEmpty else { return nil }
         let coordinate = mapItem.location.coordinate
         self.init(mapItemIdentifier: identifier, name: name, latitude: coordinate.latitude,

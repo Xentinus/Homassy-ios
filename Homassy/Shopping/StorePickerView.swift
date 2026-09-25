@@ -2,22 +2,26 @@ import HomassyCore
 import MapKit
 import SwiftUI
 
-/// Picks a store from Apple Maps: recent stores, nearby shops on a small map, or a name search.
+/// Picks a store from Apple Maps: recent stores, nearby shops on an interactive map (any shop on the map
+/// can be tapped and chosen), or a name search.
 struct StorePickerView: View {
     let onPick: (ShoppingLocation?) -> Void
 
     @State private var model: StorePickerModel
     @State private var completer = StoreCompleter()
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var mapSelection: MapSelection<String>?
     @State private var placeCard: MKMapItem?
     @Environment(\.dismiss) private var dismiss
 
     /// The When-In-Use authorizer is app-only (P4-02), so the picker owns it.
-    init(space: Space, services: ServiceContainer, onPick: @escaping (ShoppingLocation?) -> Void) {
+    init(space: Space, services: ServiceContainer, initialTab: StorePickerModel.Tab = .recent,
+         onPick: @escaping (ShoppingLocation?) -> Void) {
         self.onPick = onPick
         _model = State(initialValue: StorePickerModel(search: services.storeSearch,
                                                       locations: services.shoppingLocations,
-                                                      location: CoreLocationAuthorizer(), space: space))
+                                                      location: CoreLocationAuthorizer(), space: space,
+                                                      initialTab: initialTab))
     }
 
     var body: some View {
@@ -55,6 +59,9 @@ struct StorePickerView: View {
                     }
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                if let place = model.selectedPlace { selectionBar(place) }
+            }
             .navigationTitle(Text("store.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -75,9 +82,13 @@ struct StorePickerView: View {
                 if tab == .nearby { Task { await model.loadNearby() } }
             }
             .onChange(of: model.nearby) { _, _ in position = .automatic }
+            .onChange(of: mapSelection) { _, selection in Task { await resolve(selection) } }
             .overlay { if model.isLoading { ProgressView("store.loading") } }
             .mapItemDetailSheet(item: $placeCard)
-            .task { model.loadRecent() }
+            .task {
+                model.loadRecent()
+                if model.tab == .nearby { await model.loadNearby() }
+            }
         }
     }
 
@@ -106,24 +117,56 @@ struct StorePickerView: View {
 
     private var nearbySection: some View {
         Section {
-            Map(position: $position) {
+            Map(position: $position, selection: $mapSelection) {
                 UserAnnotation()
                 ForEach(model.nearby) { result in
                     Marker(result.name, systemImage: "cart",
                            coordinate: CLLocationCoordinate2D(latitude: result.latitude, longitude: result.longitude))
+                        .tag(MapSelection(result.id))
                 }
             }
-            .frame(height: 200)
+            .mapFeatureSelectionDisabled { $0.kind != .pointOfInterest }
+            .frame(height: 320)
             .listRowInsets(EdgeInsets())
             .onMapCameraChange(frequency: .onEnd) { context in
                 model.mapCenter = Coordinate(latitude: context.region.center.latitude,
                                              longitude: context.region.center.longitude)
             }
+            .accessibilityIdentifier("store.map")
+            Text("store.map.hint").font(.footnote).foregroundStyle(.secondary)
             ForEach(model.nearby) { resultRow($0) }
             Button { Task { await model.loadNearby() } } label: {
                 Label("store.searchHere", systemImage: "arrow.clockwise")
             }
         }
+    }
+
+    private func selectionBar(_ place: StoreResult) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: place.name).font(.headline)
+                if let subtitle = place.subtitle {
+                    Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 0)
+            Button { Task { placeCard = await mapItem(for: place) } } label: {
+                Image(systemName: "info.circle")
+            }
+            .accessibilityLabel(Text("store.details"))
+            Button {
+                if let location = model.pickSelected() {
+                    onPick(location)
+                    dismiss()
+                }
+            } label: {
+                Text("store.chooseSelected")
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("store.chooseSelected")
+        }
+        .padding()
+        .background(.bar)
     }
 
     private func resultRow(_ result: StoreResult) -> some View {
@@ -151,6 +194,21 @@ struct StorePickerView: View {
             }
             .buttonStyle(.borderless)
             .accessibilityLabel(Text("store.details"))
+        }
+    }
+
+    /// A tapped marker selects our result; a tapped Apple Maps place is looked up by its feature.
+    private func resolve(_ selection: MapSelection<String>?) async {
+        guard let selection else {
+            model.clearSelection()
+            return
+        }
+        if let id = selection.value, let result = model.nearby.first(where: { $0.id == id }) {
+            model.select(result)
+        } else if let feature = selection.feature,
+                  let item = try? await MKMapItemRequest(feature: feature).mapItem,
+                  let result = StoreResult(mapItem: item) {
+            model.select(result)
         }
     }
 

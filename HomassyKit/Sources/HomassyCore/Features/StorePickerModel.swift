@@ -4,7 +4,10 @@ import Observation
 @MainActor
 @Observable
 public final class StorePickerModel {
-    public enum Tab: Hashable, Sendable { case recent, nearby }
+    public enum Tab: Hashable, Sendable, Identifiable {
+        case recent, nearby
+        public var id: Self { self }
+    }
 
     public enum Message: Equatable, Sendable {
         case needsLocation, noResults, failed
@@ -35,6 +38,8 @@ public final class StorePickerModel {
     public private(set) var isLoading = false
     public private(set) var message: Message?
     public private(set) var userCoordinate: Coordinate?
+    /// A shop tapped on the map (a result marker or any Apple Maps place), waiting for "Choose".
+    public private(set) var selectedPlace: StoreResult?
 
     /// Where to search: the user, else the map the user is looking at, else the last store used.
     public var searchCenter: Coordinate? { userCoordinate ?? mapCenter ?? recent.lazy.compactMap(\.coordinate).first }
@@ -47,7 +52,8 @@ public final class StorePickerModel {
     @ObservationIgnored private var recentObjects: [UUID: ShoppingLocation] = [:]
 
     public init(search: any StoreSearching, locations: ShoppingLocationService,
-                location: any LocationAuthorizing, space: Space) {
+                location: any LocationAuthorizing, space: Space, initialTab: Tab = .recent) {
+        self.tab = initialTab
         self.search = search
         self.locations = locations
         self.location = location
@@ -127,6 +133,18 @@ public final class StorePickerModel {
             message = .failed
             return nil
         }
+    }
+
+    public func select(_ place: StoreResult) { selectedPlace = place }
+
+    public func clearSelection() { selectedPlace = nil }
+
+    /// Stores the place tapped on the map and clears the selection.
+    public func pickSelected() -> ShoppingLocation? {
+        guard let place = selectedPlace else { return nil }
+        let stored = pick(place)
+        if stored != nil { selectedPlace = nil }
+        return stored
     }
 
     public func pickRecent(_ id: UUID) -> ShoppingLocation? {

@@ -8,8 +8,8 @@ public final class ShoppingListsModel {
         public let id: UUID
         public let name: String
         public let color: String?
+        /// Items still to buy.
         public let remaining: Int
-        public let purchased: Int
     }
 
     public let space: Space
@@ -29,10 +29,8 @@ public final class ShoppingListsModel {
             let all = try service.lists(in: space)
             lists = Dictionary(all.map { ($0.publicId, $0) }, uniquingKeysWith: { first, _ in first })
             summaries = try all.map { list in
-                let items = try service.items(in: list)
-                let purchased = items.filter(\.isPurchased).count
-                return Summary(id: list.publicId, name: list.name, color: list.color,
-                               remaining: items.count - purchased, purchased: purchased)
+                Summary(id: list.publicId, name: list.name, color: list.color,
+                        remaining: try service.unpurchasedItems(in: list).count)
             }
         } catch {
             errorMessage = FeatureError.message(for: error)

@@ -11,7 +11,7 @@ public enum BarcodeAddResult {
 public final class ShoppingService {
     public let context: NSManagedObjectContext
     public let userRecordName: String
-    private let spaceStore: SpaceStore
+    public let spaceStore: SpaceStore
     private let canEditSpace: @MainActor (Space) -> Bool
     private let now: () -> Date
 
