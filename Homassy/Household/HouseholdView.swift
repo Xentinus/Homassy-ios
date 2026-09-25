@@ -4,6 +4,9 @@ import SwiftUI
 /// The Household tab root: settings of the selected space. P2-05 adds storage locations;
 /// P5 adds members, sharing and sync status.
 struct HouseholdView: View {
+    @Environment(ServiceContainer.self) private var services
+    @Environment(SpaceSelection.self) private var selection
+
     var body: some View {
         List {
             Section {
@@ -15,6 +18,10 @@ struct HouseholdView: View {
                 .accessibilityIdentifier("household.storageLocations")
             } footer: {
                 Text("empty.household")
+            }
+
+            if let space = services.activeSpace(selectedID: selection.selectedSpaceID) {
+                ArchiveSection(space: space)
             }
         }
         .navigationTitle(AppTab.household.title)
@@ -30,6 +37,7 @@ struct HouseholdView: View {
     NavigationStack { HouseholdView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
         .environment(model.services!)
+        .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
@@ -37,5 +45,6 @@ struct HouseholdView: View {
     NavigationStack { HouseholdView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
         .environment(model.services!)
+        .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 #endif

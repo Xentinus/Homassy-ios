@@ -1,6 +1,30 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Homassy Archive" : {
+      "comment" : "Document type name of .homassy files (UTTypeDescription, CFBundleTypeName)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homassy-Archiv"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homassy Archive"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homassy-archívum"
+          }
+        }
+      }
+    },
     "NSCameraUsageDescription" : {
       "comment" : "Camera permission prompt (barcode scanner, product photo)",
       "extractionState" : "extracted_with_value",
