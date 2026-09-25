@@ -8,7 +8,7 @@ struct ProductCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ProductImageTile(data: card.image)
+            ProductImageTile(data: card.image, name: card.name)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(card.name)

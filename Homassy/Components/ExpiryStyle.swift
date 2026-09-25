@@ -21,35 +21,39 @@ extension ExpirationLevel {
         }
     }
 
-    /// The card border; nil for the neutral hairline.
-    var cardBorder: Color? {
+    /// The corner badge's colour and symbol (Apple-native direction, user choice 2026-09-25); nil when neutral.
+    /// The card itself is never tinted: the badge and the expiry line carry the state, with a glyph and text,
+    /// so colour is never the only signal.
+    var cardBadge: (color: Color, symbol: String)? {
         switch self {
         case .none, .ok: nil
-        case .soon, .critical: Palette.expirySoon
-        case .expired: Palette.expiryCritical
+        case .soon, .critical: (Palette.expirySoon, "clock")
+        case .expired: (Palette.expiryCritical, "exclamationmark")
         }
-    }
-
-    /// A faint wash over the card background; clear when neutral.
-    var cardWash: Color {
-        cardBorder?.opacity(0.08) ?? .clear
     }
 }
 
 extension View {
-    /// The shared card chrome: grouped background, rounded corners, expiry wash and border.
+    /// The shared card chrome: neutral grouped background, hairline and rounded corners, plus the expiry
+    /// badge in the top-right corner for soon (yellow) and expired (red) cards.
     func cardChrome(level: ExpirationLevel = .none, cornerRadius: CGFloat = 16) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         return self
-            .background(level.cardWash, in: shape)
             .background(Color(uiColor: .secondarySystemGroupedBackground), in: shape)
-            .overlay {
-                if let border = level.cardBorder {
-                    shape.strokeBorder(border, lineWidth: 1.5)
-                } else {
-                    shape.strokeBorder(Color(uiColor: .separator).opacity(0.6), lineWidth: 0.5)
+            .overlay { shape.strokeBorder(Color(uiColor: .separator).opacity(0.6), lineWidth: 0.5) }
+            .clipShape(shape)
+            .overlay(alignment: .topTrailing) {
+                if let badge = level.cardBadge {
+                    Image(systemName: badge.symbol)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 26, height: 26)
+                        .background(badge.color, in: Circle())
+                        .overlay { Circle().strokeBorder(.white.opacity(0.9), lineWidth: 1.5) }
+                        .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
+                        .padding(8)
+                        .accessibilityHidden(true)      // the expiry line says it in words
                 }
             }
-            .clipShape(shape)
     }
 }
