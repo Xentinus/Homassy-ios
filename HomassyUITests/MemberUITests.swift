@@ -45,6 +45,7 @@ final class MemberUITests: XCTestCase {
         name.typeText("Zoli")
         let mocha = app.buttons["member.color.mocha"]
         XCTAssertTrue(mocha.exists)
+        XCTAssertTrue(app.descendants(matching: .any)["member.color.custom"].firstMatch.exists, "custom colour picker missing")
         mocha.tap()
         XCTAssertTrue(mocha.isSelected)
         attachScreenshot(app, "member setup")

@@ -130,6 +130,7 @@ struct MemberSetupView: View {
             ForEach(MemberColor.selectablePresets, id: \.key) { preset in
                 swatch(key: preset.key) { Circle().fill(Color.memberAccent(preset)) }
             }
+            customSwatch
         }
         .padding(.vertical, 4)
     }
@@ -146,6 +147,29 @@ struct MemberSetupView: View {
         .accessibilityLabel(Text(Self.colorName(key)))
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("member.color.\(key ?? "automatic")")
+    }
+
+    /// The system colour picker for any other colour, as the last swatch (like storage locations and lists).
+    private var customSwatch: some View {
+        let selected = MemberColor.isCustom(model.colorKey)
+        let selection = Binding<Color>(
+            get: { model.colorKey.flatMap(HexColor.parse).map(Color.init(hex:)) ?? Palette.mocha700 },
+            set: { model.colorKey = HexColor.format($0.rgbHex) })
+        return ZStack {
+            ColorPicker(selection: selection, supportsOpacity: false) {
+                Text("member.color.custom")
+            }
+            .labelsHidden()
+            .accessibilityAddTraits(selected ? .isSelected : [])
+            .accessibilityIdentifier("member.color.custom")
+            if selected {
+                Circle()
+                    .strokeBorder(Color.primary, lineWidth: 2)
+                    .frame(width: 34, height: 34)
+                    .allowsHitTesting(false)
+            }
+        }
+        .frame(minWidth: 34, minHeight: 34)
     }
 
     static func colorName(_ key: String?) -> LocalizedStringKey {

@@ -39,9 +39,18 @@ public enum MemberColor {
     /// Everything a member can choose from: the hashed palette, then Mocha.
     public static let selectablePresets: [Preset] = presets + [mocha]
 
-    /// Resolves a hand-picked preset key, such as a stored override. Unknown keys give `nil`.
+    /// Resolves a hand-picked key: a preset key, or a custom `#rrggbb` colour (P5-03, like storage colours).
+    /// A custom colour uses the same shade in light and dark mode. Unknown keys give `nil`.
     public static func preset(forKey key: String) -> Preset? {
-        selectablePresets.first { $0.key == key }
+        if let hex = HexColor.parse(key) {
+            return Preset(key: HexColor.format(hex), light: hex, dark: hex, gradient: (hex, hex))
+        }
+        return selectablePresets.first { $0.key == key }
+    }
+
+    /// True for a custom `#rrggbb` pick.
+    public static func isCustom(_ key: String?) -> Bool {
+        key.flatMap(HexColor.parse) != nil
     }
 
     /// A member's colour: the hand-picked key when it is known, otherwise the automatic one from the seed.

@@ -8,6 +8,14 @@ extension Color {
         let c = HexColor.components(hex)
         self.init(.sRGB, red: Double(c.r) / 255, green: Double(c.g) / 255, blue: Double(c.b) / 255, opacity: 1)
     }
+
+    /// The colour as 24-bit sRGB, clamped (colour pickers here have no opacity).
+    var rgbHex: UInt32 {
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        UIColor(self).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        func byte(_ value: CGFloat) -> UInt32 { UInt32((min(max(value, 0), 1) * 255).rounded()) }
+        return byte(red) << 16 | byte(green) << 8 | byte(blue)
+    }
 }
 
 extension MemberColorPreset {
