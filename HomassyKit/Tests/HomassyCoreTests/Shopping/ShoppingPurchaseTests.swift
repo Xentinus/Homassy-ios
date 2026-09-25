@@ -118,6 +118,7 @@ struct ShoppingPurchaseTests {
 
         #expect(try stack.count(InventoryItem.self) == 0)
         #expect(try stack.count(InventoryEvent.self) == 0)
+        #expect(try stack.count(PurchaseRecord.self) == 0)
         #expect(try stack.count(Product.self) == 0)
         #expect(item.quantity == 2)
         #expect(item.updatedAt == before.0)
@@ -217,5 +218,55 @@ struct ShoppingPurchaseTests {
         #expect(try shopping.items(in: list).isEmpty)
         #expect(try stack.count(InventoryItem.self) == 1)
         #expect(!stack.context.hasChanges)
+    }
+
+    @Test func withInventoryThePurchaseIsRecordedAndUndoRemovesIt() throws {
+        let milk = try stack.makeProduct("Tej", unit: .liter)
+        let spar = try stack.makeStore("Spar")
+        let list = try shopping.createList(name: "Heti", in: stack.space)
+        let item = try shopping.addItem(to: list, product: milk, quantity: 2)
+        let action = try buy(item, PurchaseDetails(quantity: 2, storeID: spar.publicId, price: 900))
+        let record = try #require(try stack.context.fetch(NSFetchRequest<PurchaseRecord>(entityName: "PurchaseRecord")).first)
+        #expect(record.inventoryItem != nil)
+        #expect(record.price == 900)
+        #expect(record.shoppingLocation == spar)
+        action.revert()
+        #expect(try stack.count(PurchaseRecord.self) == 0)
+    }
+
+    @Test func withoutInventoryAProductPurchaseIsStillRecorded() throws {
+        let milk = try stack.makeProduct("Tej", unit: .liter)
+        let spar = try stack.makeStore("Spar")
+        let list = try shopping.createList(name: "Heti", in: stack.space)
+        let item = try shopping.addItem(to: list, product: milk, quantity: 2)
+        stack.now.advance(seconds: 60)
+
+        let action = try buy(item, PurchaseDetails(quantity: 2, storeID: spar.publicId, price: 900, currency: "HUF",
+                                                   addToInventory: false))
+        let record = try #require(try stack.context.fetch(NSFetchRequest<PurchaseRecord>(entityName: "PurchaseRecord")).first)
+        #expect(record.product == milk)
+        #expect(record.quantity == 2)
+        #expect(record.unit == .liter)
+        #expect(record.price == 900)
+        #expect(record.shoppingLocation == spar)
+        #expect(record.inventoryItem == nil)
+        #expect(record.purchasedAt == stack.now.date)
+        #expect(try stack.count(InventoryItem.self) == 0)
+
+        action.revert()
+        #expect(try stack.count(PurchaseRecord.self) == 0)
+        #expect(!stack.context.hasChanges)
+
+        try buy(item, PurchaseDetails(quantity: 2, price: 900, addToInventory: false)).commit()
+        #expect(try stack.count(PurchaseRecord.self) == 1)
+        #expect(!stack.context.hasChanges)
+    }
+
+    @Test func withoutInventoryACustomItemRecordsNothing() throws {
+        let list = try shopping.createList(name: "Heti", in: stack.space)
+        let item = try shopping.addItem(to: list, customName: "Szalvéta")
+        try buy(item, PurchaseDetails(quantity: 1, price: 300, addToInventory: false)).commit()
+        #expect(try stack.count(PurchaseRecord.self) == 0)
+        #expect(try stack.count(Product.self) == 0)
     }
 }

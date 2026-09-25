@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 import Testing
 @testable import HomassyCore
@@ -122,5 +123,20 @@ struct PurchaseFormModelTests {
         #expect(try stack.service.items(in: list).isEmpty)
         #expect(try stack.count(InventoryItem.self) == 0)
         #expect(try stack.count(ShoppingLocation.self) == 0)     // the suggested place is not stored either
+    }
+
+    @Test func withoutInventoryAProductStillRecordsStoreAndPrice() throws {
+        let milk = try stack.makeProduct("Tej", unit: .liter)
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let model = makeModel(try stack.service.addItem(to: list, product: milk))
+        model.addToInventory = false
+        #expect(model.recordsPurchase)
+        model.applySuggestion(.place(StoreSamples.aldiNyugati, distance: 40))
+        model.priceText = "450"
+        try #require(model.purchase()).commit()
+        let record = try #require(try stack.context.fetch(NSFetchRequest<PurchaseRecord>(entityName: "PurchaseRecord")).first)
+        #expect(record.price == 450)
+        #expect(record.shoppingLocation?.name == "Aldi Nyugati")
+        #expect(try stack.count(InventoryItem.self) == 0)
     }
 }

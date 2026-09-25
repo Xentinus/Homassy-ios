@@ -24,6 +24,7 @@ public final class Product: NSManagedObject, HomassyEntity {
     @NSManaged public var inventoryItems: NSSet?
     @NSManaged public var shoppingListItems: NSSet?
     @NSManaged public var inventoryEvents: NSSet?
+    @NSManaged public var purchaseRecords: NSSet?
 
     public var defaultUnit: MeasureUnit {
         get { MeasureUnit(rawValue: defaultUnitRaw) ?? .piece }
@@ -33,6 +34,7 @@ public final class Product: NSManagedObject, HomassyEntity {
     public var inventoryItemSet: Set<InventoryItem> { inventoryItems as? Set<InventoryItem> ?? [] }
     public var shoppingListItemSet: Set<ShoppingListItem> { shoppingListItems as? Set<ShoppingListItem> ?? [] }
     public var inventoryEventSet: Set<InventoryEvent> { inventoryEvents as? Set<InventoryEvent> ?? [] }
+    public var purchaseRecordSet: Set<PurchaseRecord> { purchaseRecords as? Set<PurchaseRecord> ?? [] }
 
     public override func awakeFromInsert() {
         super.awakeFromInsert()

@@ -860,6 +860,30 @@
         }
       }
     },
+    "price.perUnit %@ %@" : {
+      "comment" : "Unit price: amount, unit (450 Ft / l)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ / %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ / %2$@"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ / %2$@"
+          }
+        }
+      }
+    },
     "shopping.error.generic" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -65,10 +65,11 @@ struct ModelTests {
         try context.count(for: T.makeFetchRequest())
     }
 
-    @Test func modelContainsExactlyTheTenEntities() {
+    @Test func modelContainsExactlyTheElevenEntities() {
         let names = Set(HomassyModel.shared.entities.compactMap(\.name))
         #expect(names == ["Space", "Member", "Product", "StorageLocation", "InventoryItem",
-                          "ConsumptionLog", "InventoryEvent", "ShoppingLocation", "ShoppingList", "ShoppingListItem"])
+                          "ConsumptionLog", "InventoryEvent", "PurchaseRecord", "ShoppingLocation", "ShoppingList",
+                          "ShoppingListItem"])
     }
 
     @Test func sharedModelIsASingleInstance() {
@@ -80,7 +81,7 @@ struct ModelTests {
             ("Space", Space.self), ("Member", Member.self), ("Product", Product.self),
             ("StorageLocation", StorageLocation.self), ("InventoryItem", InventoryItem.self),
             ("ConsumptionLog", ConsumptionLog.self), ("InventoryEvent", InventoryEvent.self),
-            ("ShoppingLocation", ShoppingLocation.self),
+            ("PurchaseRecord", PurchaseRecord.self), ("ShoppingLocation", ShoppingLocation.self),
             ("ShoppingList", ShoppingList.self), ("ShoppingListItem", ShoppingListItem.self),
         ]
         for (name, type): (String, AnyClass) in pairs {

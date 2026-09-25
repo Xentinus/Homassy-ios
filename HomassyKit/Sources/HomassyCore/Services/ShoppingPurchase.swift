@@ -45,6 +45,11 @@ public enum ShoppingPurchase {
             ? try addStock(for: item, details: details, in: space, purchasedAt: purchasedAt,
                            shopping: shopping, inventory: inventory)
             : nil
+        // Without inventory the purchase is still recorded for the price trend, when there is a product.
+        let recordOnly = details.addToInventory
+            ? nil
+            : try recordOnly(for: item, details: details, in: space, purchasedAt: purchasedAt,
+                             shopping: shopping, inventory: inventory)
 
         let previous = (quantity: item.quantity, updatedAt: item.updatedAt, updatedBy: item.updatedBy)
         let keepsItem = details.keepRemainder && details.quantity < item.quantity
@@ -63,9 +68,11 @@ public enum ShoppingPurchase {
             revert: {
                 if let added {
                     for event in added.stock.inventoryEventSet { inventory.discard(event) }
+                    for record in added.stock.purchaseRecordSet { inventory.discard(record) }
                     inventory.discard(added.stock)
                     if added.createdProduct { inventory.discard(added.product) }
                 }
+                if let recordOnly { inventory.discard(recordOnly) }
                 if !item.isGone {
                     item.quantity = previous.quantity
                     item.updatedAt = previous.updatedAt
@@ -79,6 +86,18 @@ public enum ShoppingPurchase {
                 if !keepsItem, !item.isGone { shopping.context.delete(item) }
                 try shopping.save()
             })
+    }
+
+    /// A list purchase that skips inventory: records where, how much and for how much when the item has a
+    /// product (a custom item writes nothing, user decision 2026-09-25). Not saved.
+    private static func recordOnly(for item: ShoppingListItem, details: PurchaseDetails, in space: Space,
+                                   purchasedAt: Date, shopping: ShoppingService,
+                                   inventory: InventoryService) throws -> PurchaseRecord? {
+        guard let product = item.product, !product.isGone else { return nil }
+        let store = try details.storeID.map { try entity(ShoppingLocation.self, $0, in: space, context: shopping.context) }
+        return try inventory.recordPurchase(product: product, quantity: details.quantity, unit: item.unit,
+                                            price: details.price, currency: details.currency, store: store,
+                                            purchasedAt: purchasedAt, commit: false)
     }
 
     /// Validates and adds the stock (not saved); a product created for a custom item is removed again

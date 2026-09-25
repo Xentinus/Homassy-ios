@@ -60,6 +60,9 @@ public final class PurchaseFormModel {
     }
 
     public var space: Space? { item.shoppingList?.space }
+    /// Store and price are asked whenever the purchase is recorded: always with inventory, and without it for
+    /// product items (a custom item bought without inventory records nothing).
+    public var recordsPurchase: Bool { addToInventory || item.product != nil }
     public var storeName: String? { selection.name }
     /// Metres to the store when it came from the GPS suggestion.
     public var suggestedDistance: Double? { selection.suggestedDistance }
@@ -94,7 +97,7 @@ public final class PurchaseFormModel {
             return nil
         }
         var price: Decimal?
-        if addToInventory, let text = priceText.nilIfBlank {
+        if recordsPurchase, let text = priceText.nilIfBlank {
             guard let parsed = Quantity.parse(text, locale: locale) else {
                 errorMessage = coreLocalized("form.invalidPrice")
                 return nil
@@ -103,7 +106,7 @@ public final class PurchaseFormModel {
         }
         do {
             guard let space else { throw ServiceError.notFound }
-            let store = addToInventory ? try selection.resolve(locations: locations, space: space) : nil
+            let store = recordsPurchase ? try selection.resolve(locations: locations, space: space) : nil
             let details = PurchaseDetails(quantity: quantity, storeID: store?.publicId, keepRemainder: keepRemainder,
                                           price: price, currency: currency.nilIfBlank,
                                           expiresAt: hasExpiry ? expiresAt : nil, storageLocationID: storageLocationID,

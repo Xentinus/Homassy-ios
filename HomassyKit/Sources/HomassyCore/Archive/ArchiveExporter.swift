@@ -136,6 +136,19 @@ public final class ArchiveExporter {
                                          toLocationName: nonEmpty(e.toLocationName), occurredAt: e.occurredAt)
             }
 
+        // Purchases stay with their product when the store or the stock item is gone (P4-05).
+        let purchaseRecords = try fetch(PurchaseRecord.self, "product.space == %@", space)
+            .compactMap { r -> PurchaseRecordDTO? in
+                guard let product = r.product else { return nil }
+                return PurchaseRecordDTO(publicId: r.publicId, createdAt: r.createdAt, updatedAt: r.updatedAt,
+                                         createdBy: r.createdBy, updatedBy: r.updatedBy, product: product.publicId,
+                                         shoppingLocation: r.shoppingLocation?.publicId,
+                                         inventoryItem: r.inventoryItem?.publicId,
+                                         quantity: DecimalString(r.quantity), unit: r.unit,
+                                         price: r.price.map(DecimalString.init), currency: nonEmpty(r.currency),
+                                         purchasedAt: r.purchasedAt)
+            }
+
         let shoppingListItems = try fetch(ShoppingListItem.self, "shoppingList.space == %@", space)
             .compactMap { i -> ShoppingListItemDTO? in
                 guard let list = i.shoppingList else { return nil }
@@ -156,7 +169,7 @@ public final class ArchiveExporter {
             members: members, products: products, storageLocations: storageLocations,
             shoppingLocations: shoppingLocations, shoppingLists: shoppingLists,
             inventoryItems: inventoryItems, consumptionLogs: consumptionLogs,
-            inventoryEvents: inventoryEvents, shoppingListItems: shoppingListItems)
+            inventoryEvents: inventoryEvents, shoppingListItems: shoppingListItems, purchaseRecords: purchaseRecords)
         let manifest = ArchiveManifest(schemaVersion: ArchiveCodec.supportedSchemaVersion, exportedAt: now(),
                                        appVersion: appVersion, locale: locale.identifier(.bcp47),
                                        timeZone: timeZone.identifier, spaceName: space.name,
