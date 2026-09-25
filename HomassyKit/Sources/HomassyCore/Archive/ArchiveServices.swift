@@ -18,4 +18,8 @@ public final class ArchiveServices {
     public func makeExporter() -> ArchiveExporter {
         ArchiveExporter(context: persistence.viewContext)
     }
+
+    public func makeImporter() -> ArchiveImporter {
+        ArchiveImporter(persistence: persistence, spaceStore: spaceStore, userRecordName: userRecordName)
+    }
 }
