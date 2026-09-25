@@ -29,6 +29,8 @@ public final class ServiceContainer {
     public let history: HistoryProcessor?
     /// Rows recently changed by someone else, for the attribution flash.
     public let attribution = AttributionTracker()
+    /// iCloud sync status: AppModel's app-lifetime instance (P5-05); a fresh idle one in package tests.
+    public let syncStatus: SyncStatusModel
 
     public init(spaceStore: SpaceStore, context: NSManagedObjectContext, userRecordName: String,
                 canEdit: @escaping @MainActor (Space) -> Bool = { _ in true },
@@ -36,7 +38,8 @@ public final class ServiceContainer {
                 persistence: PersistenceController? = nil,
                 storeSearch: any StoreSearching = MapKitStoreSearch(),
                 sharing: SharingService? = nil,
-                historyDefaults: UserDefaults = .standard) {
+                historyDefaults: UserDefaults = .standard,
+                syncStatus: SyncStatusModel? = nil) {
         // When sharing is given, its permission check is every service's canEdit (read-only households).
         let permission: @MainActor (Space) -> Bool
         if let sharing {
@@ -45,6 +48,7 @@ public final class ServiceContainer {
             permission = canEdit
         }
         self.sharing = sharing
+        self.syncStatus = syncStatus ?? SyncStatusModel(privateStoreIdentifier: "")
         members = sharing.map { MemberService(persistence: $0.persistence, spaceStore: spaceStore,
                                               sharing: $0, userRecordName: userRecordName) }
         history = sharing.map { sharing in

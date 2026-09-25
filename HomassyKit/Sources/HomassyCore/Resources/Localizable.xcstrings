@@ -1482,6 +1482,144 @@
         }
       }
     },
+    "sync.problem.network" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud ist nicht erreichbar. Änderungen bleiben auf diesem Gerät gespeichert und werden synchronisiert, sobald du wieder online bist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't reach iCloud. Changes are saved on this device and will sync when you're back online."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Az iCloud nem érhető el. A változások ezen az eszközön megmaradnak, és szinkronizálódnak, amint újra online leszel."
+          }
+        }
+      }
+    },
+    "sync.problem.notAuthenticated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du bist von iCloud abgemeldet. Melde dich an, um weiter zu synchronisieren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're signed out of iCloud. Sign in to keep syncing."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kijelentkeztél az iCloudból. Jelentkezz be a szinkronizálás folytatásához."
+          }
+        }
+      }
+    },
+    "sync.problem.other" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud-Synchronisierung fehlgeschlagen (Fehler %lld). Homassy versucht es weiter."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud sync failed (error %lld). Homassy will keep trying."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Az iCloud-szinkronizálás sikertelen (hibakód: %lld). A Homassy tovább próbálkozik."
+          }
+        }
+      }
+    },
+    "sync.problem.quota.owner" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein iCloud-Speicher ist voll, deshalb wird dieser Haushalt nicht synchronisiert. Gib Speicher frei oder erweitere deinen iCloud-Speicher."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your iCloud storage is full, so this household can't sync. Free up space or upgrade your iCloud storage."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Megtelt az iCloud-tárhelyed, ezért a háztartás nem szinkronizál. Szabadíts fel helyet, vagy bővítsd az iCloud-tárhelyedet."
+          }
+        }
+      }
+    },
+    "sync.problem.quota.participant" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Haushalt wird nicht synchronisiert, weil der iCloud-Speicher des Eigentümers voll ist."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This household isn't syncing because its owner's iCloud storage is full."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A háztartás nem szinkronizál, mert a tulajdonos iCloud-tárhelye megtelt."
+          }
+        }
+      }
+    },
+    "sync.problem.zoneGone" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieser Haushalt ist nicht mehr verfügbar. Der Eigentümer hat ihn möglicherweise gelöscht oder dich entfernt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This household is no longer available. The owner may have deleted it or removed you."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez a háztartás már nem érhető el. Lehet, hogy a tulajdonos törölte, vagy eltávolított belőle."
+          }
+        }
+      }
+    },
     "undo.collapsed.consume %lld" : {
       "extractionState" : "manual",
       "localizations" : {

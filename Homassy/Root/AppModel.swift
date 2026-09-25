@@ -48,6 +48,8 @@ final class AppModel {
     let persistence: PersistenceController
     /// The one cloud-sharing object; it also answers SpaceStore's share lookups.
     let cloudSharing: any CloudSharing
+    /// iCloud sync status for the whole app lifetime (P5-05); fed by the container's event notifications.
+    let syncStatus: SyncStatusModel
     /// Accepts share invitations; exists before the account check, since a cold-start invitation arrives early.
     let shareAcceptance: ShareAcceptanceModel
     let spaceStore: SpaceStore
@@ -75,9 +77,22 @@ final class AppModel {
         cloudSharing = Self.makeCloudSharing(persistence: persistence)
         shareAcceptance = ShareAcceptanceModel(persistence: persistence, cloud: cloudSharing,
                                                containerIdentifier: Self.containerIdentifier)
+        syncStatus = SyncStatusModel(privateStoreIdentifier: persistence.privateStore.identifier ?? "")
         spaceStore = SpaceStore(persistence: persistence, sharing: cloudSharing)
         accountGate = AccountGateModel(provider: accountProvider, defaults: defaults)
         self.introduction = introduction
+        // Start consuming at once, before the stores finish their setup events.
+        let events = SyncEventSource.events(from: persistence.container)
+        Task { [syncStatus] in await syncStatus.consume(events) }
+        syncStatus.onNotAuthenticated = { [weak self] in Task { await self?.accountGate.refresh() } }
+        #if DEBUG
+        if UITestHooks.simulatesSyncProblem {
+            syncStatus.handle(SyncEventSnapshot(
+                id: UUID(), storeIdentifier: persistence.privateStore.identifier ?? "", kind: .exporting,
+                startDate: .now, endDate: .now, succeeded: false,
+                failure: SyncFailureInfo(code: 25, isCloudKit: true)))      // CKError.quotaExceeded
+        }
+        #endif
     }
 
     /// The app's real configuration, or the UI-test configuration when launched by HomassyUITests.
@@ -185,7 +200,7 @@ final class AppModel {
         let container = ServiceContainer(spaceStore: spaceStore, context: persistence.viewContext,
                                          userRecordName: userRecordName, notificationCenter: Self.notificationCenter,
                                          persistence: persistence, sharing: sharingService,
-                                         historyDefaults: Self.appDefaults)
+                                         historyDefaults: Self.appDefaults, syncStatus: syncStatus)
         #if DEBUG
         if UITestHooks.isSeeded {
             try? await UITestSeed.populate(container, in: personalSpace)

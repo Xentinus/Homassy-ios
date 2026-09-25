@@ -29,6 +29,10 @@ enum UITestHooks {
     /// so a UI test can see the ring and the "· now" caption (P5-04). Nothing else arrives from others locally.
     static var simulatesAttribution: Bool { contains("-uiTestAttribution") }
 
+    /// `-uiTestSyncProblem`: feed the sync status one "iCloud storage full" failure, which is persistent at once,
+    /// so a UI test sees the Household tab badge and callout (P5-05). Local stores post no CloudKit events.
+    static var simulatesSyncProblem: Bool { contains("-uiTestSyncProblem") }
+
     /// UI tests start every launch on Inventory with empty stacks: the scene delegate lets the system
     /// restore scene storage across test launches, which would leak the previous test's tab.
     static var ignoresRestoredSceneState: Bool { isActive }
