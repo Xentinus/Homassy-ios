@@ -18,6 +18,7 @@ enum ArchiveValidator {
         try unique(data.consumptionLogs.map(\.publicId))
         try unique(data.inventoryEvents.map(\.publicId))
         try unique(data.shoppingListItems.map(\.publicId))
+        try unique(data.purchaseRecords.map(\.publicId))
 
         let products = Set(data.products.map(\.publicId))
         let storage = Set(data.storageLocations.map(\.publicId))
@@ -42,6 +43,13 @@ enum ArchiveValidator {
         for event in data.inventoryEvents {
             try check(event.product, in: products, entity: .inventoryEvents, record: event.publicId, field: "product")
             try check(event.inventoryItem, in: items, entity: .inventoryEvents, record: event.publicId, field: "inventoryItem")
+        }
+        for record in data.purchaseRecords {
+            try check(record.product, in: products, entity: .purchaseRecords, record: record.publicId, field: "product")
+            try check(record.shoppingLocation, in: stores, entity: .purchaseRecords, record: record.publicId,
+                      field: "shoppingLocation")
+            try check(record.inventoryItem, in: items, entity: .purchaseRecords, record: record.publicId,
+                      field: "inventoryItem")
         }
         for item in data.shoppingListItems {
             try check(item.list, in: lists, entity: .shoppingListItems, record: item.publicId, field: "list")

@@ -18,6 +18,7 @@ struct ProductDetailView: View {
     @State private var editingItem: EditTarget?
     @State private var pendingTransfer: TransferRequest?
     @State private var feedback = 0
+    @State private var chartStore: PriceSummary.StoreLine?
 
     /// Which stock item the amount sheet is for, and whether it consumes or moves.
     struct AmountTarget: Identifiable {
@@ -64,6 +65,9 @@ struct ProductDetailView: View {
                     }
                 }
             }
+        }
+        .sheet(item: $chartStore) { line in
+            if let model { PriceChartSheet(model: model, line: line) }
         }
         .sheet(item: $editingItem) { target in
             if let form = model?.editForm(for: target.id) {
@@ -231,25 +235,21 @@ struct ProductDetailView: View {
             }
         }
         Section("product.detail.priceTrend") {
-            if model.priceHistory.isEmpty {
+            if model.priceSummary.isEmpty {
                 Text("product.detail.noPrices").foregroundStyle(.secondary)
             }
-            ForEach(model.priceHistory) { row in
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        if let date = row.date {
-                            Text(date, format: .dateTime.year().month().day())
-                        }
-                        (row.storeName.map { Text($0) } ?? Text("product.detail.unknownStore"))
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(row.priceText).font(.body.weight(.semibold)).monospacedDigit()
-                        Text(row.quantityText).font(.caption).foregroundStyle(.secondary)
-                    }
+            if let average = model.priceSummary.average {
+                LabeledContent("price.average") {
+                    Text(verbatim: model.unitPriceText(average.unitPrice, currency: average.currency, unit: average.unit))
+                        .font(.body.weight(.semibold))
+                        .monospacedDigit()
                 }
-                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("price.average")
+            }
+            ForEach(model.priceSummary.stores) { line in
+                Button { chartStore = line } label: { PriceStoreRow(model: model, line: line) }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("price.store.\(line.name ?? "none")")
             }
         }
         Section {

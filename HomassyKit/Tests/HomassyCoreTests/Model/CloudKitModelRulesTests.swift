@@ -52,7 +52,7 @@ struct CloudKitModelRulesTests {
         let model = HomassyModel.shared.entitiesByName
         let decimals = [("InventoryItem", "quantity"), ("InventoryItem", "price"),
                         ("ConsumptionLog", "quantity"), ("ConsumptionLog", "remaining"), ("InventoryEvent", "quantity"),
-                        ("ShoppingListItem", "quantity")]
+                        ("PurchaseRecord", "quantity"), ("PurchaseRecord", "price"), ("ShoppingListItem", "quantity")]
         for (entity, name) in decimals {
             #expect(model[entity]?.attributesByName[name]?.attributeType == .decimalAttributeType, "\(entity).\(name)")
         }
@@ -85,6 +85,12 @@ struct CloudKitModelRulesTests {
         #expect(rule("InventoryItem", "inventoryEvents") == .nullifyDeleteRule)
         #expect(rule("InventoryEvent", "product") == .nullifyDeleteRule)
         #expect(rule("InventoryEvent", "inventoryItem") == .nullifyDeleteRule)
+        #expect(rule("Product", "purchaseRecords") == .cascadeDeleteRule)
+        #expect(rule("ShoppingLocation", "purchaseRecords") == .nullifyDeleteRule)
+        #expect(rule("InventoryItem", "purchaseRecords") == .nullifyDeleteRule)
+        #expect(rule("PurchaseRecord", "product") == .nullifyDeleteRule)
+        #expect(rule("PurchaseRecord", "shoppingLocation") == .nullifyDeleteRule)
+        #expect(rule("PurchaseRecord", "inventoryItem") == .nullifyDeleteRule)
         #expect(rule("ShoppingList", "items") == .cascadeDeleteRule)
         #expect(rule("Product", "shoppingListItems") == .nullifyDeleteRule)
         #expect(rule("StorageLocation", "inventoryItems") == .nullifyDeleteRule)

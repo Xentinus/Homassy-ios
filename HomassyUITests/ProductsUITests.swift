@@ -202,6 +202,23 @@ final class ProductsUITests: XCTestCase {
         XCTAssertTrue(loose.waitForExistence(timeout: 3))
     }
 
+    /// P4-05: the seeded milk was stocked for 459 HUF, so the price trend shows an average and a store line,
+    /// and the store line opens the chart.
+    func testPriceTrendShowsTheAverageAndOpensTheChart() {
+        let app = openProducts()
+        openDetail("Milk", in: app)
+        let average = app.descendants(matching: .any)["price.average"]
+        for _ in 0..<6 where !average.exists { app.swipeUp() }
+        XCTAssertTrue(average.waitForExistence(timeout: 5))
+        XCTAssertTrue(average.label.contains("459"), average.label)
+        let store = app.buttons["price.store.none"]
+        XCTAssertTrue(store.exists)
+        keepScreenshot("product-price-trend", app)
+        store.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["price.chart"].waitForExistence(timeout: 5))
+        keepScreenshot("product-price-chart", app)
+    }
+
     private func keepScreenshot(_ name: String, _ app: XCUIApplication) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

@@ -22,6 +22,19 @@ struct ModelUpgradeTests {
         return model
     }
 
+    /// The model as it was before P4-05 added `PurchaseRecord`.
+    static func modelWithoutPurchaseRecord() -> NSManagedObjectModel {
+        let model = HomassyModel.shared.copy() as! NSManagedObjectModel
+        for entity in model.entities {
+            entity.managedObjectClassName = NSStringFromClass(NSManagedObject.self)
+            entity.properties = entity.properties.filter {
+                ($0 as? NSRelationshipDescription)?.destinationEntity?.name != "PurchaseRecord"
+            }
+        }
+        model.entities = model.entities.filter { $0.name != "PurchaseRecord" }
+        return model
+    }
+
     /// The model as it was from P2-06 to P2-09: Product still had `isEatable` and no `url`.
     static func modelWithEatableAndNoURL() -> NSManagedObjectModel {
         let model = HomassyModel.shared.copy() as! NSManagedObjectModel
@@ -95,5 +108,44 @@ struct ModelUpgradeTests {
         context.assign(event, to: try #require(milk.objectID.persistentStore))
         try context.save()
         #expect(milk.inventoryEventSet == [event])
+    }
+
+    @Test("A store from before PurchaseRecord opens and keeps its stock")
+    func addingPurchaseRecordMigratesTheLocalStore() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "ModelUpgrade-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let old = Self.modelWithoutPurchaseRecord()
+        #expect(old.entitiesByName["PurchaseRecord"] == nil)
+        for fileName in [PersistenceController.privateFileName, PersistenceController.sharedFileName] {
+            let coordinator = NSPersistentStoreCoordinator(managedObjectModel: old)
+            _ = try coordinator.addPersistentStore(type: .sqlite, at: directory.appending(path: fileName),
+                                                   options: [NSPersistentHistoryTrackingKey: true as NSNumber])
+            let context = NSManagedObjectContext(.mainQueue)
+            context.persistentStoreCoordinator = coordinator
+            let product = NSEntityDescription.insertNewObject(forEntityName: "Product", into: context)
+            product.setValue("Milk", forKey: "name")
+            product.setValue(UUID(), forKey: "publicId")
+            let item = NSEntityDescription.insertNewObject(forEntityName: "InventoryItem", into: context)
+            item.setValue(UUID(), forKey: "publicId")
+            item.setValue(product, forKey: "product")
+            item.setValue(NSDecimalNumber(string: "459"), forKey: "price")
+            try context.save()
+        }
+
+        let controller = try PersistenceController(mode: .sqlite(directory: directory))
+        let context = controller.viewContext
+        let items = try context.fetch(NSFetchRequest<InventoryItem>(entityName: "InventoryItem"))
+        #expect(items.count == 2)
+        #expect(items.allSatisfy { $0.price == 459 && $0.purchaseRecordSet.isEmpty })
+
+        let milk = try #require(items.first?.product)
+        let record = PurchaseRecord(context: context)
+        record.product = milk
+        record.price = 459
+        context.assign(record, to: try #require(milk.objectID.persistentStore))
+        try context.save()
+        #expect(milk.purchaseRecordSet == [record])
     }
 }

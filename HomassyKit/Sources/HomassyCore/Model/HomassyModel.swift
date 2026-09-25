@@ -62,6 +62,13 @@ public enum HomassyModel {
             string("toLocationName"),
             date("occurredAt"),
         ])
+        let purchaseRecord = entity(PurchaseRecord.self, [
+            decimal("quantity", default: 0),
+            string("unitRaw", default: MeasureUnit.piece.rawValue),
+            decimal("price"),
+            string("currency"),
+            date("purchasedAt"),
+        ])
         let shoppingLocation = entity(ShoppingLocation.self, [
             string("mapItemIdentifier"),
             string("name", default: ""),
@@ -102,6 +109,11 @@ public enum HomassyModel {
         relate(product, "inventoryEvents", toMany: true, rule: .cascadeDeleteRule, inventoryEvent, "product", toMany: false, rule: .nullifyDeleteRule)
         relate(inventoryItem, "inventoryEvents", toMany: true, rule: .nullifyDeleteRule, inventoryEvent, "inventoryItem", toMany: false, rule: .nullifyDeleteRule)
 
+        // Purchases (P4-05): the product owns them; a deleted store or stock item leaves them behind.
+        relate(product, "purchaseRecords", toMany: true, rule: .cascadeDeleteRule, purchaseRecord, "product", toMany: false, rule: .nullifyDeleteRule)
+        relate(shoppingLocation, "purchaseRecords", toMany: true, rule: .nullifyDeleteRule, purchaseRecord, "shoppingLocation", toMany: false, rule: .nullifyDeleteRule)
+        relate(inventoryItem, "purchaseRecords", toMany: true, rule: .nullifyDeleteRule, purchaseRecord, "inventoryItem", toMany: false, rule: .nullifyDeleteRule)
+
         // Shopping.
         relate(shoppingList, "items", toMany: true, rule: .cascadeDeleteRule, shoppingListItem, "shoppingList", toMany: false, rule: .nullifyDeleteRule)
         relate(product, "shoppingListItems", toMany: true, rule: .nullifyDeleteRule, shoppingListItem, "product", toMany: false, rule: .nullifyDeleteRule)
@@ -109,7 +121,7 @@ public enum HomassyModel {
 
         let model = NSManagedObjectModel()
         model.entities = [space, member, product, storageLocation, inventoryItem, consumptionLog, inventoryEvent,
-                          shoppingLocation, shoppingList, shoppingListItem]
+                          purchaseRecord, shoppingLocation, shoppingList, shoppingListItem]
         return model
     }
 

@@ -56,6 +56,7 @@ public final class ArchiveImporter {
         var inventoryItems: [UUID: Decision<InventoryItem>] = [:]
         var consumptionLogs: [UUID: Decision<ConsumptionLog>] = [:]
         var inventoryEvents: [UUID: Decision<InventoryEvent>] = [:]
+        var purchaseRecords: [UUID: Decision<PurchaseRecord>] = [:]
         var shoppingListItems: [UUID: Decision<ShoppingListItem>] = [:]
         var counts: [ArchiveEntity: EntityImportCounts] = [:]
     }
@@ -158,6 +159,8 @@ public final class ArchiveImporter {
                                           counts: &plan.counts) { $0.inventoryItem?.product?.space == target }
         plan.inventoryEvents = try decide(InventoryEvent.self, data.inventoryEvents, target: target,
                                           entity: .inventoryEvents, counts: &plan.counts) { $0.product?.space == target }
+        plan.purchaseRecords = try decide(PurchaseRecord.self, data.purchaseRecords, target: target,
+                                          entity: .purchaseRecords, counts: &plan.counts) { $0.product?.space == target }
         plan.shoppingListItems = try decide(ShoppingListItem.self, data.shoppingListItems, target: target,
                                             entity: .shoppingListItems, counts: &plan.counts) { $0.shoppingList?.space == target }
         return plan
@@ -374,6 +377,21 @@ public final class ArchiveImporter {
             event.occurredAt = dto.occurredAt
         }
         try afterApplying?(.inventoryEvents)
+
+        for dto in data.purchaseRecords {
+            let (record, write) = try materialize(plan.purchaseRecords[dto.publicId], in: space)
+            guard write else { continue }
+            copyMeta(dto, to: record)
+            record.product = try required(products[dto.product], .purchaseRecords, dto.publicId, "product")
+            record.shoppingLocation = dto.shoppingLocation.flatMap { stores[$0] }
+            record.inventoryItem = dto.inventoryItem.flatMap { items[$0] }
+            record.quantity = dto.quantity.value
+            record.unit = dto.unit
+            record.price = dto.price?.value
+            record.currency = dto.currency
+            record.purchasedAt = dto.purchasedAt
+        }
+        try afterApplying?(.purchaseRecords)
 
         for dto in data.shoppingListItems {
             let (item, write) = try materialize(plan.shoppingListItems[dto.publicId], in: space)

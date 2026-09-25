@@ -36,15 +36,6 @@ public struct StockGroup: Identifiable, Equatable, Sendable {
     public let items: [StockItemCard]
 }
 
-/// One purchase with a price, for the price trend.
-public struct PriceRow: Identifiable, Equatable, Sendable {
-    public let id: UUID
-    public let date: Date?
-    public let storeName: String?
-    public let priceText: String
-    public let quantityText: String
-}
-
 /// One `InventoryEvent`, with who did it. `actorName` is nil for the current user and for unknown members.
 public struct HistoryRow: Identifiable, Equatable, Sendable {
     public let id: UUID
@@ -73,7 +64,9 @@ public final class ProductDetailModel {
     public private(set) var fields: ProductFields?
     /// Every open item by location; `stockGroups` hides the ones whose delete is in its undo window.
     private var allGroups: [StockGroup] = []
-    public private(set) var priceHistory: [PriceRow] = []
+    /// Every priced purchase, newest first (P4-05); `priceSummary` is the average and the per-store lines.
+    public private(set) var priceEntries: [PriceEntry] = []
+    public private(set) var priceSummary = PriceSummary(average: nil, stores: [])
     public private(set) var history: [HistoryRow] = []
     public private(set) var errorMessage: String?
 
@@ -119,7 +112,8 @@ public final class ProductDetailModel {
         guard !product.isGone, let space = product.space else {
             fields = nil
             allGroups = []
-            priceHistory = []
+            priceEntries = []
+            priceSummary = PriceSummary(average: nil, stores: [])
             history = []
             openItems = []
             return
@@ -131,7 +125,8 @@ public final class ProductDetailModel {
         do {
             openItems = try inventory.items(for: product)
             allGroups = try groups(in: space)
-            priceHistory = try prices()
+            priceEntries = PriceHistory.entries(for: product, defaultCurrency: inventory.defaultCurrency)
+            priceSummary = PriceHistory.summary(of: priceEntries, preferredCurrency: inventory.defaultCurrency)
             history = try inventory.events(for: product).map(row)
         } catch {
             errorMessage = error.localizedDescription
@@ -268,16 +263,27 @@ public final class ProductDetailModel {
         return groups
     }
 
-    private func prices() throws -> [PriceRow] {
-        try inventory.items(for: product, includeConsumed: true)
-            .filter { $0.price != nil }
-            .sorted { ($0.purchasedAt ?? $0.createdAt) > ($1.purchasedAt ?? $1.createdAt) }
-            .map { item in
-                let currency = item.currency ?? inventory.defaultCurrency
-                let price = (item.price ?? 0).formatted(.currency(code: currency).locale(locale))
-                return PriceRow(id: item.publicId, date: item.purchasedAt, storeName: item.shoppingLocation?.name,
-                                priceText: price, quantityText: Quantity.format(item.purchasedQuantity, unit: item.unit, locale: locale))
-            }
+    // MARK: Price trend
+
+    /// One store's purchases for the chart, oldest first.
+    public func chartEntries(storeKey: String) -> [PriceEntry] { PriceHistory.chart(priceEntries, storeKey: storeKey) }
+
+    public func priceText(_ value: Decimal, currency: String) -> String {
+        value.formatted(.currency(code: currency).locale(locale))
+    }
+
+    /// "450 Ft / l".
+    public func unitPriceText(_ value: Decimal, currency: String, unit: MeasureUnit) -> String {
+        CoreLocalization.format("price.perUnit %@ %@", locale: locale, priceText(value, currency: currency),
+                                unit.shortLabel(for: 1, locale: locale))
+    }
+
+    public func unitPriceText(_ entry: PriceEntry) -> String {
+        unitPriceText(entry.unitPrice, currency: entry.currency, unit: entry.unit)
+    }
+
+    public func quantityText(_ entry: PriceEntry) -> String {
+        Quantity.format(entry.quantity, unit: entry.unit, locale: locale)
     }
 
     private func row(_ event: InventoryEvent) -> HistoryRow {
@@ -290,13 +296,6 @@ public final class ProductDetailModel {
                           occurredAt: event.occurredAt,
                           actorName: isCurrentUser ? nil : member?.displayName,
                           actorSeed: member?.colorSeed ?? actor, isCurrentUser: isCurrentUser)
-    }
-}
-
-private extension InventoryItem {
-    /// The amount bought: what is left plus everything consumed from it.
-    var purchasedQuantity: Decimal {
-        quantity + consumptionLogSet.reduce(0) { $0 + $1.quantity }
     }
 }
 

@@ -153,6 +153,8 @@ struct ImportFlowView: View {
                     switch group {
                     case .stock:
                         Text("archive.import.stock.detail \(preview.counts(for: .consumptionLogs).total) \(preview.counts(for: .inventoryEvents).total)")
+                    case .products where preview.counts(for: .purchaseRecords).total > 0:
+                        Text("archive.import.products.detail \(preview.counts(for: .purchaseRecords).total)")
                     case .shoppingLists:
                         Text("archive.import.lists.detail \(preview.counts(for: .shoppingListItems).total)")
                     default:

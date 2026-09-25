@@ -1,7 +1,7 @@
 import CoreData
 import Foundation
 
-/// The only writer of `InventoryItem`, `ConsumptionLog` and `InventoryEvent`.
+/// The only writer of `InventoryItem`, `ConsumptionLog`, `InventoryEvent` and `PurchaseRecord`.
 /// Every stock action records one `InventoryEvent` (README "Inventory history").
 @MainActor
 public final class InventoryService {
@@ -56,8 +56,59 @@ public final class InventoryService {
         item.storageLocation = storageLocation
         item.shoppingLocation = shoppingLocation
         record(.added, for: item, in: space, quantity: quantity, to: storageLocation?.name)
+        try recordPurchase(product: product, quantity: quantity, unit: unit, price: price, currency: item.currency,
+                           store: shoppingLocation, purchasedAt: purchasedAt, inventoryItem: item, commit: false)
         if commit { try context.save() }
         return item
+    }
+
+    /// Where, how much and for how much (P4-05). Written only when there is a price or a store; the price
+    /// is the amount paid for `quantity`. Returns nil when nothing was recorded.
+    @discardableResult
+    public func recordPurchase(product: Product, quantity: Decimal, unit: MeasureUnit, price: Decimal?,
+                               currency: String?, store: ShoppingLocation?, purchasedAt: Date?,
+                               inventoryItem: InventoryItem? = nil, commit: Bool = true) throws -> PurchaseRecord? {
+        guard price != nil || store != nil else { return nil }
+        guard !product.isGone, let space = product.space else { throw ServiceError.notFound }
+        try ensureEditable(space)
+        guard quantity > 0 else { throw ServiceError.quantityMustBePositive }
+        try ensure(store, isIn: space)
+
+        let record = spaceStore.insert(PurchaseRecord.self, in: space, by: userRecordName)
+        record.product = product
+        record.quantity = quantity
+        record.unit = unit
+        record.price = price
+        record.currency = price == nil ? nil : (currency?.nilIfBlank ?? defaultCurrency)
+        record.shoppingLocation = store
+        record.purchasedAt = purchasedAt ?? now()
+        record.inventoryItem = inventoryItem
+        if commit { try context.save() }
+        return record
+    }
+
+    /// Keeps a stock item's purchase record in step with an edit: updated, created once there is a price or a
+    /// store, removed once neither is left.
+    private func syncPurchaseRecord(of item: InventoryItem) throws {
+        let existing = item.purchaseRecordSet.first
+        guard item.price != nil || item.shoppingLocation != nil else {
+            if let existing { context.delete(existing) }
+            return
+        }
+        guard let existing else {
+            guard let product = item.product else { return }
+            try recordPurchase(product: product, quantity: item.purchasedQuantity, unit: item.unit, price: item.price,
+                               currency: item.currency, store: item.shoppingLocation, purchasedAt: item.purchasedAt,
+                               inventoryItem: item, commit: false)
+            return
+        }
+        existing.quantity = item.purchasedQuantity
+        existing.unit = item.unit
+        existing.price = item.price
+        existing.currency = item.price == nil ? nil : item.currency
+        existing.shoppingLocation = item.shoppingLocation
+        if let purchasedAt = item.purchasedAt { existing.purchasedAt = purchasedAt }
+        existing.stamp(by: userRecordName, now: now())
     }
 
     public func update(_ item: InventoryItem, quantity: Decimal, unit: MeasureUnit, expiresAt: Date?, purchasedAt: Date?,
@@ -79,6 +130,7 @@ public final class InventoryService {
         let relocated = previousLocation != storageLocation
         record(.edited, for: item, in: space, quantity: quantity,
                from: relocated ? previousLocation?.name : nil, to: storageLocation?.name)
+        try syncPurchaseRecord(of: item)
         try context.save()
     }
 
@@ -350,5 +402,12 @@ public final class InventoryService {
         guard let identifier = location.mapItemIdentifier?.nilIfBlank else { return nil }
         return try context.fetchEntities(
             ShoppingLocation.self, where: NSPredicate(format: "space == %@ AND mapItemIdentifier == %@", space, identifier)).first
+    }
+}
+
+extension InventoryItem {
+    /// The amount bought: what is left plus everything consumed from it.
+    var purchasedQuantity: Decimal {
+        quantity + consumptionLogSet.reduce(0) { $0 + $1.quantity }
     }
 }

@@ -16,6 +16,7 @@ public final class ShoppingLocation: NSManagedObject, HomassyEntity {
     @NSManaged public var space: Space?
     @NSManaged public var inventoryItems: NSSet?
     @NSManaged public var shoppingListItems: NSSet?
+    @NSManaged public var purchaseRecords: NSSet?
 
     public var latitude: Double? {
         get { primitive("latitude") }
@@ -29,6 +30,7 @@ public final class ShoppingLocation: NSManagedObject, HomassyEntity {
 
     public var inventoryItemSet: Set<InventoryItem> { inventoryItems as? Set<InventoryItem> ?? [] }
     public var shoppingListItemSet: Set<ShoppingListItem> { shoppingListItems as? Set<ShoppingListItem> ?? [] }
+    public var purchaseRecordSet: Set<PurchaseRecord> { purchaseRecords as? Set<PurchaseRecord> ?? [] }
 
     public override func awakeFromInsert() {
         super.awakeFromInsert()

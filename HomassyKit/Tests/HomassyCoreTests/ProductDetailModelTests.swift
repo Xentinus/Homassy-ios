@@ -59,7 +59,7 @@ struct ProductDetailModelTests {
         #expect(model.stockCount == 4)
     }
 
-    @Test("Price trend lists priced purchases newest first, including used-up items")
+    @Test("Price trend: average unit price and each store's latest, including used-up stock")
     func priceTrend() async throws {
         let env = try ServiceTestEnvironment()
         let milk = try await env.makeProduct("Milk", unit: .liter)
@@ -67,14 +67,20 @@ struct ProductDetailModelTests {
         let old = try service.addStock(product: milk, quantity: 1, unit: .liter, expiresAt: nil, purchasedAt: env.day(-10),
                                        price: Decimal(string: "3.2")!, currency: "EUR", storageLocation: nil, shoppingLocation: nil)
         try service.markUsedUp(old)
-        try service.addStock(product: milk, quantity: 1, unit: .liter, expiresAt: nil, purchasedAt: env.day(-1),
-                             price: Decimal(string: "3.5")!, currency: "EUR", storageLocation: nil, shoppingLocation: nil)
+        try service.addStock(product: milk, quantity: 2, unit: .liter, expiresAt: nil, purchasedAt: env.day(-1),
+                             price: 7, currency: "EUR", storageLocation: nil, shoppingLocation: nil)
         try env.stock(milk, 1)                                                        // no price
 
-        let rows = model(env, milk).priceHistory
-        #expect(rows.map(\.priceText) == ["€3.50", "€3.20"])
-        #expect(rows.map(\.date) == [env.day(-1), env.day(-10)])
-        #expect(rows[0].quantityText == "1\u{00A0}l")
+        let model = model(env, milk)
+        #expect(model.priceEntries.map(\.price) == [7, Decimal(string: "3.2")!])
+        let average = try #require(model.priceSummary.average)
+        #expect(model.unitPriceText(average.unitPrice, currency: average.currency, unit: average.unit) == "€3.35 / l")
+        let line = try #require(model.priceSummary.stores.first)
+        #expect(line.key == PriceHistory.noStoreKey)
+        #expect(line.count == 2)
+        #expect(model.unitPriceText(line.latest) == "€3.50 / l")
+        #expect(model.quantityText(line.latest) == "2\u{00A0}l")
+        #expect(model.chartEntries(storeKey: line.key).map(\.date) == [env.day(-10), env.day(-1)])
     }
 
     @Test("History lists every event newest first, with who did it")
@@ -107,7 +113,7 @@ struct ProductDetailModelTests {
         try env.productService().delete(milk)
         model.reload()
         #expect(model.fields == nil)
-        #expect(model.stockGroups.isEmpty && model.history.isEmpty && model.priceHistory.isEmpty)
+        #expect(model.stockGroups.isEmpty && model.history.isEmpty && model.priceEntries.isEmpty)
     }
 
     // MARK: Actions

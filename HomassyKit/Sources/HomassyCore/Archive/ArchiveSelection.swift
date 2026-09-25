@@ -45,7 +45,8 @@ public struct ArchiveFilterResult: Equatable, Sendable {
 
 extension ArchiveData {
     /// The part of the archive `selection` asks for, plus what it references (user rules, 2026-09-25):
-    /// stock follows the imported products and brings its storage locations and stores, even unpicked ones;
+    /// stock and purchases follow the imported products and bring their storage locations and stores, even
+    /// unpicked ones;
     /// shopping lists bring their stores, and list items of products left out arrive without a product,
     /// named after it.
     /// The order of every collection is kept, and the result always passes `ArchiveValidator`.
@@ -58,6 +59,13 @@ extension ArchiveData {
         let itemIDs = Set(keptItems.map(\.publicId))
         let keptLogs = consumptionLogs.filter { itemIDs.contains($0.inventoryItem) }
         let keptEvents = groups.contains(.stock) ? inventoryEvents.filter { productIDs.contains($0.product) } : []
+        // Purchases are the product's price history: they come with the product, and lose a stock item left out.
+        let keptPurchases = purchaseRecords.filter { productIDs.contains($0.product) }.map { record in
+            guard let item = record.inventoryItem, !itemIDs.contains(item) else { return record }
+            var copy = record
+            copy.inventoryItem = nil
+            return copy
+        }
 
         let keptLists = shoppingLists.filter { selection.keeps($0.publicId, in: .shoppingLists) }
         let listIDs = Set(keptLists.map(\.publicId))
@@ -89,7 +97,8 @@ extension ArchiveData {
                                  referenced: Set(keptItems.compactMap(\.storageLocation)))
         let keptStores = places(shoppingLocations, group: .shoppingLocations, entity: .shoppingLocations,
                                 referenced: Set(keptItems.compactMap(\.shoppingLocation)
-                                                + keptListItems.compactMap(\.shoppingLocation)))
+                                                + keptListItems.compactMap(\.shoppingLocation)
+                                                + keptPurchases.compactMap(\.shoppingLocation)))
 
         let data = ArchiveData(space: space,
                                members: members.filter { selection.keeps($0.publicId, in: .members) },
@@ -100,7 +109,8 @@ extension ArchiveData {
                                inventoryItems: keptItems,
                                consumptionLogs: keptLogs,
                                inventoryEvents: keptEvents,
-                               shoppingListItems: keptListItems)
+                               shoppingListItems: keptListItems,
+                               purchaseRecords: keptPurchases)
         return ArchiveFilterResult(data: data, autoIncluded: autoIncluded, unlinkedListItems: unlinked)
     }
 }
