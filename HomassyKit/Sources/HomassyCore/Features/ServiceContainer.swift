@@ -14,6 +14,7 @@ public final class ServiceContainer {
     public let products: ProductService
     public let storageLocations: StorageLocationService
     public let inventory: InventoryService
+    public let shopping: ShoppingService
     public let notifications: ExpiryNotificationCoordinator
     /// Export and import. Nil only in package tests that build the container without persistence.
     public let archive: ArchiveServices?
@@ -29,6 +30,7 @@ public final class ServiceContainer {
         storageLocations = StorageLocationService(spaceStore: spaceStore, context: context,
                                                   userRecordName: userRecordName, canEdit: canEdit)
         inventory = InventoryService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: canEdit)
+        shopping = ShoppingService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: canEdit)
         notifications = ExpiryNotificationCoordinator(
             context: context, center: notificationCenter,
             locale: Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en"))
