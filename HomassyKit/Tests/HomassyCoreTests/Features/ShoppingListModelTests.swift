@@ -12,8 +12,7 @@ struct ShoppingListModelTests {
     init() throws { stack = try ShoppingTestStack() }
 
     private func makeModel(_ list: ShoppingList) -> ShoppingListModel {
-        ShoppingListModel(service: stack.service, inventory: stack.inventory, list: list, undoQueue: queue,
-                          pending: stack.pending, locale: locale)
+        ShoppingListModel(service: stack.service, list: list, undoQueue: queue, pending: stack.pending, locale: locale)
     }
 
     @Test func rowsDescribeTheItemsStillToBuy() throws {
@@ -48,27 +47,6 @@ struct ShoppingListModelTests {
         #expect(row.image == Data([1, 2, 3]))
     }
 
-    @Test func quickPurchaseHidesAndUndoBringsBackWithoutStock() throws {
-        let list = try stack.service.createList(name: "Heti", in: stack.space)
-        let bread = try stack.service.addItem(to: list, customName: "Kenyér")
-        let model = makeModel(list)
-
-        model.quickPurchase(bread.publicId)
-        #expect(model.remaining.isEmpty)
-        #expect(queue.pending.count == 1)
-        #expect(queue.pending.first?.kind == .purchase)
-
-        queue.undo(try #require(queue.pending.first).id)
-        model.reload()
-        #expect(model.remaining.map(\.name) == ["Kenyér"])
-        #expect(try stack.count(InventoryItem.self) == 0)
-
-        model.quickPurchase(bread.publicId)
-        try queue.commitAll()
-        model.reload()
-        #expect(model.remaining.isEmpty)
-        #expect(try stack.count(InventoryItem.self) == 1)
-    }
 
     @Test func deleteHidesAndUndoBringsBack() throws {
         let list = try stack.service.createList(name: "Heti", in: stack.space)

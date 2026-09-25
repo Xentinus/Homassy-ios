@@ -52,5 +52,4 @@ extension XCUIApplication {
     }
 
 
-    func shoppingItemToggle(_ name: String) -> XCUIElement { buttons["shopping.item.\(name).toggle"] }
 }

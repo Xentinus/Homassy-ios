@@ -1,8 +1,9 @@
 import HomassyCore
 import SwiftUI
 
-/// Tapping an item card: how much was bought, from where (the nearest shop is suggested), whether the
-/// rest stays on the list, and the optional price, expiry and storage location. Goes straight to inventory.
+/// Tapping an item card: how much was bought, whether the rest stays on the list, and whether it goes into
+/// inventory (default on) from where (the nearest shop is suggested), with the optional price, expiry and
+/// storage location. Off, the item only leaves the list.
 struct PurchaseSheet: View {
     let services: ServiceContainer
 
@@ -38,32 +39,12 @@ struct PurchaseSheet: View {
                     Text("shopping.purchase.howMuch")
                 }
                 Section {
-                    StoreSuggestionRow(name: model.storeName, distance: model.suggestedDistance) { pickingStore = true }
-                } header: {
-                    Text("shopping.purchase.fromWhere")
+                    Toggle("shopping.purchase.addToInventory", isOn: $model.addToInventory.animation())
+                        .accessibilityIdentifier("shopping.purchase.addToInventory")
+                } footer: {
+                    if !model.addToInventory { Text("shopping.purchase.addToInventory.off") }
                 }
-                Section {
-                    HStack {
-                        TextField("stock.price", text: $model.priceText)
-                            .keyboardType(.decimalPad)
-                            .accessibilityIdentifier("shopping.purchase.price")
-                        TextField("stock.currency", text: $model.currency)
-                            .textInputAutocapitalization(.characters)
-                            .autocorrectionDisabled()
-                            .multilineTextAlignment(.trailing)
-                            .frame(maxWidth: 72)
-                    }
-                    Toggle("stock.hasExpiry", isOn: $model.hasExpiry.animation())
-                    if model.hasExpiry {
-                        DatePicker("stock.expiresAt", selection: $model.expiresAt, displayedComponents: .date)
-                    }
-                    Picker("stock.location", selection: $model.storageLocationID) {
-                        Text("inventory.noLocation").tag(UUID?.none)
-                        ForEach(model.storageOptions) { Text(verbatim: $0.name).tag(Optional($0.id)) }
-                    }
-                } header: {
-                    Text("shopping.purchase.toInventory")
-                }
+                if model.addToInventory { inventorySections }
                 if let error = model.errorMessage {
                     Section { Text(verbatim: error).foregroundStyle(.red) }
                 }
@@ -92,6 +73,36 @@ struct PurchaseSheet: View {
             }
         }
         .presentationDetents([.large])
+    }
+
+    @ViewBuilder private var inventorySections: some View {
+        Section {
+            StoreSuggestionRow(name: model.storeName, distance: model.suggestedDistance) { pickingStore = true }
+        } header: {
+            Text("shopping.purchase.fromWhere")
+        }
+        Section {
+            HStack {
+                TextField("stock.price", text: $model.priceText)
+                    .keyboardType(.decimalPad)
+                    .accessibilityIdentifier("shopping.purchase.price")
+                TextField("stock.currency", text: $model.currency)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 72)
+            }
+            Toggle("stock.hasExpiry", isOn: $model.hasExpiry.animation())
+            if model.hasExpiry {
+                DatePicker("stock.expiresAt", selection: $model.expiresAt, displayedComponents: .date)
+            }
+            Picker("stock.location", selection: $model.storageLocationID) {
+                Text("inventory.noLocation").tag(UUID?.none)
+                ForEach(model.storageOptions) { Text(verbatim: $0.name).tag(Optional($0.id)) }
+            }
+        } header: {
+            Text("shopping.purchase.toInventory")
+        }
     }
 
     private func confirm() {
