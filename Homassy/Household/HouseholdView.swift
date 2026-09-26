@@ -27,6 +27,8 @@ struct HouseholdView: View {
             if let space = services.activeSpace(selectedID: selection.selectedSpaceID) {
                 HouseholdSpaceSections(space: space)
             }
+
+            SupportSection()
         }
         .navigationTitle(AppTab.household.title)
         .toolbar {
