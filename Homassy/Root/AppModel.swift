@@ -185,6 +185,7 @@ final class AppModel {
     static var notificationCenter: any NotificationCentering {
         #if DEBUG
         if UITestHooks.isActive { return UITestNotificationCenter() }
+        if NotificationPreviewCenter.isRequested { return NotificationPreviewCenter() }
         #endif
         return SystemNotificationCenter()
     }

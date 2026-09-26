@@ -72,6 +72,7 @@ nonisolated struct UITestNotificationCenter: NotificationCentering {
     func add(_ notification: PlannedNotification) async throws {}
     func removePendingRequests(withIdentifiers identifiers: [String]) async {}
     func setBadgeCount(_ count: Int) async throws {}
+    func addLocation(_ reminder: PlannedStoreReminder) async throws {}
 }
 
 /// Never shows the system prompt during UI tests.

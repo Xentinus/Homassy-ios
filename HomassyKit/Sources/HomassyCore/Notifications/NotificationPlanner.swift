@@ -20,6 +20,14 @@ public struct PlannedNotification: Sendable, Equatable {
     public let dateComponents: DateComponents
     public let title: String
     public let body: String
+
+    public init(identifier: String, fireDate: Date, dateComponents: DateComponents, title: String, body: String) {
+        self.identifier = identifier
+        self.fireDate = fireDate
+        self.dateComponents = dateComponents
+        self.title = title
+        self.body = body
+    }
 }
 
 /// Pure: expiry snapshots in, summary notifications out (spec §6.5). Never per item, never over 64.
