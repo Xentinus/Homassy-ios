@@ -62,6 +62,31 @@ public final class InventoryService {
         return item
     }
 
+    /// Several lots of one product at once (P2-08a). Every lot is checked before anything is inserted, so a bad
+    /// lot adds nothing. The paid total is split across the lots by amount; each lot gets its own purchase record.
+    @discardableResult
+    public func addStock(product: Product, lots: [LotDetails], unit: MeasureUnit, purchasedAt: Date?,
+                         totalPrice: Decimal?, currency: String?, shoppingLocation: ShoppingLocation?,
+                         commit: Bool = true) throws -> [InventoryItem] {
+        guard !product.isGone, let space = product.space else { throw ServiceError.notFound }
+        try ensureEditable(space)
+        guard !lots.isEmpty else { throw ServiceError.quantityMustBePositive }
+        try ensure(shoppingLocation, isIn: space)
+        for lot in lots { try validate(quantity: lot.quantity, expiresAt: lot.expiresAt, purchasedAt: purchasedAt) }
+        let locations = try lots.map { lot in try lot.storageLocationID.map { try storageLocation($0, in: space) } }
+        let shares = totalPrice.map { ProportionalSplit.split(total: $0, weights: lots.map(\.quantity)) }
+
+        var items: [InventoryItem] = []
+        for (index, lot) in lots.enumerated() {
+            items.append(try addStock(product: product, quantity: lot.quantity, unit: unit, expiresAt: lot.expiresAt,
+                                      purchasedAt: purchasedAt, price: shares?[index], currency: currency,
+                                      storageLocation: locations[index], shoppingLocation: shoppingLocation,
+                                      commit: false))
+        }
+        if commit { try context.save() }
+        return items
+    }
+
     /// Where, how much and for how much (P4-05). Written only when there is a price or a store; the price
     /// is the amount paid for `quantity`. Returns nil when nothing was recorded.
     @discardableResult
@@ -111,11 +136,20 @@ public final class InventoryService {
         existing.stamp(by: userRecordName, now: now())
     }
 
+    /// Keeps the item's store (the callers that do not edit the store).
     public func update(_ item: InventoryItem, quantity: Decimal, unit: MeasureUnit, expiresAt: Date?, purchasedAt: Date?,
                        price: Decimal?, currency: String?, storageLocation: StorageLocation?) throws {
+        try update(item, quantity: quantity, unit: unit, expiresAt: expiresAt, purchasedAt: purchasedAt, price: price,
+                   currency: currency, storageLocation: storageLocation, shoppingLocation: item.shoppingLocation)
+    }
+
+    public func update(_ item: InventoryItem, quantity: Decimal, unit: MeasureUnit, expiresAt: Date?, purchasedAt: Date?,
+                       price: Decimal?, currency: String?, storageLocation: StorageLocation?,
+                       shoppingLocation: ShoppingLocation?) throws {
         let space = try editableSpace(of: item)
         try validate(quantity: quantity, expiresAt: expiresAt, purchasedAt: purchasedAt)
         try ensure(storageLocation, isIn: space)
+        try ensure(shoppingLocation, isIn: space)
         let previousLocation = item.storageLocation
         item.quantity = quantity
         item.unit = unit
@@ -124,6 +158,7 @@ public final class InventoryService {
         item.price = price
         item.currency = currency?.nilIfBlank ?? defaultCurrency
         item.storageLocation = storageLocation
+        item.shoppingLocation = shoppingLocation
         item.isFullyConsumed = false
         item.consumedAt = nil
         item.stamp(by: userRecordName, now: now())
@@ -357,6 +392,14 @@ public final class InventoryService {
     private func ensure(_ location: ShoppingLocation?, isIn space: Space) throws {
         guard let location else { return }
         guard !location.isGone, location.space == space else { throw ServiceError.notFound }
+    }
+
+    /// The space's storage location with this id; a location of another space or a deleted one is `notFound`.
+    private func storageLocation(_ id: UUID, in space: Space) throws -> StorageLocation {
+        let match = try context.fetchEntities(
+            StorageLocation.self, where: NSPredicate(format: "space == %@ AND publicId == %@", space, id as NSUUID)).first
+        guard let match, !match.isGone else { throw ServiceError.notFound }
+        return match
     }
 
     private func validate(quantity: Decimal, expiresAt: Date?, purchasedAt: Date?) throws {
