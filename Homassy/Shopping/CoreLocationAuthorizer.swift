@@ -6,6 +6,8 @@ import HomassyCore
 final class CoreLocationAuthorizer: NSObject, LocationAuthorizing, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var waiters: [CheckedContinuation<LocationAccess, Never>] = []
+    /// Called whenever the authorization changes (P4-06 refreshes the store reminders then).
+    var onAccessChange: (@MainActor () -> Void)?
 
     override init() {
         super.init()
@@ -51,6 +53,7 @@ final class CoreLocationAuthorizer: NSObject, LocationAuthorizing, CLLocationMan
             let pending = self.waiters
             self.waiters.removeAll()
             for waiter in pending { waiter.resume(returning: current) }
+            self.onAccessChange?()
         }
     }
 }

@@ -10,6 +10,7 @@ struct MainTabView: View {
     @Environment(UndoQueue.self) private var undoQueue
     @Environment(SpaceSelection.self) private var selection
     @Environment(SyncStatusModel.self) private var syncStatus
+    @State private var tapRouter = NotificationTapRouter.shared
 
     @ViewBuilder
     private var inventoryRoot: some View {
@@ -60,6 +61,11 @@ struct MainTabView: View {
             Text(verbatim: archiveRouter.errorMessage ?? "")
         }
         .task { backupReminder.recordFirstUseIfNeeded() }
+        .onChange(of: tapRouter.pendingTab, initial: true) { _, tab in
+            guard let tab else { return }
+            selectedTab = tab
+            tapRouter.pendingTab = nil
+        }
         #if DEBUG
         .task { if UITestHooks.ignoresRestoredSceneState { selectedTab = .inventory } }
         #endif

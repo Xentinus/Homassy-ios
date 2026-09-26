@@ -48,6 +48,8 @@ final class AppModel {
     let persistence: PersistenceController
     /// The one cloud-sharing object; it also answers SpaceStore's share lookups.
     let cloudSharing: any CloudSharing
+    /// Location for the store reminders (P4-06); nil under UI tests, so they never read the position.
+    private let storeLocation: CoreLocationAuthorizer?
     /// iCloud sync status for the whole app lifetime (P5-05); fed by the container's event notifications.
     let syncStatus: SyncStatusModel
     /// Accepts share invitations; exists before the account check, since a cold-start invitation arrives early.
@@ -74,6 +76,12 @@ final class AppModel {
          defaults: UserDefaults = AppModel.appDefaults,
          introduction: IntroductionModel) {
         self.persistence = persistence
+        StoreReminderSettings.registerDefault()
+        #if DEBUG
+        storeLocation = UITestHooks.isActive ? nil : CoreLocationAuthorizer()
+        #else
+        storeLocation = CoreLocationAuthorizer()
+        #endif
         cloudSharing = Self.makeCloudSharing(persistence: persistence)
         shareAcceptance = ShareAcceptanceModel(persistence: persistence, cloud: cloudSharing,
                                                containerIdentifier: Self.containerIdentifier)
@@ -201,7 +209,9 @@ final class AppModel {
         let container = ServiceContainer(spaceStore: spaceStore, context: persistence.viewContext,
                                          userRecordName: userRecordName, notificationCenter: Self.notificationCenter,
                                          persistence: persistence, sharing: sharingService,
-                                         historyDefaults: Self.appDefaults, syncStatus: syncStatus)
+                                         historyDefaults: Self.appDefaults, syncStatus: syncStatus,
+                                         locationAuthorizer: storeLocation,
+                                         storeRemindersEnabled: { StoreReminderSettings.isEnabled })
         #if DEBUG
         if UITestHooks.isSeeded {
             try? await UITestSeed.populate(container, in: personalSpace)
@@ -216,6 +226,7 @@ final class AppModel {
         }
         #endif
         services = container
+        storeLocation?.onAccessChange = { container.storeReminders.scheduleRefresh(.authorization) }
         startRemoteChanges(for: container)
     }
 
@@ -226,11 +237,15 @@ final class AppModel {
         guard let processor = container.history else { return }
         let attribution = container.attribution
         let notifications = container.notifications
+        let storeReminders = container.storeReminders
         let observer = RemoteChangeObserver(container: persistence.container, processor: processor) { batch in
             attribution.record(batch.foreignChanges)
             let scheduleRelevant: Set<String> = ["Space", "Product", "InventoryItem", "StorageLocation"]
             if !batch.changedEntityNames.isDisjoint(with: scheduleRelevant) {
                 notifications.scheduleRefresh(.remoteChange)    // also refreshes the badge
+            }
+            if !batch.changedEntityNames.isDisjoint(with: ["ShoppingListItem", "ShoppingLocation", "ShoppingList"]) {
+                storeReminders.scheduleRefresh(.remoteChange)
             }
         }
         observer.start()
