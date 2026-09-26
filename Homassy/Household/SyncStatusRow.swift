@@ -1,7 +1,8 @@
 import HomassyCore
 import SwiftUI
 
-/// The Household tab's iCloud row: last sync, syncing, or the current problem. Local mode says sync needs iCloud.
+/// The space settings sheet's iCloud row: last sync, syncing, or the current problem. Local mode says sync
+/// needs iCloud.
 struct SyncStatusRow: View {
     @Environment(SyncStatusModel.self) private var status
     @Environment(ServiceContainer.self) private var services

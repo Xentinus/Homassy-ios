@@ -17,7 +17,6 @@ final class MemberUITests: XCTestCase {
     /// Creates a household without the owner's name, so member setup is due for it.
     @MainActor
     private func createUnnamedHousehold(_ name: String, in app: XCUIApplication) {
-        app.openTab("Household")
         let switcher = app.buttons["spaceSwitcher"].firstMatch
         XCTAssertTrue(switcher.waitForExistence(timeout: 10))
         switcher.tap()
@@ -50,6 +49,7 @@ final class MemberUITests: XCTestCase {
         XCTAssertTrue(mocha.isSelected)
         attachScreenshot(app, "member setup")
         app.buttons["member.setup.save"].tap()
+        app.openSettings()
 
         let me = app.descendants(matching: .any)["member.row.me"].firstMatch
         XCTAssertTrue(me.waitForExistence(timeout: 5))
@@ -72,6 +72,7 @@ final class MemberUITests: XCTestCase {
         let later = app.buttons["member.setup.later"]
         XCTAssertTrue(later.waitForExistence(timeout: 8), "member setup was not offered")
         later.tap()
+        app.openSettings()
 
         let setName = app.buttons["member.editSelf"]
         XCTAssertTrue(setName.waitForExistence(timeout: 5))
@@ -83,7 +84,6 @@ final class MemberUITests: XCTestCase {
     func testANamedOwnerIsNotAskedAgain() {
         let app = XCUIApplication.homassy()
         app.launch()
-        app.openTab("Household")
         let switcher = app.buttons["spaceSwitcher"].firstMatch
         XCTAssertTrue(switcher.waitForExistence(timeout: 10))
         switcher.tap()
@@ -97,6 +97,7 @@ final class MemberUITests: XCTestCase {
         owner.typeText("Anna")
         app.buttons["household.new.create"].tap()
         app.buttons["household.new.done"].tap()
+        app.openSettings()
 
         XCTAssertTrue(app.descendants(matching: .any)["member.row.me"].firstMatch.waitForExistence(timeout: 5))
         XCTAssertFalse(app.textFields["member.setup.name"].waitForExistence(timeout: 2))

@@ -30,7 +30,8 @@ enum UITestHooks {
     static var simulatesAttribution: Bool { contains("-uiTestAttribution") }
 
     /// `-uiTestSyncProblem`: feed the sync status one "iCloud storage full" failure, which is persistent at once,
-    /// so a UI test sees the Household tab badge and callout (P5-05). Local stores post no CloudKit events.
+    /// so a UI test sees the space menu's red dot and the settings callout (P5-05). Local stores post no CloudKit
+    /// events.
     static var simulatesSyncProblem: Bool { contains("-uiTestSyncProblem") }
 
     /// UI tests start every launch on Inventory with empty stacks: the scene delegate lets the system

@@ -1,7 +1,7 @@
 import HomassyCore
 import SwiftUI
 
-/// The Household tab's Backup section: export the selected space, import a file, and the last export date.
+/// The space settings sheet's Backup section: export the selected space, import a file, and the last export date.
 struct ArchiveSection: View {
     let space: Space
 
