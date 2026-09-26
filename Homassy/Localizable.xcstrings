@@ -7971,6 +7971,75 @@
         }
       }
     },
+    "support.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homassy ist kostenlos, ohne Werbung und ohne kostenpflichtige Funktionen. Wenn du die Entwicklung unterstützen möchtest, kannst du das tun — du kaufst damit nichts und schaltest nichts frei. Danke so oder so."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homassy is free, has no ads and no paid features. If you would like to support its development, you can — it buys nothing and unlocks nothing. Thank you either way."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Homassy ingyenes, nincs benne hirdetés és nincs fizetős funkció. Ha szeretnéd támogatni a fejlesztést, megteheted — semmit nem vásárolsz vele és semmit nem old fel. Így is, úgy is köszönöm."
+          }
+        }
+      }
+    },
+    "support.open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entwicklung unterstützen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support development"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fejlesztés támogatása"
+          }
+        }
+      }
+    },
+    "support.open.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffnet die Unterstützungsseite in Safari."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the support page in Safari."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Megnyitja a támogatási oldalt a Safariban."
+          }
+        }
+      }
+    },
     "sync.callout.title" : {
       "extractionState" : "manual",
       "localizations" : {
