@@ -5,12 +5,14 @@ public struct ExpirySnapshot: Sendable, Equatable {
     public let name: String
     public let expiresAt: Date
     public let spaceName: String
+    public let spaceID: UUID?
 
-    public init(id: UUID, name: String, expiresAt: Date, spaceName: String) {
+    public init(id: UUID, name: String, expiresAt: Date, spaceName: String, spaceID: UUID? = nil) {
         self.id = id
         self.name = name
         self.expiresAt = expiresAt
         self.spaceName = spaceName
+        self.spaceID = spaceID
     }
 }
 
@@ -20,13 +22,17 @@ public struct PlannedNotification: Sendable, Equatable {
     public let dateComponents: DateComponents
     public let title: String
     public let body: String
+    /// The space a tap opens: the one with most of the items (user choice, 2026-09-26).
+    public let targetSpaceID: UUID?
 
-    public init(identifier: String, fireDate: Date, dateComponents: DateComponents, title: String, body: String) {
+    public init(identifier: String, fireDate: Date, dateComponents: DateComponents, title: String, body: String,
+                targetSpaceID: UUID? = nil) {
         self.identifier = identifier
         self.fireDate = fireDate
         self.dateComponents = dateComponents
         self.title = title
         self.body = body
+        self.targetSpaceID = targetSpaceID
     }
 }
 
@@ -89,8 +95,8 @@ public enum NotificationPlanner {
 
     private static func notification(prefix: String, day: Date, fire: Date, calendar: Calendar, locale: Locale,
                                      title: String, countKey: String, items: [ExpirySnapshot]) -> PlannedNotification {
-        let count = CoreLocalization.format(countKey, locale: locale, items.count)
-        let body = CoreLocalization.format("notification.body %@ %@", locale: locale, count, names(items, locale: locale))
+        // Only what is wrong, never item names; a tap shows the items (user request, 2026-09-26).
+        let body = CoreLocalization.format(countKey, locale: locale, items.count)
         let components = calendar.dateComponents([.year, .month, .day], from: day)
         return PlannedNotification(
             identifier: prefix + dayString(components),
@@ -98,19 +104,19 @@ public enum NotificationPlanner {
             dateComponents: DateComponents(year: components.year, month: components.month, day: components.day,
                                            hour: fireHour, minute: 0),
             title: CoreLocalization.string(title, locale: locale),
-            body: body)
+            body: body,
+            targetSpaceID: mostCommonSpace(items.map(\.spaceID)))
     }
 
-    static func names(_ items: [ExpirySnapshot], locale: Locale) -> String {
-        let showSpaces = Set(items.map(\.spaceName)).count > 1
-        let sorted = items.sorted {
-            if $0.expiresAt != $1.expiresAt { return $0.expiresAt < $1.expiresAt }
-            return $0.name.localizedStandardCompare($1.name) == .orderedAscending
+    /// The space most of the items belong to; ties go to the first one seen.
+    static func mostCommonSpace(_ ids: [UUID?]) -> UUID? {
+        let known = ids.compactMap { $0 }
+        let counts = Dictionary(grouping: known, by: { $0 }).mapValues(\.count)
+        return known.max { lhs, rhs in
+            counts[lhs, default: 0] != counts[rhs, default: 0]
+                ? counts[lhs, default: 0] < counts[rhs, default: 0]
+                : known.firstIndex(of: lhs)! > known.firstIndex(of: rhs)!
         }
-        let shown = sorted.prefix(namesShown).map { showSpaces ? "\($0.name) (\($0.spaceName))" : $0.name }
-        let joined = shown.joined(separator: ", ")
-        let remaining = sorted.count - shown.count
-        return remaining > 0 ? CoreLocalization.format("notification.names.more %@ %lld", locale: locale, joined, remaining) : joined
     }
 
     static func dayString(_ components: DateComponents) -> String {
