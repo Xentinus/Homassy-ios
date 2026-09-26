@@ -37,18 +37,27 @@ final class NotificationTapRouter {
 final class NotificationResponder: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
     static let shared = NotificationResponder()
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification)
-        async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+    // Completion-handler forms on purpose: the async forms finish on a background thread, and UIKit then aborts
+    // (`_performBlockAfterCATransactionCommitSynchronizes` assertion, seen on the iPhone 2026-09-26). The handlers are
+    // always called on the main thread.
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                            withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void) {
+        DispatchQueue.main.async { completionHandler([.banner, .list, .sound]) }
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                            withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
         let request = response.notification.request
-        guard let tab = NotificationTapRouter.tab(for: request.identifier) else { return }
+        let tab = NotificationTapRouter.tab(for: request.identifier)
         let space = (request.content.userInfo[SystemNotificationCenter.spaceIDKey] as? String).flatMap(UUID.init(uuidString:))
-        await MainActor.run {
-            NotificationTapRouter.shared.pendingSpaceID = space
-            NotificationTapRouter.shared.pendingTab = tab
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                if let tab {
+                    NotificationTapRouter.shared.pendingSpaceID = space
+                    NotificationTapRouter.shared.pendingTab = tab
+                }
+            }
+            completionHandler()
         }
     }
 }
