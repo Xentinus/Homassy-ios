@@ -25,7 +25,6 @@ struct TabPlaceholderView: View {
         switch tab {
         case .inventory: ("add.inventoryItem", "plus.circle")
         case .shopping: ("add.shoppingList", "list.bullet")
-        case .products: ("add.product", "shippingbox")
         case .household, .search: nil
         }
     }
@@ -34,7 +33,6 @@ struct TabPlaceholderView: View {
         switch tab {
         case .inventory: "empty.inventory"
         case .shopping: "empty.shopping"
-        case .products: "empty.products"
         case .household, .search: "empty.household"
         }
     }

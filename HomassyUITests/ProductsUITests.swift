@@ -10,7 +10,7 @@ final class ProductsUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication.homassy(extraArguments: ["-uiTestSeed"])
         app.launch()
-        app.openTab("Products")
+        app.openTab("Search")
         XCTAssertTrue(app.buttons["product.row.Milk"].waitForExistence(timeout: 10))
         return app
     }

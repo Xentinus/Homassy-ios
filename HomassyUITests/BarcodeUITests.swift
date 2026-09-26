@@ -2,7 +2,7 @@ import XCTest
 
 @MainActor
 final class BarcodeUITests: XCTestCase {
-    private func scan(_ code: String, fromTab tab: String = "Products") -> XCUIApplication {
+    private func scan(_ code: String, fromTab tab: String = "Search") -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication.homassy(extraArguments: ["-uiTestSeed", "-uiTestScannedBarcode", code])
         app.launch()
