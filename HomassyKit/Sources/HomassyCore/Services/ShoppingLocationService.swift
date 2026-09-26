@@ -71,6 +71,26 @@ public final class ShoppingLocationService {
         return Array(sorted.prefix(limit))
     }
 
+    /// The store menu's entries (P2-08a): stores where `product` was bought, newest purchase first, then the
+    /// space's other recent stores. No duplicates, no deleted stores, at most `limit`.
+    public func recentStores(for product: Product?, in space: Space, limit: Int = 5) throws -> [ShoppingLocation] {
+        var result: [ShoppingLocation] = []
+        var seen = Set<NSManagedObjectID>()
+        func add(_ store: ShoppingLocation?) {
+            guard result.count < limit, let store, !store.isGone, store.space == space,
+                  seen.insert(store.objectID).inserted else { return }
+            result.append(store)
+        }
+        if let product, !product.isGone {
+            let records = try context.fetchEntities(
+                PurchaseRecord.self, where: NSPredicate(format: "product == %@ AND shoppingLocation != nil", product),
+                sortedBy: [NSSortDescriptor(key: "purchasedAt", ascending: false)])
+            records.forEach { add($0.shoppingLocation) }
+        }
+        try recent(in: space, limit: .max).forEach(add)
+        return result
+    }
+
     public func location(publicId: UUID, in space: Space) throws -> ShoppingLocation? {
         try fetch(NSPredicate(format: "space == %@ AND publicId == %@", space, publicId as NSUUID)).first
     }

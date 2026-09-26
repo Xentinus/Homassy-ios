@@ -62,4 +62,17 @@ struct StoreSelection {
         case nil: nil
         }
     }
+
+    /// The user picked the suggestion itself: it becomes the choice, and later suggestions no longer replace it.
+    mutating func take(_ suggestion: StoreSuggestion, locations: ShoppingLocationService, space: Space) {
+        locked = false
+        apply(suggestion, locations: locations, space: space)
+        locked = true
+    }
+
+    /// The chosen store when it is already saved (nil for none or a not-yet-stored Apple Maps place).
+    var savedLocation: ShoppingLocation? {
+        if case .saved(let location) = source { return location }
+        return nil
+    }
 }
