@@ -70,6 +70,7 @@ struct RootView: View {
                     }
                     .environment(services)
                     .expiryNotifications(services.notifications, context: services.context)
+                    .storeReminders(services.storeReminders, context: services.context)
             } else if app.bootstrapError != nil {
                 AccountGateView(state: .couldNotDetermine) { app.bootstrapPersonalSpace() }
             } else {

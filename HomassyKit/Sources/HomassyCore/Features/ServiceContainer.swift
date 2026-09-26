@@ -19,6 +19,8 @@ public final class ServiceContainer {
     /// Apple Maps store search; a fake in tests.
     public let storeSearch: any StoreSearching
     public let notifications: ExpiryNotificationCoordinator
+    /// Store arrival reminders (P4-06); idle unless the app passes a location authorizer and the switch is on.
+    public let storeReminders: StoreReminderCoordinator
     /// Export and import. Nil only in package tests that build the container without persistence.
     public let archive: ArchiveServices?
     /// Households: create, share, leave, delete. Nil only in package tests that build the container without it.
@@ -39,7 +41,9 @@ public final class ServiceContainer {
                 storeSearch: any StoreSearching = MapKitStoreSearch(),
                 sharing: SharingService? = nil,
                 historyDefaults: UserDefaults = .standard,
-                syncStatus: SyncStatusModel? = nil) {
+                syncStatus: SyncStatusModel? = nil,
+                locationAuthorizer: (any LocationAuthorizing)? = nil,
+                storeRemindersEnabled: @escaping @MainActor () -> Bool = { false }) {
         // When sharing is given, its permission check is every service's canEdit (read-only households).
         let permission: @MainActor (Space) -> Bool
         if let sharing {
@@ -70,6 +74,10 @@ public final class ServiceContainer {
         self.storeSearch = storeSearch
         notifications = ExpiryNotificationCoordinator(
             context: context, center: notificationCenter,
+            locale: Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en"))
+        storeReminders = StoreReminderCoordinator(
+            context: context, center: notificationCenter, search: storeSearch, location: locationAuthorizer,
+            isEnabled: storeRemindersEnabled,
             locale: Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en"))
         archive = persistence.map { ArchiveServices(persistence: $0, spaceStore: spaceStore, userRecordName: userRecordName,
                                                           canEdit: permission) }
