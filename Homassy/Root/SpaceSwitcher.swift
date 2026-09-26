@@ -19,6 +19,7 @@ struct SpaceSwitcher: View {
     @State private var isShowingSettings = false
     /// Imports started in the settings sheet wait here until it has closed; the shell cannot present over it.
     @State private var settingsImports = ArchiveImportRouter()
+    @State private var tapRouter = NotificationTapRouter.shared
 
     var body: some View {
         let current = selection.resolve(in: spaces)
@@ -67,6 +68,22 @@ struct SpaceSwitcher: View {
             settingsImports.pending = pending
             archiveRouter.pending = nil
             isShowingSettings = false
+        }
+        .onChange(of: archiveRouter.errorMessage) { _, message in
+            // Same hand-off as `pending` above, for a file that failed to open while the sheet is up.
+            guard message != nil, isShowingSettings else { return }
+            settingsImports.errorMessage = archiveRouter.errorMessage
+            archiveRouter.errorMessage = nil
+            isShowingSettings = false
+        }
+        .onChange(of: tapRouter.tapCount) {
+            // A notification tap switches tabs behind the sheet (`MainTabView`); the sheet must not linger over it.
+            isShowingSettings = false
+        }
+        .onChange(of: app.shareAcceptance.state) { _, state in
+            // The joining capsule and the failure alert live on `MainTabView`, under the sheet, and cannot present
+            // over it: close the sheet as soon as acceptance is no longer idle.
+            if state != .idle { isShowingSettings = false }
         }
         .task { reload() }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,

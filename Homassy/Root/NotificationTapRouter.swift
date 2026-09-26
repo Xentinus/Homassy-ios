@@ -23,6 +23,9 @@ final class NotificationTapRouter {
     static let shared = NotificationTapRouter()
     var pendingTab: AppTab?
     var pendingSpaceID: UUID?
+    /// Bumped every time a tap sets `pendingTab` (P1-07a: lets `SpaceSwitcher` close its settings sheet on a
+    /// tap even when the tab doesn't change, which `pendingTab` alone wouldn't signal).
+    private(set) var tapCount = 0
 
     /// The tab for a notification identifier ("preview-" copies from the DEBUG preview count too).
     nonisolated static func tab(for identifier: String) -> AppTab? {
@@ -30,6 +33,13 @@ final class NotificationTapRouter {
         if id.hasPrefix("store-") { return .shopping }
         if id.hasPrefix("daily-") || id.hasPrefix("weekly-") { return .inventory }
         return nil
+    }
+
+    /// Records a tap: the tab and space it should open, and bumps `tapCount`.
+    func route(tab: AppTab, spaceID: UUID?) {
+        pendingSpaceID = spaceID
+        pendingTab = tab
+        tapCount += 1
     }
 }
 
@@ -53,8 +63,7 @@ final class NotificationResponder: NSObject, UNUserNotificationCenterDelegate, @
         DispatchQueue.main.async {
             MainActor.assumeIsolated {
                 if let tab {
-                    NotificationTapRouter.shared.pendingSpaceID = space
-                    NotificationTapRouter.shared.pendingTab = tab
+                    NotificationTapRouter.shared.route(tab: tab, spaceID: space)
                 }
             }
             completionHandler()

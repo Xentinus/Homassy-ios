@@ -2347,52 +2347,6 @@
         }
       }
     },
-    "empty.inventory" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch nichts im Vorrat"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing in stock yet"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Még nincs semmi a készletben"
-          }
-        }
-      }
-    },
-    "empty.shopping" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch keine Einkaufslisten"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No shopping lists yet"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Még nincs bevásárlólista"
-          }
-        }
-      }
-    },
     "gate.checking" : {
       "extractionState" : "manual",
       "localizations" : {
