@@ -5475,29 +5475,6 @@
         }
       }
     },
-    "products.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Produkte"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Products"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Termékek"
-          }
-        }
-      }
-    },
     "search.byBarcode" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5563,75 +5540,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nincs találat"
-          }
-        }
-      }
-    },
-    "search.noResults.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Versuche einen anderen Namen oder Barcode."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Try another name or barcode."
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Próbálj másik nevet vagy vonalkódot."
-          }
-        }
-      }
-    },
-    "search.prompt" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Suche nach Produkten, Artikeln und Listen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Search products, items and lists"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keress termékekre, tételekre és listákra"
-          }
-        }
-      }
-    },
-    "search.prompt.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gib einen Namen, eine Marke, Kategorie oder einen Barcode ein, oder scanne einen Barcode."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Type a name, brand, category or barcode, or scan a barcode."
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Írj be nevet, márkát, kategóriát vagy vonalkódot, vagy olvass be egy vonalkódot."
           }
         }
       }
@@ -8243,29 +8151,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Készlet"
-          }
-        }
-      }
-    },
-    "tab.products" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Produkte"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Products"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Termékek"
           }
         }
       }

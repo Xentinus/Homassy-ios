@@ -6,12 +6,12 @@ final class NavigationShellUITests: XCTestCase {
     }
 
     @MainActor
-    func testFourTabsAndSearchExist() throws {
+    func testTabsAndSearchExist() throws {
         let app = XCUIApplication.homassy()
         app.launch()
 
         XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
-        for title in ["Inventory", "Shopping", "Products", "Household", "Search"] {
+        for title in ["Inventory", "Shopping", "Household", "Search"] {
             XCTAssertTrue(app.buttons[title].firstMatch.exists, "Missing tab \(title)")
         }
     }
@@ -22,8 +22,8 @@ final class NavigationShellUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
 
-        app.buttons["Products"].firstMatch.tap()
-        XCTAssertTrue(app.navigationBars["Products"].waitForExistence(timeout: 5))
+        app.buttons["Search"].firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Search"].waitForExistence(timeout: 5))
         app.buttons["Household"].firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Household"].waitForExistence(timeout: 5))
     }
@@ -99,7 +99,7 @@ final class NavigationShellUITests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
 
-        for title in ["Inventory", "Shopping", "Products", "Household"] {
+        for title in ["Inventory", "Shopping", "Household"] {
             let item = app.buttons[title].firstMatch
             XCTAssertTrue(item.exists, "Missing section \(title)")
             XCTAssertTrue(item.isHittable, "Section \(title) not reachable")

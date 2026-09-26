@@ -33,9 +33,6 @@ struct MainTabView: View {
             Tab(AppTab.shopping.title, systemImage: AppTab.shopping.systemImage, value: AppTab.shopping) {
                 TabNavigationStack(tab: .shopping) { ShoppingRootView() }
             }
-            Tab(AppTab.products.title, systemImage: AppTab.products.systemImage, value: AppTab.products) {
-                TabNavigationStack(tab: .products) { ProductsView() }
-            }
             Tab(AppTab.household.title, systemImage: AppTab.household.systemImage, value: AppTab.household) {
                 TabNavigationStack(tab: .household) { HouseholdView() }
             }

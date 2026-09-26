@@ -8,7 +8,7 @@ final class AttributionUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication.homassy(extraArguments: ["-uiTestSeed", "-uiTestAttribution"])
         app.launch()
-        app.openTab("Products")
+        app.openTab("Search")
 
         // The caption is part of the card's combined label, which VoiceOver reads too.
         let card = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "New member · now")).firstMatch

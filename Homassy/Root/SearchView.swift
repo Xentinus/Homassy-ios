@@ -2,13 +2,17 @@ import CoreData
 import HomassyCore
 import SwiftUI
 
-/// The Search tab: the active space's products by name, brand, category or barcode, typed or scanned
-/// (user request, 2026-09-24). A result opens the product detail; an unknown scanned code offers a new product.
+/// The Search tab and the product catalogue in one (P1-07a, user decision 2026-09-26; search itself is a user
+/// request of 2026-09-24). An empty field shows every product of the active space in letter sections; typing, a
+/// category or a scanned barcode narrows them. Cards have no delete (user rule); a tap opens the product detail.
+/// An unknown scanned code offers a new product.
 struct SearchView: View {
     @Environment(ServiceContainer.self) private var services
     @Environment(SpaceSelection.self) private var selection
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var model: ProductListModel?
+    @State private var showingForm = false
+    @State private var scanning = false
     @State private var creatingProduct: String?
 
     var body: some View {
@@ -20,16 +24,16 @@ struct SearchView: View {
         .searchable(text: Binding(get: { model?.searchText ?? "" }, set: { model?.searchText = $0 }),
                     placement: .navigationBarDrawer(displayMode: .always), prompt: Text("products.search.prompt"))
         .navigationDestination(for: ProductRoute.self) { ProductDetailView(productID: $0.id) }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                BarcodeSearchButton(identifier: "search.barcode") { code, symbology in
-                    model?.searchBarcode(code, symbology: symbology)
-                }
-            }
-        }
+        .toolbar { toolbar }
         .task(id: selection.selectedSpaceID) { rebuildModel() }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
                                                         object: services.context)) { _ in model?.reload() }
+        .barcodeFlow(isScanning: $scanning, space: model?.space)
+        .sheet(isPresented: $showingForm) {
+            if let space = model?.space {
+                ProductFormSheet(model: ProductFormModel(mode: .create(space, barcode: nil), service: services.products))
+            }
+        }
         .sheet(item: Binding(get: { creatingProduct.map(BarcodeValue.init) }, set: { creatingProduct = $0?.code })) { value in
             if let space = model?.space {
                 ProductFormSheet(model: ProductFormModel(mode: .create(space, barcode: value.code), service: services.products)) { _ in
@@ -52,34 +56,103 @@ struct SearchView: View {
 
     @ViewBuilder
     private func content(_ model: ProductListModel) -> some View {
-        let cards = model.searchText.trimmingCharacters(in: .whitespaces).isEmpty ? [] : model.sections.flatMap(\.cards)
-        ScrollView {
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
-                ForEach(cards) { card in
-                    NavigationLink(value: ProductRoute(id: card.id)) { ProductCard(card: card) }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("search.row.\(card.name)")
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 12, pinnedViews: [.sectionHeaders]) {
+                    ForEach(model.sections) { section in
+                        Section {
+                            ForEach(section.cards) { card in
+                                NavigationLink(value: ProductRoute(id: card.id)) { ProductCard(card: card) }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("product.row.\(card.name)")
+                            }
+                        } header: {
+                            Text(section.id)
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 4)
+                                .background(Color(uiColor: .systemGroupedBackground))
+                                .accessibilityAddTraits(.isHeader)
+                                .id(section.id)
+                        }
+                    }
+                }
+                .padding(.leading)
+                .padding(.trailing, showsIndex(model) ? 28 : 16)
+                .padding(.bottom, 24)
+            }
+            .overlay(alignment: .trailing) {
+                if showsIndex(model) {
+                    SectionIndexBar(letters: model.sections.map(\.id)) { letter in
+                        proxy.scrollTo(letter, anchor: .top)
+                    }
+                    .padding(.trailing, 2)
                 }
             }
-            .padding()
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .overlay {
-            if model.searchText.trimmingCharacters(in: .whitespaces).isEmpty {
-                ContentUnavailableView("search.prompt", systemImage: "magnifyingglass",
-                                       description: Text("search.prompt.message"))
-            } else if cards.isEmpty {
-                ContentUnavailableView {
-                    Label("search.noResults", systemImage: "magnifyingglass")
-                } description: {
-                    Text(model.unknownBarcode == nil ? "search.noResults.message" : "search.unknownBarcode.message")
-                } actions: {
-                    if let code = model.unknownBarcode, model.canEdit {
-                        Button("search.createProduct") { creatingProduct = code }
-                            .buttonStyle(.borderedProminent)
-                            .accessibilityIdentifier("search.createProduct")
+            if model.sections.isEmpty {
+                if let code = model.unknownBarcode {
+                    ContentUnavailableView {
+                        Label("search.noResults", systemImage: "magnifyingglass")
+                    } description: {
+                        Text("search.unknownBarcode.message")
+                    } actions: {
+                        if model.canEdit {
+                            Button("search.createProduct") { creatingProduct = code }
+                                .buttonStyle(.borderedProminent)
+                                .accessibilityIdentifier("search.createProduct")
+                        }
                     }
+                } else if model.isFiltering {
+                    ContentUnavailableView.search(text: model.searchText)
+                } else {
+                    ContentUnavailableView("products.empty.title", systemImage: "shippingbox",
+                                           description: Text("products.empty.message"))
                 }
+            }
+        }
+        .alert("common.error", isPresented: Binding(get: { model.errorMessage != nil },
+                                                    set: { if !$0 { model.dismissError() } })) {
+            Button("common.ok", role: .cancel) {}
+        } message: { Text(model.errorMessage ?? "") }
+    }
+
+    /// The letter strip appears once there is more than one letter to jump between.
+    private func showsIndex(_ model: ProductListModel) -> Bool { model.sections.count > 1 }
+
+    @ToolbarContentBuilder
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) { SpaceSwitcher() }
+        ToolbarItem(placement: .topBarTrailing) {
+            BarcodeSearchButton(identifier: "search.barcode") { code, symbology in
+                model?.searchBarcode(code, symbology: symbology)
+            }
+        }
+        if let model, !model.categories.isEmpty {
+            ToolbarItem(placement: .topBarTrailing) {
+                @Bindable var model = model
+                Menu {
+                    Picker("products.filter", selection: $model.selectedCategory) {
+                        Text("products.filter.all").tag(String?.none)
+                        ForEach(model.categories, id: \.self) { Text($0).tag(Optional($0)) }
+                    }
+                } label: {
+                    Label("products.filter", systemImage: model.selectedCategory == nil
+                          ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                }
+                .accessibilityIdentifier("products.filter")
+            }
+        }
+        ToolbarItem(placement: .primaryAction) {
+            AddMenu {
+                Button { showingForm = true } label: { Label("add.product", systemImage: "shippingbox") }
+                    .accessibilityIdentifier("addMenu.product")
+                    .disabled(model?.canEdit != true)
+                Button { scanning = true } label: { Label("barcode.scan", systemImage: "barcode.viewfinder") }
+                    .accessibilityIdentifier("addMenu.barcode")
             }
         }
     }
@@ -93,3 +166,21 @@ struct SearchView: View {
         model = fresh
     }
 }
+
+#if DEBUG
+#Preview("Portrait") {
+    let model = AppModel.preview()
+    NavigationStack { SearchView() }
+        .environment(model).environment(model.selection).environment(model.undoQueue)
+        .environment(model.services!).environment(model.services!.attribution)
+        .environment(ArchiveImportRouter())
+}
+
+#Preview("Landscape", traits: .landscapeLeft) {
+    let model = AppModel.preview()
+    NavigationStack { SearchView() }
+        .environment(model).environment(model.selection).environment(model.undoQueue)
+        .environment(model.services!).environment(model.services!.attribution)
+        .environment(ArchiveImportRouter())
+}
+#endif

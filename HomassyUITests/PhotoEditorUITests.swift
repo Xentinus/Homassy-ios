@@ -9,8 +9,8 @@ final class PhotoEditorUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication.homassy(extraArguments: ["-uiTestSeed", "-uiTestSamplePhoto"])
         app.launch()
-        app.openTab("Products")
-        let menu = app.navigationBars["Products"].buttons["addMenu"]
+        app.openTab("Search")
+        let menu = app.navigationBars["Search"].buttons["addMenu"]
         XCTAssertTrue(menu.waitForExistence(timeout: 10))
         menu.tap()
         app.buttons["addMenu.product"].tap()

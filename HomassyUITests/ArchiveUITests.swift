@@ -136,7 +136,7 @@ final class ArchiveUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["import.done"].waitForExistence(timeout: 10))
         app.buttons["import.close"].tap()
 
-        app.openTab("Products")
+        app.openTab("Search")
         XCTAssertTrue(app.descendants(matching: .any)["product.row.Tej"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.descendants(matching: .any)["product.row.Liszt"].exists)
     }
