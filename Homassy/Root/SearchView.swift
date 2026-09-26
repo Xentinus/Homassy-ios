@@ -125,7 +125,7 @@ struct SearchView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) { SpaceSwitcher() }
+        SpaceSwitcherToolbarItem()
         ToolbarItem(placement: .topBarTrailing) {
             BarcodeSearchButton(identifier: "search.barcode") { code, symbology in
                 model?.searchBarcode(code, symbology: symbology)

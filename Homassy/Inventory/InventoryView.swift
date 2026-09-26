@@ -121,7 +121,7 @@ struct InventoryView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) { SpaceSwitcher() }
+        SpaceSwitcherToolbarItem()
         ToolbarItem(placement: .primaryAction) {
             AddMenu {
                 Button { addingStock = true } label: { Label("add.inventoryItem", systemImage: "plus.circle") }

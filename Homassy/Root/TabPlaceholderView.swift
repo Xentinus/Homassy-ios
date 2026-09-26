@@ -8,7 +8,7 @@ struct TabPlaceholderView: View {
         ContentUnavailableView(emptyTitle, systemImage: tab.systemImage)
             .navigationTitle(tab.title)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { SpaceSwitcher() }
+                SpaceSwitcherToolbarItem()
                 if let placeholder = addPlaceholder {
                     ToolbarItem(placement: .primaryAction) {
                         AddMenu {

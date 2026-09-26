@@ -4,10 +4,11 @@ import HomassyCore
 import SwiftUI
 
 /// Toolbar menu listing Personal and every household, with a checkmark on the selected one, then New household
-/// and Settings… (P1-07a: the Home app pattern, the settings of the selected space open as a sheet). A persistent
-/// sync problem swaps the menu's icon for a warning triangle (P5-05): the iOS 26 Liquid Glass toolbar chrome
-/// re-renders a toolbar button's own icon and title from a `Label`, but discards a separately overlaid badge, so
-/// a dot drawn on top of the icon never actually appears; changing the icon itself always does.
+/// and Settings… (P1-07a: the Home app pattern, the settings of the selected space open as a sheet). The
+/// switcher's own icon never changes; a persistent sync problem (P5-05) is shown with the system toolbar-item
+/// badge instead (Apple-native, user choice 2026-09-26) — see `SpaceSwitcherToolbarItem` below, since the badge
+/// is a modifier on the toolbar content, not on this view. The "Settings…" row still swaps to a warning
+/// triangle while there's a problem, since that row is plain menu content, not a toolbar item.
 struct SpaceSwitcher: View {
     @Environment(AppModel.self) private var app
     @Environment(SpaceSelection.self) private var selection
@@ -47,8 +48,7 @@ struct SpaceSwitcher: View {
             }
             .accessibilityIdentifier("space.settings")
         } label: {
-            Label(name, systemImage: hasProblem ? "exclamationmark.triangle.fill"
-                                                 : (current?.kind == .household ? "house.fill" : "person.crop.circle"))
+            Label(name, systemImage: current?.kind == .household ? "house.fill" : "person.crop.circle")
                 .labelStyle(.titleAndIcon)
         }
         .accessibilityIdentifier("spaceSwitcher")
@@ -88,6 +88,22 @@ struct SpaceSwitcher: View {
         if let message = settingsImports.errorMessage {
             settingsImports.errorMessage = nil
             archiveRouter.errorMessage = message
+        }
+    }
+}
+
+/// `SpaceSwitcher()`'s own toolbar item, with the system badge for a persistent sync problem (P5-05,
+/// Apple-native, user choice 2026-09-26) — the same "!" the old Household tab badge used. `ToolbarItem` itself
+/// has no `badge(_:)` in this SDK (only `TabContent` and `View` do), so the badge is applied to the switcher's
+/// content view, inside the item, not to the toolbar content. Every screen with the switcher in its toolbar
+/// uses this in place of a plain `ToolbarItem(placement: .topBarLeading) { SpaceSwitcher() }`.
+struct SpaceSwitcherToolbarItem: ToolbarContent {
+    @Environment(ServiceContainer.self) private var services
+
+    var body: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            SpaceSwitcher()
+                .badge(services.syncStatus.bannerProblem == nil ? nil : Text(verbatim: "!"))
         }
     }
 }

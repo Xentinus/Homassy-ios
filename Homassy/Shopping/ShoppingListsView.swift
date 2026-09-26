@@ -21,7 +21,7 @@ struct ShoppingListsView: View {
         content
             .navigationTitle(Text("shopping.lists.title"))
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) { SpaceSwitcher() }
+                SpaceSwitcherToolbarItem()
                 ToolbarItem(placement: .primaryAction) {
                     AddMenu {
                         Button { editor = .create } label: { Label("add.shoppingList", systemImage: "list.bullet") }

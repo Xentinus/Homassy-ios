@@ -12,8 +12,17 @@ extension XCUIApplication {
     func openSettings() {
         let switcher = buttons["spaceSwitcher"].firstMatch
         XCTAssertTrue(switcher.waitForExistence(timeout: 10), "space switcher missing")
+        waitUntilHittable(switcher, timeout: 5)
         switcher.tap()
-        let item = buttons["space.settings"].firstMatch
+        var item = buttons["space.settings"].firstMatch
+        if !item.waitForExistence(timeout: 3) {
+            // openSettings() often runs right after another sheet (member setup, New household) is dismissed;
+            // a tap that lands while it's still animating away gets swallowed and the menu never opens. Retry
+            // once before treating this as a real failure.
+            waitUntilHittable(switcher, timeout: 5)
+            switcher.tap()
+            item = buttons["space.settings"].firstMatch
+        }
         XCTAssertTrue(item.waitForExistence(timeout: 5), "Settings… missing from the space menu")
         item.tap()
         XCTAssertTrue(buttons["space.settings.done"].waitForExistence(timeout: 5), "the settings sheet did not open")
@@ -24,5 +33,12 @@ extension XCUIApplication {
         XCTAssertTrue(done.waitForExistence(timeout: 5))
         done.tap()
         XCTAssertTrue(done.waitForNonExistence(timeout: 5), "the settings sheet did not close")
+    }
+
+    private func waitUntilHittable(_ element: XCUIElement, timeout: TimeInterval) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !(element.exists && element.isHittable) && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
     }
 }
