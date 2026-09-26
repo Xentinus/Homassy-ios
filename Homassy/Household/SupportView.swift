@@ -2,9 +2,9 @@ import HomassyCore
 import SafariServices
 import SwiftUI
 
-/// The Household tab's last section (X-03, Apple-native option B, user choice 2026-09-26): one button that opens
-/// our support URL in an in-app Safari sheet, with the guide §9.2 copy as its footer. A donation that grants
-/// nothing: no state, no purchase, no unlock.
+/// The space settings sheet's last section (X-03, Apple-native option B, user choice 2026-09-26): one button
+/// that opens our support URL in an in-app Safari sheet, with the guide §9.2 copy as its footer. A donation that
+/// grants nothing: no state, no purchase, no unlock.
 struct SupportSection: View {
     @State private var showsPage = false
 

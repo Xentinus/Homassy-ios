@@ -5,14 +5,18 @@ final class NavigationShellUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    /// P1-07a: two tabs and the Search tab; Products and Household are gone (user decision 2026-09-26).
     @MainActor
-    func testTabsAndSearchExist() throws {
+    func testTwoTabsAndSearchExist() throws {
         let app = XCUIApplication.homassy()
         app.launch()
 
         XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
-        for title in ["Inventory", "Shopping", "Household", "Search"] {
-            XCTAssertTrue(app.buttons[title].firstMatch.exists, "Missing tab \(title)")
+        for title in ["Inventory", "Shopping", "Search"] {
+            XCTAssertTrue(app.tabBars.buttons[title].exists, "Missing tab \(title)")
+        }
+        for title in ["Products", "Household"] {
+            XCTAssertFalse(app.tabBars.buttons[title].exists, "Tab \(title) should be gone")
         }
     }
 
@@ -22,10 +26,10 @@ final class NavigationShellUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
 
-        app.buttons["Search"].firstMatch.tap()
+        app.openTab("Shopping")
+        XCTAssertTrue(app.navigationBars["Shopping"].waitForExistence(timeout: 5))
+        app.openTab("Search")
         XCTAssertTrue(app.navigationBars["Search"].waitForExistence(timeout: 5))
-        app.buttons["Household"].firstMatch.tap()
-        XCTAssertTrue(app.navigationBars["Household"].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -47,7 +51,7 @@ final class NavigationShellUITests: XCTestCase {
     }
 
     @MainActor
-    func testSpaceSwitcherListsPersonalAndNewHousehold() throws {
+    func testSpaceSwitcherListsPersonalNewHouseholdAndSettings() throws {
         let app = XCUIApplication.homassy()
         app.launch()
         XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
@@ -61,6 +65,28 @@ final class NavigationShellUITests: XCTestCase {
         let newHousehold = app.buttons["New household"].firstMatch
         XCTAssertTrue(newHousehold.exists)
         XCTAssertTrue(newHousehold.isEnabled)      // live since P5-01
+        XCTAssertTrue(app.buttons["space.settings"].firstMatch.exists)
+    }
+
+    /// The Home app pattern: "Settings…" in the space menu opens the space's settings as a sheet, Done closes it.
+    @MainActor
+    func testSettingsOpenFromTheSpaceMenuOnEveryTab() throws {
+        let app = XCUIApplication.homassy()
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
+
+        for tab in ["Inventory", "Shopping", "Search"] {
+            app.openTab(tab)
+            app.openSettings()
+            XCTAssertTrue(app.navigationBars["Personal"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons["household.storageLocations"].exists)
+            app.closeSettings()
+            XCTAssertTrue(app.navigationBars[tab].waitForExistence(timeout: 5))
+        }
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "back on search"
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     /// Shopping's `+` menu is live since P4-03.
@@ -99,12 +125,12 @@ final class NavigationShellUITests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
 
-        for title in ["Inventory", "Shopping", "Household"] {
+        for title in ["Inventory", "Shopping"] {
             let item = app.buttons[title].firstMatch
             XCTAssertTrue(item.exists, "Missing section \(title)")
             XCTAssertTrue(item.isHittable, "Section \(title) not reachable")
         }
-        app.buttons["Household"].firstMatch.tap()
-        XCTAssertTrue(app.navigationBars["Household"].waitForExistence(timeout: 5))
+        app.openSettings()
+        XCTAssertTrue(app.navigationBars["Personal"].waitForExistence(timeout: 5))
     }
 }

@@ -7,7 +7,6 @@ final class HouseholdLocalSharingUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication.homassy()
         app.launch()
-        app.openTab("Household")
 
         let switcher = app.buttons["spaceSwitcher"].firstMatch
         XCTAssertTrue(switcher.waitForExistence(timeout: 10))
@@ -24,6 +23,7 @@ final class HouseholdLocalSharingUITests: XCTestCase {
         let done = app.buttons["household.new.done"]
         XCTAssertTrue(done.waitForExistence(timeout: 5))
         done.tap()
+        app.openSettings()
 
         let manage = app.buttons["household.sharing.manage"]
         XCTAssertTrue(manage.waitForExistence(timeout: 5))

@@ -6,7 +6,7 @@ final class StorageLocationsUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication.homassy(extraArguments: ["-uiTestSeed"])
         app.launch()
-        app.openTab("Household")
+        app.openSettings()
         let link = app.buttons["household.storageLocations"]
         XCTAssertTrue(link.waitForExistence(timeout: 5))
         link.tap()
@@ -55,8 +55,15 @@ final class StorageLocationsUITests: XCTestCase {
         pantry.swipeLeft()
         app.buttons["Delete"].tap()
         XCTAssertTrue(pantry.waitForNonExistence(timeout: 3))
-        let undo = app.buttons["undoToast.undo"]
-        XCTAssertTrue(undo.waitForExistence(timeout: 3))
+        // The settings sheet and the tab behind it each keep their own undo overlay (P1-07a): the sheet's is
+        // the hittable one, so wait for that rather than an arbitrary match of the ambiguous identifier.
+        let undoCandidates = app.buttons.matching(identifier: "undoToast.undo")
+        let deadline = Date().addingTimeInterval(3)
+        while undoCandidates.allElementsBoundByIndex.first(where: \.isHittable) == nil && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+        }
+        let undo = undoCandidates.allElementsBoundByIndex.first(where: \.isHittable) ?? undoCandidates.firstMatch
+        XCTAssertTrue(undo.exists && undo.isHittable, "no hittable undo button found")
         undo.tap()
         XCTAssertTrue(pantry.waitForExistence(timeout: 3))
     }

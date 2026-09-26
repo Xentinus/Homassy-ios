@@ -23,7 +23,7 @@ final class ArchiveUITests: XCTestCase {
     @MainActor
     func testExportOpensTheSystemExporter() {
         let app = launch()
-        app.openTab("Household")
+        app.openSettings()
         let export = app.buttons["archive.export"]
         var swipes = 0
         while !(export.exists && export.isHittable) && swipes < 8 {

@@ -1,7 +1,8 @@
 import HomassyCore
 import SwiftUI
 
-/// The main shell: four tabs and search. A tab bar in compact width, a sidebar-capable tab view in regular width.
+/// The main shell (P1-07a): Inventory, Shopping and the Search tab. A tab bar in compact width, a sidebar-capable
+/// tab view in regular width. The space's settings open from the space menu, not from a tab.
 struct MainTabView: View {
     @SceneStorage("selectedTab") private var selectedTab: AppTab = .inventory
     @Environment(ServiceContainer.self) private var services
@@ -9,7 +10,6 @@ struct MainTabView: View {
     @Environment(BackupReminder.self) private var backupReminder
     @Environment(UndoQueue.self) private var undoQueue
     @Environment(SpaceSelection.self) private var selection
-    @Environment(SyncStatusModel.self) private var syncStatus
     @State private var tapRouter = NotificationTapRouter.shared
 
     @ViewBuilder
@@ -33,11 +33,6 @@ struct MainTabView: View {
             Tab(AppTab.shopping.title, systemImage: AppTab.shopping.systemImage, value: AppTab.shopping) {
                 TabNavigationStack(tab: .shopping) { ShoppingRootView() }
             }
-            Tab(AppTab.household.title, systemImage: AppTab.household.systemImage, value: AppTab.household) {
-                TabNavigationStack(tab: .household) { HouseholdView() }
-            }
-            // A persistent sync problem: the details wait at the top of the Household tab (P5-05).
-            .badge(syncStatus.bannerProblem == nil ? nil : Text(verbatim: "!"))
             Tab(AppTab.search.title, systemImage: AppTab.search.systemImage, value: AppTab.search, role: .search) {
                 TabNavigationStack(tab: .search) { SearchView() }
             }

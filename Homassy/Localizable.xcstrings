@@ -2163,6 +2163,29 @@
         }
       }
     },
+    "common.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fertig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kész"
+          }
+        }
+      }
+    },
     "common.edit" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2343,29 +2366,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Még nincs semmi a készletben"
-          }
-        }
-      }
-    },
-    "empty.products" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch keine Produkte"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No products yet"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Még nincs termék"
           }
         }
       }
@@ -3066,19 +3066,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mitglieder lädst du im Tab „Haushalt“ ein."
+            "value" : "Mitglieder lädst du in den Einstellungen im Bereichsmenü ein."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Invite members from the Household tab."
+            "value" : "Invite members in Settings, from the space menu."
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tagokat a Háztartás lapon hívhatsz meg."
+            "value" : "Tagokat a tér menüjében, a Beállításokban hívhatsz meg."
           }
         }
       }
@@ -6901,6 +6901,29 @@
         }
       }
     },
+    "space.settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings…"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beállítások…"
+          }
+        }
+      }
+    },
     "space.switcher" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6920,6 +6943,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tér váltása"
+          }
+        }
+      }
+    },
+    "space.syncProblem.accessibility %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, Synchronisierungsproblem"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, sync problem"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, szinkronizálási hiba"
           }
         }
       }
@@ -8105,29 +8151,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Egy másolat még megvan ezen az eszközön. Exportáld, ha meg akarod tartani az adatokat, aztán távolítsd el."
-          }
-        }
-      }
-    },
-    "tab.household" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Haushalt"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Household"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Háztartás"
           }
         }
       }

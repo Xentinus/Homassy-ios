@@ -1,13 +1,12 @@
 import SwiftUI
 
 enum AppTab: String, CaseIterable, Hashable {
-    case inventory, shopping, household, search
+    case inventory, shopping, search
 
     var title: LocalizedStringKey {
         switch self {
         case .inventory: "tab.inventory"
         case .shopping: "tab.shopping"
-        case .household: "tab.household"
         case .search: "tab.search"
         }
     }
@@ -16,7 +15,6 @@ enum AppTab: String, CaseIterable, Hashable {
         switch self {
         case .inventory: "refrigerator"
         case .shopping: "cart"
-        case .household: "house"
         case .search: "magnifyingglass"
         }
     }

@@ -1,9 +1,9 @@
 import HomassyCore
 import SwiftUI
 
-/// A persistent sync problem (§8), the Apple-native way (user choice, 2026-09-25): a "!" badge on the Household tab
-/// and this callout at the top of the Household tab, with the actions where they apply. Like Settings' "iCloud
-/// storage full" row, it never covers other screens' content.
+/// A persistent sync problem (§8), the Apple-native way (user choice, 2026-09-25): a red dot on the space menu
+/// (P1-07a) and this callout at the top of the space settings sheet, with the actions where they apply. Like
+/// Settings' "iCloud storage full" row, it never covers other screens' content.
 struct SyncProblemCallout: View {
     let problem: SyncProblem
     @Environment(SyncStatusModel.self) private var status

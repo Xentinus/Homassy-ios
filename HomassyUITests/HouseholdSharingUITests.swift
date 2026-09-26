@@ -56,10 +56,11 @@ final class HouseholdSharingUITests: XCTestCase {
     func testCreatingAHouseholdSelectsItAndDeletingItReturnsToPersonal() {
         let app = XCUIApplication.homassy()
         app.launch()
-        app.openTab("Household")
-        XCTAssertTrue(app.navigationBars["Household"].waitForExistence(timeout: 10))
+        app.openSettings()
+        XCTAssertTrue(app.navigationBars["Personal"].waitForExistence(timeout: 10))
         // Personal has no Members section.
         XCTAssertFalse(app.buttons["household.sharing.manage"].exists)
+        app.closeSettings()
 
         createHousehold(in: app)
         app.buttons["household.new.done"].tap()
@@ -67,16 +68,17 @@ final class HouseholdSharingUITests: XCTestCase {
         let switcher = app.buttons["spaceSwitcher"].firstMatch
         XCTAssertTrue(switcher.waitForExistence(timeout: 5))
         XCTAssertEqual(switcher.label, "Test flat")
+        app.openSettings()
         let me = app.descendants(matching: .any)["member.row.me"].firstMatch
         XCTAssertTrue(me.waitForExistence(timeout: 5))
         XCTAssertTrue(me.label.contains("Anna"), me.label)
         XCTAssertTrue(me.label.contains("Owner"), me.label)
         XCTAssertTrue(app.buttons["archive.export"].exists)
-        attachScreenshot(app, "household tab owner")
+        attachScreenshot(app, "settings owner")
 
         let delete = app.buttons["household.sharing.delete"]
         scrollTo(delete, in: app)
-        attachScreenshot(app, "household tab bottom")
+        attachScreenshot(app, "settings bottom")
         delete.tap()
 
         XCTAssertTrue(app.buttons["Export a backup first"].waitForExistence(timeout: 5))
@@ -88,6 +90,7 @@ final class HouseholdSharingUITests: XCTestCase {
         attachScreenshot(app, "delete step 2")
         finalDelete.tap()
 
+        XCTAssertTrue(app.buttons["space.settings.done"].waitForNonExistence(timeout: 5), "the sheet closes after the delete")
         XCTAssertTrue(switcher.waitForExistence(timeout: 5))
         let backToPersonal = NSPredicate(format: "label == %@", "Personal")
         expectation(for: backToPersonal, evaluatedWith: switcher)
@@ -99,8 +102,6 @@ final class HouseholdSharingUITests: XCTestCase {
     func testTheNewHouseholdSheetOffersAnExport() {
         let app = XCUIApplication.homassy()
         app.launch()
-        app.openTab("Household")
-        XCTAssertTrue(app.navigationBars["Household"].waitForExistence(timeout: 10))
 
         createHousehold(in: app)
         app.buttons["household.new.export"].tap()
@@ -115,10 +116,9 @@ final class HouseholdSharingUITests: XCTestCase {
     func testTheDeleteDialogOffersAnExportFirst() {
         let app = XCUIApplication.homassy()
         app.launch()
-        app.openTab("Household")
-        XCTAssertTrue(app.navigationBars["Household"].waitForExistence(timeout: 10))
         createHousehold(in: app)
         app.buttons["household.new.done"].tap()
+        app.openSettings()
 
         let delete = app.buttons["household.sharing.delete"]
         scrollTo(delete, in: app)
