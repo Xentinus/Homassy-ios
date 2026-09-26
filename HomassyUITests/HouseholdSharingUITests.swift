@@ -17,7 +17,9 @@ final class HouseholdSharingUITests: XCTestCase {
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
         var swipes = 0
-        while !(element.exists && element.isHittable) && swipes < 8 {
+        // Delete/Leave now sits below Support at the very bottom (HIG, user choice 2026-09-26), one section
+        // further down than before, so this allows a couple more swipes than a single section would need.
+        while !(element.exists && element.isHittable) && swipes < 12 {
             app.swipeUp()
             swipes += 1
         }

@@ -3,11 +3,13 @@ import CoreData
 import HomassyCore
 import SwiftUI
 
-/// The selected space's Members, Backup and Delete/Leave sections. Members and Delete/Leave are shown
-/// only for households; the destructive action sits alone at the bottom of the list (HIG). Members holds
-/// everything about people: the member list, former members, the user's own name/photo/colour and sharing.
-struct HouseholdSpaceSections: View {
+/// The selected space's Members, Backup, `trailing` and Delete/Leave sections, in that order — Delete/Leave sits
+/// alone at the very bottom of the settings sheet, below Support (HIG, user choice 2026-09-26). Members and
+/// Delete/Leave are shown only for households. Members holds everything about people: the member list, former
+/// members, the user's own name/photo/colour and sharing.
+struct HouseholdSpaceSections<TrailingContent: View>: View {
     let space: Space
+    @ViewBuilder let trailing: () -> TrailingContent
 
     @Environment(ServiceContainer.self) private var services
     @Environment(\.requestExport) private var requestExport
@@ -42,10 +44,12 @@ struct HouseholdSpaceSections: View {
                 sharingSection(sharing, role: role)
                 iCloudSection
                 ArchiveSection(space: space)
+                trailing()
                 destructiveSection(sharing, role: role)
             } else {
                 iCloudSection
                 ArchiveSection(space: space)
+                trailing()
             }
         }
     }

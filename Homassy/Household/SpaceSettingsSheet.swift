@@ -2,10 +2,11 @@ import HomassyCore
 import SwiftUI
 
 /// Settings of the selected space, opened from "Settings…" in the space menu (P1-07a, the Home app pattern,
-/// user choice 2026-09-26). It replaces the app's former Household screen and keeps its sections: storage locations (P2-05),
-/// members and sharing (P5-01…P5-03), iCloud and the sync problem callout (P5-05), backup (P3-04) and support (X-03).
-/// It always shows the space it was opened for, and closes itself when the selection changes, for example after
-/// the household is deleted or left.
+/// user choice 2026-09-26). It replaces the app's former Household screen and keeps its sections: storage
+/// locations (P2-05), members and sharing (P5-01…P5-03), iCloud and the sync problem callout (P5-05), backup
+/// (P3-04) and support (X-03). Delete/Leave, when there is one, sits below Support at the very bottom (HIG,
+/// user choice 2026-09-26). It always shows the space it was opened for, and closes itself when the selection
+/// changes, for example after the household is deleted or left.
 struct SpaceSettingsSheet: View {
     @Environment(ServiceContainer.self) private var services
     @Environment(SpaceSelection.self) private var selection
@@ -35,10 +36,12 @@ struct SpaceSettingsSheet: View {
                 }
 
                 if let space {
-                    HouseholdSpaceSections(space: space)
+                    HouseholdSpaceSections(space: space) {
+                        SupportSection()
+                    }
+                } else {
+                    SupportSection()
                 }
-
-                SupportSection()
             }
             .navigationTitle(Text(verbatim: space?.name ?? ""))
             .navigationBarTitleDisplayMode(.inline)

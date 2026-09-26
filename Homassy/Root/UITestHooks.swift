@@ -30,7 +30,7 @@ enum UITestHooks {
     static var simulatesAttribution: Bool { contains("-uiTestAttribution") }
 
     /// `-uiTestSyncProblem`: feed the sync status one "iCloud storage full" failure, which is persistent at once,
-    /// so a UI test sees the space menu's red dot and the settings callout (P5-05). Local stores post no CloudKit
+    /// so a UI test sees the space menu's badge and the settings callout (P5-05). Local stores post no CloudKit
     /// events.
     static var simulatesSyncProblem: Bool { contains("-uiTestSyncProblem") }
 

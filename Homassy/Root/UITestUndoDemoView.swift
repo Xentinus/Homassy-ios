@@ -29,7 +29,7 @@ struct UITestUndoDemoView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) { SpaceSwitcher() }
+            SpaceSwitcherToolbarItem()
         }
     }
 
