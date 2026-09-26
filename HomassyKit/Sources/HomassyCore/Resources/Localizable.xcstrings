@@ -1005,19 +1005,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der Haushalt wurde erstellt, konnte aber noch nicht geteilt werden. Versuche es im Tab „Haushalt“ erneut."
+            "value" : "Der Haushalt wurde erstellt, konnte aber noch nicht geteilt werden. Versuche es erneut in den Einstellungen im Bereichsmenü."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The household was created but couldn't be shared yet. Try sharing it again from the Household tab."
+            "value" : "The household was created but couldn't be shared yet. Try sharing it again in Settings, from the space menu."
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A háztartás létrejött, de még nem sikerült megosztani. Próbáld újra a Háztartás lapon."
+            "value" : "A háztartás létrejött, de még nem sikerült megosztani. Próbáld újra a tér menüjében, a Beállításokban."
           }
         }
       }

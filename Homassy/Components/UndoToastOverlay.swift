@@ -3,6 +3,8 @@ import SwiftUI
 
 /// Shows the newest pending change with an Undo button, or the commit failure message.
 /// Attach with `.overlay(alignment: .bottom)` inside a tab (or a full-screen cover) so it clears the tab bar.
+/// Purely visual: several of these can be live at once (a tab's and the settings sheet's, P1-07a), so the
+/// VoiceOver announcement is posted once, by `RootView`, not by every overlay showing the same toast.
 struct UndoToastOverlay: View {
     @Environment(UndoQueue.self) private var queue
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -24,12 +26,6 @@ struct UndoToastOverlay: View {
         .padding(.bottom, 8)
         .motionAware(Motion.settle, value: queue.pending.map(\.id))
         .motionAware(Motion.settle, value: queue.lastError != nil)
-        .onChange(of: queue.toastTitle) { _, title in
-            if let title { AccessibilityNotification.Announcement(title).post() }
-        }
-        .onChange(of: queue.lastError != nil) { _, failed in
-            if failed { AccessibilityNotification.Announcement(String(localized: "undo.failed")).post() }
-        }
     }
 }
 

@@ -24,7 +24,7 @@ public struct ProductSection: Identifiable, Equatable, Sendable {
     public let cards: [ProductCardData]
 }
 
-/// The Products tab: letter sections of cards, search and a category filter. Cards have no delete
+/// The Search tab's product catalogue: letter sections of cards, search and a category filter. Cards have no delete
 /// (user rule); a product deleted from its detail is hidden here while its undo window is open.
 @MainActor
 @Observable

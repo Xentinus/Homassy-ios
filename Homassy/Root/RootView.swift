@@ -24,6 +24,14 @@ struct RootView: View {
         .motionAware(Motion.settle, value: app.introduction.shouldShow)
         .environment(app.selection)       // P1-07
         .environment(app.undoQueue)       // P1-08
+        // The single owner of the undo toast's VoiceOver announcement (P1-07a): `UndoToastOverlay` is purely
+        // visual, since several can be live at once (a tab's and the settings sheet's) while sharing one queue.
+        .onChange(of: app.undoQueue.toastTitle) { _, title in
+            if let title { AccessibilityNotification.Announcement(title).post() }
+        }
+        .onChange(of: app.undoQueue.lastError != nil) { _, failed in
+            if failed { AccessibilityNotification.Announcement(String(localized: "undo.failed")).post() }
+        }
         .task {
             app.accountGate.startObserving()
             await app.accountGate.refresh()

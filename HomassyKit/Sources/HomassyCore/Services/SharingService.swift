@@ -25,7 +25,7 @@ public enum SharingError: Error, Equatable, LocalizedError {
         case .notShared:
             String(localized: "sharing.error.notShared", defaultValue: "This household isn't shared yet.", bundle: .module)
         case .createdButNotShared:
-            String(localized: "sharing.error.createdButNotShared", defaultValue: "The household was created but couldn't be shared yet. Try sharing it again from the Household tab.", bundle: .module)
+            String(localized: "sharing.error.createdButNotShared", defaultValue: "The household was created but couldn't be shared yet. Try sharing it again in Settings, from the space menu.", bundle: .module)
         case .cloudUnavailable:
             String(localized: "sharing.error.cloudUnavailable", defaultValue: "Sharing needs iCloud — available in the released app.", bundle: .module)
         }
