@@ -25,7 +25,7 @@ public enum BadgeCounter {
         return items.compactMap { item in
             guard let expiresAt = item.expiresAt, let product = item.product else { return nil }
             return ExpirySnapshot(id: item.publicId, name: product.name, expiresAt: expiresAt,
-                                  spaceName: product.space?.name ?? "")
+                                  spaceName: product.space?.name ?? "", spaceID: product.space?.publicId)
         }
     }
 }

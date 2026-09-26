@@ -603,29 +603,6 @@
         }
       }
     },
-    "notification.body %@ %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@: %2$@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@: %2$@"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@: %2$@"
-          }
-        }
-      }
-    },
     "notification.daily.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -786,29 +763,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld tétel holnap lejár"
-          }
-        }
-      }
-    },
-    "notification.names.more %@ %lld" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ und %2$lld weitere"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ and %2$lld more"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ és még %2$lld"
           }
         }
       }
@@ -1491,13 +1445,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld item waiting"
+                  "value" : "%lld item waiting on your list"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld items waiting"
+                  "value" : "%lld items waiting on your list"
                 }
               }
             }
@@ -1509,13 +1463,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld tétel vár"
+                  "value" : "%lld tétel vár a listádon"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld tétel vár"
+                  "value" : "%lld tétel vár a listádon"
                 }
               }
             }
@@ -1527,13 +1481,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld Artikel wartet"
+                  "value" : "%lld Artikel wartet auf deiner Liste"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld Artikel warten"
+                  "value" : "%lld Artikel warten auf deiner Liste"
                 }
               }
             }

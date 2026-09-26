@@ -40,7 +40,8 @@ public final class StoreReminderCoordinator {
                 }
                 return WaitingItem(name: ShoppingService.displayName(of: item),
                                    spaceName: item.shoppingList?.space?.name ?? "",
-                                   storeName: store.name, storeCoordinate: coordinate, storeLastUsedAt: store.lastUsedAt)
+                                   storeName: store.name, storeCoordinate: coordinate, storeLastUsedAt: store.lastUsedAt,
+                                   spaceID: item.shoppingList?.space?.publicId)
             }
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }

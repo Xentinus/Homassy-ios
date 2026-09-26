@@ -13,6 +13,9 @@ public protocol NotificationCentering: Sendable {
 }
 
 public struct SystemNotificationCenter: NotificationCentering {
+    /// `userInfo` key of the space a tap opens.
+    public static let spaceIDKey = "spaceID"
+
     public init() {}
 
     public func pendingRequestIdentifiers() async -> [String] {
@@ -25,6 +28,7 @@ public struct SystemNotificationCenter: NotificationCentering {
         content.body = notification.body
         content.sound = .default
         content.threadIdentifier = "homassy.expiry"
+        if let space = notification.targetSpaceID { content.userInfo = [Self.spaceIDKey: space.uuidString] }
         let trigger = UNCalendarNotificationTrigger(dateMatching: notification.dateComponents, repeats: false)
         let request = UNNotificationRequest(identifier: notification.identifier, content: content, trigger: trigger)
         try await UNUserNotificationCenter.current().add(request)
@@ -45,6 +49,7 @@ public struct SystemNotificationCenter: NotificationCentering {
         content.body = reminder.body
         content.sound = .default
         content.threadIdentifier = "homassy.store"
+        if let space = reminder.targetSpaceID { content.userInfo = [Self.spaceIDKey: space.uuidString] }
         let region = CLCircularRegion(
             center: CLLocationCoordinate2D(latitude: reminder.center.latitude, longitude: reminder.center.longitude),
             radius: reminder.radius, identifier: reminder.identifier)

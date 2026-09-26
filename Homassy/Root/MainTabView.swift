@@ -63,8 +63,10 @@ struct MainTabView: View {
         .task { backupReminder.recordFirstUseIfNeeded() }
         .onChange(of: tapRouter.pendingTab, initial: true) { _, tab in
             guard let tab else { return }
+            if let space = tapRouter.pendingSpaceID { selection.selectedSpaceID = space }
             selectedTab = tab
             tapRouter.pendingTab = nil
+            tapRouter.pendingSpaceID = nil
         }
         #if DEBUG
         .task { if UITestHooks.ignoresRestoredSceneState { selectedTab = .inventory } }

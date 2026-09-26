@@ -24,7 +24,7 @@ nonisolated struct NotificationPreviewCenter: NotificationCentering {
         let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fire)
         try await system.add(PlannedNotification(identifier: "preview-" + notification.identifier, fireDate: fire,
                                                  dateComponents: components, title: notification.title,
-                                                 body: notification.body))
+                                                 body: notification.body, targetSpaceID: notification.targetSpaceID))
     }
 
     func removePendingRequests(withIdentifiers identifiers: [String]) async {
@@ -39,7 +39,8 @@ nonisolated struct NotificationPreviewCenter: NotificationCentering {
         let fire = Date.now.addingTimeInterval(4 * 60)
         let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fire)
         try await system.add(PlannedNotification(identifier: "preview-" + reminder.identifier, fireDate: fire,
-                                                 dateComponents: components, title: reminder.title, body: reminder.body))
+                                                 dateComponents: components, title: reminder.title, body: reminder.body,
+                                                 targetSpaceID: reminder.targetSpaceID))
     }
 }
 

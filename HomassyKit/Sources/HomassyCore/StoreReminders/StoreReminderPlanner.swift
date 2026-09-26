@@ -7,13 +7,16 @@ public struct WaitingItem: Sendable, Equatable {
     public let storeName: String
     public let storeCoordinate: Coordinate?
     public let storeLastUsedAt: Date?
+    public let spaceID: UUID?
 
-    public init(name: String, spaceName: String, storeName: String, storeCoordinate: Coordinate?, storeLastUsedAt: Date?) {
+    public init(name: String, spaceName: String, storeName: String, storeCoordinate: Coordinate?, storeLastUsedAt: Date?,
+                spaceID: UUID? = nil) {
         self.name = name
         self.spaceName = spaceName
         self.storeName = storeName
         self.storeCoordinate = storeCoordinate
         self.storeLastUsedAt = storeLastUsedAt
+        self.spaceID = spaceID
     }
 }
 
@@ -31,13 +34,17 @@ public struct PlannedStoreReminder: Sendable, Equatable {
     public let body: String
     public let center: Coordinate
     public let radius: Double
+    /// The space a tap opens: the one with most of the waiting items.
+    public let targetSpaceID: UUID?
 
-    public init(identifier: String, title: String, body: String, center: Coordinate, radius: Double) {
+    public init(identifier: String, title: String, body: String, center: Coordinate, radius: Double,
+                targetSpaceID: UUID? = nil) {
         self.identifier = identifier
         self.title = title
         self.body = body
         self.center = center
         self.radius = radius
+        self.targetSpaceID = targetSpaceID
     }
 }
 
@@ -48,7 +55,6 @@ public enum StoreReminderPlanner {
     public static let regionRadius: Double = 150
     public static let searchRadius: Double = 15_000
     static let duplicateDistance: Double = 50
-    static let namesShown = 3
 
     public static func groups(_ items: [WaitingItem]) -> [StoreReminderGroup] {
         Dictionary(grouping: items.filter { !ChainKey.make($0.storeName).isEmpty }) { ChainKey.make($0.storeName) }
@@ -98,22 +104,14 @@ public enum StoreReminderPlanner {
 
     private static func reminder(for group: StoreReminderGroup, at center: Coordinate, rank: Int,
                                  locale: Locale) -> PlannedStoreReminder {
-        let count = CoreLocalization.format("store.reminder.count %lld", locale: locale, group.items.count)
-        let body = CoreLocalization.format("notification.body %@ %@", locale: locale, count, names(group.items, locale: locale))
+        // Only the count, never item names; a tap opens the Shopping tab (user request, 2026-09-26).
+        let body = CoreLocalization.format("store.reminder.count %lld", locale: locale, group.items.count)
         let slug = group.key.replacingOccurrences(of: " ", with: "_")
         return PlannedStoreReminder(
             identifier: "\(identifierPrefix)\(slug)-\(rank)",
             title: CoreLocalization.format("store.reminder.title %@", locale: locale, group.displayName),
-            body: body, center: center, radius: regionRadius)
-    }
-
-    static func names(_ items: [WaitingItem], locale: Locale) -> String {
-        let showSpaces = Set(items.map(\.spaceName)).count > 1
-        let sorted = items.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        let shown = sorted.prefix(namesShown).map { showSpaces ? "\($0.name) (\($0.spaceName))" : $0.name }
-        let joined = shown.joined(separator: ", ")
-        let remaining = sorted.count - shown.count
-        return remaining > 0 ? CoreLocalization.format("notification.names.more %@ %lld", locale: locale, joined, remaining) : joined
+            body: body, center: center, radius: regionRadius,
+            targetSpaceID: NotificationPlanner.mostCommonSpace(group.items.map(\.spaceID)))
     }
 
     private static func distance(_ a: Coordinate, _ b: Coordinate) -> Double {

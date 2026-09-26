@@ -8,9 +8,10 @@ struct StoreReminderPlannerTests {
     let home = Coordinate(latitude: 47.50, longitude: 19.05)
     let budaors = Coordinate(latitude: 47.46, longitude: 18.95)
 
-    func item(_ name: String, store: String = "Auchan Budaörs", space: String = "Personal",
+    func item(_ name: String, store: String = "Auchan Budaörs", space: String = "Personal", spaceID: UUID? = nil,
               at coordinate: Coordinate? = Coordinate(latitude: 47.46, longitude: 18.95)) -> WaitingItem {
-        WaitingItem(name: name, spaceName: space, storeName: store, storeCoordinate: coordinate, storeLastUsedAt: nil)
+        WaitingItem(name: name, spaceName: space, storeName: store, storeCoordinate: coordinate, storeLastUsedAt: nil,
+                    spaceID: spaceID)
     }
 
     func branch(_ id: String, _ name: String, _ latitude: Double, _ longitude: Double) -> StoreResult {
@@ -38,7 +39,7 @@ struct StoreReminderPlannerTests {
         #expect(plan.allSatisfy { $0.radius == 150 })
         #expect(plan.contains { $0.center == budaors })
         #expect(plan[0].title == "Auchan nearby")
-        #expect(plan[0].body == "2 items waiting: Bread, Milk")
+        #expect(plan[0].body == "2 items waiting on your list")
     }
 
     @Test func nearestBranchesComeFirstAndFarOnesAreDropped() {
@@ -73,14 +74,14 @@ struct StoreReminderPlannerTests {
         #expect(plan.count == 1)
     }
 
-    @Test func bodyListsThreeNamesThenMoreAndSpacesOnlyWhenMixed() {
-        let single = StoreReminderPlanner.groups(["A", "B", "C", "D", "E"].map { item($0) })
-        let body = StoreReminderPlanner.plan(groups: single, branches: [:], position: nil, budget: 1, locale: en)[0].body
-        #expect(body == "5 items waiting: A, B, C and 2 more")
-
-        let mixed = StoreReminderPlanner.groups([item("Milk"), item("Bread", space: "Home")])
-        let mixedBody = StoreReminderPlanner.plan(groups: mixed, branches: [:], position: nil, budget: 1, locale: en)[0].body
-        #expect(mixedBody == "2 items waiting: Bread (Home), Milk (Personal)")
+    /// Counts only, never item names; a tap opens the Shopping tab on the space with most of the items.
+    @Test func bodyHasNoNamesAndTheTargetIsTheSpaceWithMostItems() {
+        let home = UUID()
+        let groups = StoreReminderPlanner.groups([item("Milk", spaceID: UUID()), item("Bread", spaceID: home),
+                                                  item("Eggs", spaceID: home)])
+        let reminder = StoreReminderPlanner.plan(groups: groups, branches: [:], position: nil, budget: 1, locale: en)[0]
+        #expect(reminder.body == "3 items waiting on your list")
+        #expect(reminder.targetSpaceID == home)
     }
 
     @Test func hungarianText() {
@@ -88,7 +89,7 @@ struct StoreReminderPlannerTests {
         let reminder = StoreReminderPlanner.plan(groups: groups, branches: [:], position: nil, budget: 1,
                                                  locale: Locale(identifier: "hu_HU"))[0]
         #expect(reminder.title == "Auchan a közelben")
-        #expect(reminder.body == "1 tétel vár: Tej")
+        #expect(reminder.body == "1 tétel vár a listádon")
     }
 
     @Test func noItemsOrNoCoordinatesGiveNothing() {

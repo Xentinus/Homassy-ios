@@ -15,8 +15,8 @@ struct NotificationPlannerTests {
         budapest.date(from: DateComponents(year: y, month: m, day: d, hour: h, minute: min))!
     }
 
-    static func item(_ name: String, _ expiresAt: Date, space: String = "Personal") -> ExpirySnapshot {
-        ExpirySnapshot(id: UUID(), name: name, expiresAt: expiresAt, spaceName: space)
+    static func item(_ name: String, _ expiresAt: Date, space: String = "Personal", spaceID: UUID? = nil) -> ExpirySnapshot {
+        ExpirySnapshot(id: UUID(), name: name, expiresAt: expiresAt, spaceName: space, spaceID: spaceID)
     }
 
     /// Thursday 2026-09-24, 06:00 — before today's 07:00.
@@ -38,8 +38,8 @@ struct NotificationPlannerTests {
         let plan = Self.plan(Self.dairy)
         #expect(plan.map(\.identifier) == ["daily-2026-09-24", "daily-2026-09-25"])
         #expect(plan[0].title == "Expiring soon")
-        #expect(plan[0].body == "4 items expire today and tomorrow: Milk, Bread, Eggs and 1 more")
-        #expect(plan[1].body == "3 items expire today: Bread, Eggs, Cheese")
+        #expect(plan[0].body == "4 items expire today and tomorrow")
+        #expect(plan[1].body == "3 items expire today")
         #expect(plan[0].fireDate == Self.date(2026, 9, 24, 7, 0))
         #expect(plan[0].dateComponents == DateComponents(year: 2026, month: 9, day: 24, hour: 7, minute: 0))
     }
@@ -47,8 +47,8 @@ struct NotificationPlannerTests {
     @Test func singularAndTomorrowOnly() {
         let plan = Self.plan([Self.item("Yogurt", Self.date(2026, 9, 26, 9))])
         #expect(plan.map(\.identifier) == ["daily-2026-09-25", "daily-2026-09-26"])
-        #expect(plan[0].body == "1 item expires tomorrow: Yogurt")
-        #expect(plan[1].body == "1 item expires today: Yogurt")
+        #expect(plan[0].body == "1 item expires tomorrow")
+        #expect(plan[1].body == "1 item expires today")
     }
 
     @Test("A fire time that has passed is skipped")
@@ -70,20 +70,22 @@ struct NotificationPlannerTests {
         let weekly = Self.plan(items).filter { $0.identifier.hasPrefix(NotificationPlanner.weeklyPrefix) }
         #expect(weekly.map(\.identifier) == ["weekly-2026-09-28", "weekly-2026-10-05"])
         #expect(weekly[0].title == "This week")
-        #expect(weekly[0].body == "2 items expire this week: Yogurt, Ham")
-        #expect(weekly[1].body == "1 item expires this week: Jam")
+        #expect(weekly[0].body == "2 items expire this week")
+        #expect(weekly[1].body == "1 item expires this week")
         #expect(weekly[0].fireDate == Self.date(2026, 9, 28, 7, 0))
         let dailies = Self.plan(items).filter { $0.identifier.hasPrefix(NotificationPlanner.dailyPrefix) }
         #expect(dailies.map(\.identifier) == ["daily-2026-09-28", "daily-2026-09-29", "daily-2026-09-30", "daily-2026-10-01"])
     }
 
-    @Test func spaceNamesOnlyWhenItemsComeFromSeveralSpaces() {
-        let mixed = Self.plan([Self.item("Milk", Self.date(2026, 9, 25), space: "Personal"),
-                               Self.item("Bread", Self.date(2026, 9, 25), space: "Home")])
-        #expect(mixed[0].body == "2 items expire tomorrow: Bread (Home), Milk (Personal)")
-        let single = Self.plan([Self.item("Milk", Self.date(2026, 9, 25), space: "Home"),
-                                Self.item("Bread", Self.date(2026, 9, 25), space: "Home")])
-        #expect(single[0].body == "2 items expire tomorrow: Bread, Milk")
+    /// The body only says what is wrong; a tap shows the items (user request, 2026-09-26). The tap opens the space
+    /// with most of the items.
+    @Test func bodyHasNoNamesAndTheTargetIsTheSpaceWithMostItems() {
+        let home = UUID(), personal = UUID()
+        let plan = Self.plan([Self.item("Milk", Self.date(2026, 9, 25), spaceID: personal),
+                              Self.item("Bread", Self.date(2026, 9, 25), spaceID: home),
+                              Self.item("Eggs", Self.date(2026, 9, 25), spaceID: home)])
+        #expect(plan[0].body == "3 items expire tomorrow")
+        #expect(plan[0].targetSpaceID == home)
     }
 
     @Test("500 items never produce more than 64 notifications")
@@ -92,7 +94,7 @@ struct NotificationPlannerTests {
         let plan = Self.plan(items)
         #expect(plan.count <= NotificationPlanner.maxPending)
         #expect(plan.count == 16)                                 // 14 dailies + 2 Mondays
-        #expect(plan.allSatisfy { $0.body.contains("more") })
+        #expect(plan.allSatisfy { !$0.body.contains(":") })          // counts only, never item names
         #expect(Set(plan.map(\.identifier)).count == plan.count)
     }
 
@@ -135,19 +137,19 @@ struct NotificationPlannerTests {
     @Test func hungarianAndGermanCopy() {
         let hu = Self.plan([Self.item("Tej", Self.date(2026, 9, 24, 18))], locale: Locale(identifier: "hu_HU"))
         #expect(hu[0].title == "Hamarosan lejár")
-        #expect(hu[0].body == "1 tétel ma lejár: Tej")
+        #expect(hu[0].body == "1 tétel ma lejár")
         let de = Self.plan([Self.item("Brot", Self.date(2026, 9, 25)), Self.item("Käse", Self.date(2026, 9, 25))],
                            locale: Locale(identifier: "de_DE"))
         #expect(de[0].title == "Läuft bald ab")
-        #expect(de[0].body == "2 Artikel laufen morgen ab: Brot, Käse")
+        #expect(de[0].body == "2 Artikel laufen morgen ab")
         let many = (0..<5).map { Self.item("Termék \($0)", Self.date(2026, 9, 24, 12)) }
-        #expect(Self.plan(many, locale: Locale(identifier: "hu_HU"))[0].body == "5 tétel ma lejár: Termék 0, Termék 1, Termék 2 és még 2")
+        #expect(Self.plan(many, locale: Locale(identifier: "hu_HU"))[0].body == "5 tétel ma lejár")
     }
 
     @Test func everyKeyIsTranslated() {
         let keys = ["notification.daily.title", "notification.weekly.title", "notification.daily.today %lld",
                     "notification.daily.tomorrow %lld", "notification.daily.todayAndTomorrow %lld",
-                    "notification.weekly.count %lld", "notification.body %@ %@", "notification.names.more %@ %lld"]
+                    "notification.weekly.count %lld"]
         for key in keys {
             for id in ["hu_HU", "en_US", "de_DE"] {
                 #expect(CoreLocalization.lookup(key, locale: Locale(identifier: id)) != nil, "\(key) \(id)")
