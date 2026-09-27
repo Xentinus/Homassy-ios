@@ -12,6 +12,7 @@ public final class ShoppingListModel {
         public let quantityText: String
         public let note: String?
         public let storeName: String?
+        public let storeID: UUID?
         public let deadline: Date?
         /// Drawn like stock expiry (README "Card layout"): yellow within 14 days, red once the deadline passed.
         public let deadlineLevel: ExpirationLevel
@@ -97,7 +98,8 @@ public final class ShoppingListModel {
     private func row(for item: ShoppingListItem) -> Row {
         Row(id: item.publicId, name: ShoppingService.displayName(of: item),
             quantityText: Quantity.format(item.quantity, unit: item.unit, locale: locale),
-            note: item.note, storeName: item.shoppingLocation?.name, deadline: item.deadline,
+            note: item.note, storeName: item.shoppingLocation?.name, storeID: item.shoppingLocation?.publicId,
+            deadline: item.deadline,
             deadlineLevel: ExpirationStatus.level(expiresAt: item.deadline, now: now(), calendar: calendar),
             productID: item.product?.publicId, image: item.product?.image)
     }

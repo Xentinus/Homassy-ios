@@ -16,6 +16,10 @@ public final class ServiceContainer {
     public let inventory: InventoryService
     public let shopping: ShoppingService
     public let shoppingLocations: ShoppingLocationService
+    /// Store addresses cached on this device (P2-08b).
+    public let storeAddressCache: StoreAddressCache
+    /// Which store is which: cached addresses, distance, compact names (P2-08b).
+    public let storeDirectory: StoreDirectory
     /// Apple Maps store search; a fake in tests.
     public let storeSearch: any StoreSearching
     public let notifications: ExpiryNotificationCoordinator
@@ -43,7 +47,9 @@ public final class ServiceContainer {
                 historyDefaults: UserDefaults = .standard,
                 syncStatus: SyncStatusModel? = nil,
                 locationAuthorizer: (any LocationAuthorizing)? = nil,
-                storeRemindersEnabled: @escaping @MainActor () -> Bool = { false }) {
+                storeRemindersEnabled: @escaping @MainActor () -> Bool = { false },
+                storeAddressCacheURL: URL? = nil,
+                storeAddresses: (any StoreAddressResolving)? = nil) {
         // When sharing is given, its permission check is every service's canEdit (read-only households).
         let permission: @MainActor (Space) -> Bool
         if let sharing {
@@ -71,6 +77,9 @@ public final class ServiceContainer {
         shopping = ShoppingService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: permission)
         shoppingLocations = ShoppingLocationService(spaceStore: spaceStore, context: context,
                                                     userRecordName: userRecordName, canEdit: permission)
+        storeAddressCache = StoreAddressCache(fileURL: storeAddressCacheURL)
+        storeDirectory = StoreDirectory(context: context, cache: storeAddressCache, resolver: storeAddresses,
+                                        location: locationAuthorizer)
         self.storeSearch = storeSearch
         notifications = ExpiryNotificationCoordinator(
             context: context, center: notificationCenter,
@@ -81,6 +90,7 @@ public final class ServiceContainer {
             locale: Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en"))
         archive = persistence.map { ArchiveServices(persistence: $0, spaceStore: spaceStore, userRecordName: userRecordName,
                                                           canEdit: permission) }
+        shoppingLocations.onUpsert = { [storeDirectory] in storeDirectory.remember($0) }
     }
 
     /// The selected space, or Personal when nothing (or something that no longer exists) is selected.

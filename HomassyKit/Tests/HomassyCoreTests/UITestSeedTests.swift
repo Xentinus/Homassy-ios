@@ -28,5 +28,7 @@ struct UITestSeedTests {
         #expect(try services.products.products(in: env.personal).map(\.name) == ["Apples", "Bread", "Eggs", "Milk"])
         #expect(try services.products.product(barcode: UITestSeed.knownBarcode, in: env.personal)?.name == "Milk")
         #expect(try services.shoppingLocations.recent(in: env.personal).map(\.name) == ["Corner Shop"])
+        let corner = try #require(try services.shoppingLocations.recent(in: env.personal).first)
+        #expect(services.storeDirectory.subtitle(ofStore: corner.publicId) == "Fő utca 1., Budapest")
     }
 }
