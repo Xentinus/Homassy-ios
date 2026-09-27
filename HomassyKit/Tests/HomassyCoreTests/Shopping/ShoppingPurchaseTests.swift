@@ -180,10 +180,26 @@ struct ShoppingPurchaseTests {
         #expect(added.map(\.storageLocation) == [garage, fridge])
         #expect(added.map(\.price) == [450, 450])
         #expect(item.quantity == 1, "the remainder stays on the list")
+        #expect(try stack.count(PurchaseRecord.self) == 2)
         action.revert()
         #expect(try stock().isEmpty)
         #expect(try stack.count(PurchaseRecord.self) == 0)
         #expect(item.quantity == 3)
+    }
+
+    @Test func aBadSecondLotOfACustomItemWritesNothing() throws {
+        let fridge = try stack.makeLocation("Hűtő")
+        let foreignLocation = try stack.makeLocation("Idegen", in: try stack.makeOtherSpace())
+        let list = try shopping.createList(name: "Heti", in: stack.space)
+        let item = try shopping.addItem(to: list, customName: "Szalvéta", quantity: 2)
+        #expect(throws: ServiceError.notFound) {
+            _ = try buy(item, PurchaseDetails(quantity: 2, lots: [
+                LotDetails(quantity: 1, storageLocationID: fridge.publicId),
+                LotDetails(quantity: 1, storageLocationID: foreignLocation.publicId)]))
+        }
+        #expect(try stack.count(Product.self) == 0)
+        #expect(try stack.count(InventoryItem.self) == 0)
+        #expect(!stack.context.hasChanges)
     }
 
     @Test func theLotsSumIsTheBoughtAmount() throws {
