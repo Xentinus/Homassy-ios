@@ -56,7 +56,13 @@ struct StockLotsSection: View {
                             .accessibilityIdentifier("lot.\(number).stepper")
                     }
                     Group {
-                        LabeledContent("stock.location") {
+                        // Both rows are laid out like a LabeledContent, but are not one: in a Form, LabeledContent
+                        // turns its control into a row-wide accessibility element that also reads the title (the
+                        // picker read "Storage location" twice), and a tap at that element's centre misses the
+                        // trailing expiry button. The controls carry the label; the visible title is not read again.
+                        HStack {
+                            Text("stock.location").accessibilityHidden(true)
+                            Spacer()
                             Picker(selection: $lot.storageLocationID) {
                                 Text("inventory.noLocation").tag(UUID?.none)
                                 ForEach(lots.storageOptions) { Text(verbatim: $0.name).tag(Optional($0.id)) }
@@ -67,9 +73,6 @@ struct StockLotsSection: View {
                             .labelsHidden()
                             .accessibilityIdentifier("lot.\(number).location")
                         }
-                        // Laid out like the LabeledContent above, but not one: in a Form, LabeledContent turns its
-                        // control into a row-wide accessibility element, so a tap at that element's centre misses
-                        // the trailing button. The button carries the label; the visible title is not read again.
                         HStack {
                             Text("stock.expiresAt").accessibilityHidden(true)
                             Spacer()
