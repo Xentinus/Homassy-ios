@@ -6,6 +6,7 @@ import Observation
 @MainActor
 @Observable
 public final class StoreAddressCache {
+    /// Sits next to the local store directory in Application Support, on this device only.
     public static var defaultURL: URL {
         StoreMode.localDevelopmentDirectory.appending(path: "store-addresses.json")
     }
@@ -30,6 +31,7 @@ public final class StoreAddressCache {
         guard addresses[identifier] != address else { return }
         addresses[identifier] = address
         guard let fileURL else { return }
+        // Best effort: a failed write loses nothing; the address is looked up again next run.
         try? FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? JSONEncoder().encode(addresses).write(to: fileURL, options: .atomic)
     }
