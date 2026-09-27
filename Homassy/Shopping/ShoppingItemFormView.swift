@@ -9,6 +9,7 @@ struct ShoppingItemFormView: View {
     @State private var model: ShoppingItemFormModel
     @State private var pickingStore = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(StoreDirectory.self) private var directory
 
     init(item: ShoppingListItem, services: ServiceContainer, onSaved: @escaping () -> Void) {
         self.services = services
@@ -44,7 +45,7 @@ struct ShoppingItemFormView: View {
                     Button { pickingStore = true } label: {
                         LabeledContent("shopping.form.store") {
                             if let store = model.store {
-                                Text(verbatim: store.name)
+                                Text(verbatim: directory.compactName(ofStore: store.id) ?? store.name)
                             } else {
                                 Text("shopping.form.store.none")
                             }
