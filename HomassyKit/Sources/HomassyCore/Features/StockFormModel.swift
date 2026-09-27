@@ -97,15 +97,19 @@ public final class StockFormModel {
     public var hasProduct: Bool { productID != nil }
     public var canSave: Bool { productID != nil && lots.total != nil }
 
-    /// Picked (or just created) in the product list: its unit, last storage location and stores apply.
+    /// Picked (or just created) in the product list: its unit, last storage location and stores apply. A single
+    /// lot's location follows the product while it is still the previous product's default (none without one);
+    /// a location the user picked by hand stays.
     public func setProduct(_ id: UUID) {
         guard !isEditing, let product = try? products.product(publicId: id), product.space == targetSpace else { return }
+        let previous = productID.flatMap { try? products.product(publicId: $0) }
+        let previousDefault = ShoppingPurchase.defaultStorageLocation(for: previous, inventory: inventory)?.publicId
         productID = id
         productName = product.name
         unit = product.defaultUnit
-        if lots.lotCount == 1,
-           let location = ShoppingPurchase.defaultStorageLocation(for: product, inventory: inventory) {
-            lots.lots[0].storageLocationID = location.publicId
+        if lots.lotCount == 1, lots.lots[0].storageLocationID == previousDefault {
+            lots.lots[0].storageLocationID =
+                ShoppingPurchase.defaultStorageLocation(for: product, inventory: inventory)?.publicId
         }
         store.setProduct(product)
     }

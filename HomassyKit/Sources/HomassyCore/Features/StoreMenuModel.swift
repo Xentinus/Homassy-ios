@@ -78,6 +78,8 @@ public final class StoreMenuModel {
         guard let space else { return }
         let stores = (try? locations.recentStores(for: product, in: space)) ?? []
         options = stores.map { PickerOption(id: $0.publicId, name: $0.name) }
+        // The chosen store, e.g. one from "Other store…", stays listed (first when not a recent one).
+        if let chosen = selection.savedLocation { pin(chosen) }
     }
 
     private func pin(_ store: ShoppingLocation) {

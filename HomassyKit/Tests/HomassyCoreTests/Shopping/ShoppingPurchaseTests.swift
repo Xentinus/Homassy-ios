@@ -184,6 +184,7 @@ struct ShoppingPurchaseTests {
         action.revert()
         #expect(try stock().isEmpty)
         #expect(try stack.count(PurchaseRecord.self) == 0)
+        #expect(try stack.count(InventoryEvent.self) == 0)
         #expect(item.quantity == 3)
     }
 
