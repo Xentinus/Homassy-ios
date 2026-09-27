@@ -117,16 +117,7 @@ public enum ShoppingPurchase {
         guard inventory.canEdit(space) else { throw ServiceError.readOnlySpace }
         // The lots are checked before a product is created: removing a new product again still leaves its
         // space changed, and a failed purchase must write nothing.
-        for lot in details.inventoryLots {
-            guard lot.quantity > 0 else { throw ServiceError.quantityMustBePositive }
-            if let expiresAt = lot.expiresAt,
-               inventory.calendar.startOfDay(for: expiresAt) < inventory.calendar.startOfDay(for: purchasedAt) {
-                throw ServiceError.expiryBeforePurchase
-            }
-            if let id = lot.storageLocationID {
-                _ = try entity(StorageLocation.self, id, in: space, context: shopping.context)
-            }
-        }
+        _ = try inventory.validateLots(details.inventoryLots, purchasedAt: purchasedAt, in: space)
         let store = try details.storeID.map { try entity(ShoppingLocation.self, $0, in: space, context: shopping.context) }
         let (product, createdProduct) = try resolveProduct(for: item, userRecordName: shopping.userRecordName,
                                                            spaceStore: shopping.spaceStore)

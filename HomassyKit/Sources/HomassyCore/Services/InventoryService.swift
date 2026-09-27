@@ -70,10 +70,8 @@ public final class InventoryService {
                          commit: Bool = true) throws -> [InventoryItem] {
         guard !product.isGone, let space = product.space else { throw ServiceError.notFound }
         try ensureEditable(space)
-        guard !lots.isEmpty else { throw ServiceError.quantityMustBePositive }
         try ensure(shoppingLocation, isIn: space)
-        for lot in lots { try validate(quantity: lot.quantity, expiresAt: lot.expiresAt, purchasedAt: purchasedAt) }
-        let locations = try lots.map { lot in try lot.storageLocationID.map { try storageLocation($0, in: space) } }
+        let locations = try validateLots(lots, purchasedAt: purchasedAt, in: space)
         let shares = totalPrice.map { ProportionalSplit.split(total: $0, weights: lots.map(\.quantity)) }
 
         var items: [InventoryItem] = []
@@ -85,6 +83,15 @@ public final class InventoryService {
         }
         if commit { try context.save() }
         return items
+    }
+
+    /// Checks lots before anything is inserted: at least one, each amount above 0, no expiry before the purchase
+    /// day, and each location in `space`. Returns the lots' storage locations in order. Also used by the shopping
+    /// purchase before it creates a product for a custom item.
+    func validateLots(_ lots: [LotDetails], purchasedAt: Date?, in space: Space) throws -> [StorageLocation?] {
+        guard !lots.isEmpty else { throw ServiceError.quantityMustBePositive }
+        for lot in lots { try validate(quantity: lot.quantity, expiresAt: lot.expiresAt, purchasedAt: purchasedAt) }
+        return try lots.map { lot in try lot.storageLocationID.map { try storageLocation($0, in: space) } }
     }
 
     /// Where, how much and for how much (P4-05). Written only when there is a price or a store; the price
