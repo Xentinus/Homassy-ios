@@ -71,6 +71,7 @@ struct MainTabView: View {
     let model = AppModel.preview()
     MainTabView().environment(model).environment(model.selection).environment(model.undoQueue)
         .environment(model.services!).environment(model.services!.attribution).environment(model.services!.syncStatus)
+        .environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 
@@ -78,6 +79,7 @@ struct MainTabView: View {
     let model = AppModel.preview()
     MainTabView().environment(model).environment(model.selection).environment(model.undoQueue)
         .environment(model.services!).environment(model.services!.attribution).environment(model.services!.syncStatus)
+        .environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 #endif

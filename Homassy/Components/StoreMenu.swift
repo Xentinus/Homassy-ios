@@ -8,6 +8,8 @@ struct StoreMenu: View {
     let model: StoreMenuModel
     let other: () -> Void
 
+    @Environment(StoreDirectory.self) private var directory
+
     /// A row of the inline picker. An untouched Apple Maps suggestion is not a row: the menu's label names it.
     private enum Choice: Hashable {
         case none
@@ -48,9 +50,14 @@ struct StoreMenu: View {
                 }
                 Picker(selection: choice) {
                     ForEach(model.options) { option in
-                        Text(verbatim: option.name)
-                            .tag(Choice.store(option.id))
-                            .accessibilityIdentifier("store.menu.\(option.name)")
+                        VStack(alignment: .leading) {
+                            Text(verbatim: option.name)
+                            if let subtitle = directory.subtitle(ofStore: option.id) {
+                                Text(verbatim: subtitle)
+                            }
+                        }
+                        .tag(Choice.store(option.id))
+                        .accessibilityIdentifier("store.menu.\(option.name)")
                     }
                     Text("store.none")
                         .tag(Choice.none)
@@ -72,7 +79,7 @@ struct StoreMenu: View {
                         if let distance = model.suggestedDistance {
                             Text(verbatim: "\(name) · \(StoreSuggestionRow.format(distance))")
                         } else {
-                            Text(verbatim: name)
+                            Text(verbatim: directory.compactName(ofStore: model.selectedStoreID) ?? name)
                         }
                     } else {
                         Text("store.none")
@@ -84,5 +91,6 @@ struct StoreMenu: View {
             }
             .accessibilityIdentifier("store.menu")
         }
+        .task { await directory.refreshLocation() }
     }
 }

@@ -161,7 +161,7 @@ private struct SectionCard: Identifiable {
     let model = AppModel.preview()
     NavigationStack { InventoryView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!).environment(model.services!.attribution)
+        .environment(model.services!).environment(model.services!.attribution).environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 
@@ -169,7 +169,7 @@ private struct SectionCard: Identifiable {
     let model = AppModel.preview()
     NavigationStack { InventoryView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!).environment(model.services!.attribution)
+        .environment(model.services!).environment(model.services!.attribution).environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
 }
 #endif
