@@ -99,6 +99,20 @@ struct StoreMenuModelTests {
         #expect(model.name == "Új bolt" && model.offersSuggestion)
     }
 
+    @Test func anOtherStorePickStaysPinnedWhenTheProductChanges() throws {
+        let milk = try stack.makeProduct("Tej")
+        let sarki = try store("Sarki bolt", usedHoursAgo: 30)
+        try bought(milk, at: sarki, daysAgo: 1)
+        for hours in 1...4 { try store("Bolt \(hours)", usedHoursAgo: Double(hours)) }
+        let model = menu()
+        // Never used, so not one of the five recent stores.
+        let other = try stack.makeStore("Új bolt")
+        model.setStore(other)
+        model.setProduct(milk)
+        #expect(model.options.map(\.name) == ["Új bolt", "Sarki bolt", "Bolt 1", "Bolt 2", "Bolt 3", "Bolt 4"])
+        #expect(model.selectedStoreID == other.publicId)
+    }
+
     @Test func aSavedSuggestionThatIsAlreadyChosenIsNotOfferedTwice() throws {
         let piac = try store("Piac", usedHoursAgo: 1)
         let model = menu(preset: piac)

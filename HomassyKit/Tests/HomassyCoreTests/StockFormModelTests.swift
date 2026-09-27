@@ -47,6 +47,50 @@ struct StockFormModelTests {
         #expect(picked.lots.lots[0].storageLocationID == fridge.publicId)
     }
 
+    @Test func pickingAnotherProductResetsTheDefaultLocation() async throws {
+        let env = try ServiceTestEnvironment()
+        let freezer = try env.storageService().create(in: env.personal, name: "Freezer", color: nil, isFreezer: true)
+        let peas = try await env.makeProduct("Peas")
+        let salt = try await env.makeProduct("Salt")
+        try env.stock(peas, 1, location: freezer)
+        let form = form(env)
+        form.setProduct(peas.publicId)
+        #expect(form.lots.lots[0].storageLocationID == freezer.publicId)
+        form.setProduct(salt.publicId)
+        #expect(form.lots.lots[0].storageLocationID == nil, "salt has no location history")
+    }
+
+    @Test func aHandPickedLocationSurvivesAnotherProduct() async throws {
+        let env = try ServiceTestEnvironment()
+        let freezer = try env.storageService().create(in: env.personal, name: "Freezer", color: nil, isFreezer: true)
+        let pantry = try env.storageService().create(in: env.personal, name: "Pantry", color: nil, isFreezer: false)
+        let fridge = try env.storageService().create(in: env.personal, name: "Fridge", color: nil, isFreezer: false)
+        let peas = try await env.makeProduct("Peas")
+        let milk = try await env.makeProduct("Milk")
+        try env.stock(peas, 1, location: freezer)
+        try env.stock(milk, 1, location: fridge)
+        let form = form(env)
+        form.setProduct(peas.publicId)
+        form.lots.lots[0].storageLocationID = pantry.publicId
+        form.setProduct(milk.publicId)
+        #expect(form.lots.lots[0].storageLocationID == pantry.publicId)
+    }
+
+    @Test func setProductIsIgnoredWhileEditingAndForAnotherSpace() async throws {
+        let env = try ServiceTestEnvironment()
+        let eggs = try await env.makeProduct("Eggs")
+        let milk = try await env.makeProduct("Milk", unit: .liter)
+        let item = try env.stock(eggs, 10)
+        let edit = StockFormModel(mode: .edit(item), inventory: env.inventoryService(), products: env.productService(),
+                                  storage: env.storageService(), locations: locations(env), locale: Self.hu)
+        edit.setProduct(milk.publicId)
+        #expect(edit.productID == eggs.publicId && edit.unit == .piece)
+        let foreign = try await env.makeProduct("Foreign", in: try env.makeHousehold(), unit: .liter)
+        let add = form(env)
+        add.setProduct(foreign.publicId)
+        #expect(add.productID == nil && add.unit == .piece && !add.hasProduct)
+    }
+
     @Test func twoLotsSplitThePriceAndShareTheStore() async throws {
         let env = try ServiceTestEnvironment()
         let fridge = try env.storageService().create(in: env.personal, name: "Fridge", color: nil, isFreezer: false)
