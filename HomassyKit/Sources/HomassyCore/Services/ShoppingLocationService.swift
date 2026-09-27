@@ -10,6 +10,8 @@ public final class ShoppingLocationService {
     private let userRecordName: String
     private let canEditSpace: @MainActor (Space) -> Bool
     private let now: () -> Date
+    /// Every Apple Maps pick, so its address is cached (P2-08b).
+    public var onUpsert: (@MainActor (StoreResult) -> Void)?
 
     public init(spaceStore: SpaceStore, context: NSManagedObjectContext, userRecordName: String,
                 canEdit: @escaping @MainActor (Space) -> Bool = { _ in true },
@@ -39,6 +41,7 @@ public final class ShoppingLocationService {
             }
             existing.lastUsedAt = date
             try save()
+            onUpsert?(result)
             return existing
         }
 
@@ -51,6 +54,7 @@ public final class ShoppingLocationService {
         location.lastUsedAt = date
         location.stamp(by: userRecordName, now: date)
         try save()
+        onUpsert?(result)
         return location
     }
 
