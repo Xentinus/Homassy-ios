@@ -35,8 +35,7 @@ struct StoreSuggestionRow: View {
     }
 
     static func format(_ metres: Double) -> String {
-        Measurement(value: metres.rounded(), unit: UnitLength.meters)
-            .formatted(.measurement(width: .abbreviated, usage: .asProvided, numberFormatStyle: .number.precision(.fractionLength(0))))
+        StoreLabel.distanceText(metres)
     }
 }
 

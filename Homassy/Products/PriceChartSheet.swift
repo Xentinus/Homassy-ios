@@ -2,6 +2,13 @@ import Charts
 import HomassyCore
 import SwiftUI
 
+/// "Auchan · Budaörs" for a known store, the raw store name from the purchase otherwise, or the placeholder
+/// when neither is known.
+private func storeTitle(for line: PriceSummary.StoreLine, directory: StoreDirectory) -> Text {
+    (line.storeID.flatMap { directory.compactName(ofStore: $0) } ?? line.name)
+        .map { Text(verbatim: $0) } ?? Text("product.detail.unknownStore")
+}
+
 /// One store on the price trend card: its name, the latest unit price and when it was bought.
 struct PriceStoreRow: View {
     let model: ProductDetailModel
@@ -12,8 +19,7 @@ struct PriceStoreRow: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                ((line.storeID.flatMap { directory.compactName(ofStore: $0) } ?? line.name)
-                    .map { Text(verbatim: $0) } ?? Text("product.detail.unknownStore"))
+                storeTitle(for: line, directory: directory)
                 Text(line.latest.date, format: .dateTime.year().month().day())
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -74,9 +80,7 @@ struct PriceChartSheet: View {
                     }
                 }
             }
-            .navigationTitle(
-                (line.storeID.flatMap { directory.compactName(ofStore: $0) } ?? line.name)
-                    .map { Text(verbatim: $0) } ?? Text("product.detail.unknownStore"))
+            .navigationTitle(storeTitle(for: line, directory: directory))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("common.close") { dismiss() } }

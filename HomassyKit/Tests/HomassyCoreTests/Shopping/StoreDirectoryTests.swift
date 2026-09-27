@@ -1,5 +1,7 @@
 import CoreData
 import Foundation
+import Observation
+import Synchronization
 import Testing
 @testable import HomassyCore
 
@@ -96,6 +98,32 @@ struct StoreDirectoryTests {
         #expect(directory.compactName(ofStore: third.publicId) == "Auchan · Budapest")
         #expect(directory.compactName(ofStore: UUID()) == nil)
         #expect(directory.compactName(ofStore: nil) == nil)
+    }
+
+    @Test func twinLocalityArrivesThroughTheResolverToo() async throws {
+        // The twin's own address is not cached yet; it only arrives through the fake resolver.
+        let cache = StoreAddressCache(fileURL: nil)
+        cache.set(try #require(StoreAddress(short: "Sport u. 2–4., Budaörs")), for: "I-A1")
+        let resolver = FakeAddressResolver(["I-A2": "Kossuth u. 5., Budaörs"])
+        let first = try store("Auchan", "I-A1")
+        _ = try store("auchan", "I-A2")
+        let directory = directory(resolver, cache: cache)
+        #expect(directory.compactName(ofStore: first.publicId) == "Auchan · Budaörs", "the twin's locality is not known yet")
+        for task in directory.lookups { await task.value }
+        #expect(directory.compactName(ofStore: first.publicId) == "Auchan · Sport u. 2–4.",
+                "the twin's locality arrived through the resolver, so the street disambiguates now")
+    }
+
+    @Test func refreshLocationDoesNotInvalidateWhenTheCoordinateIsUnchanged() async throws {
+        let here = Coordinate(latitude: 47.4600, longitude: 18.9660)
+        let location = FakeLocation(access: .authorized, coordinate: here)
+        let directory = directory(location: location)
+        await directory.refreshLocation()
+        #expect(directory.coordinate == here)
+        let changed = Mutex(false)
+        withObservationTracking { _ = directory.coordinate } onChange: { changed.withLock { $0 = true } }
+        await directory.refreshLocation()
+        #expect(!(changed.withLock { $0 }), "the same coordinate must not re-trigger observers")
     }
 
     @Test func upsertReportsThePick() throws {

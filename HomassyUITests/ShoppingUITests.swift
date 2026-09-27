@@ -99,7 +99,9 @@ final class ShoppingUITests: XCTestCase {
         app.buttons["lot.2.location"].firstMatch.tap()
         app.buttons["Pantry"].firstMatch.tap()
         app.buttons["store.menu"].firstMatch.tap()
-        app.buttons["Corner Shop"].firstMatch.tap()
+        let corner = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Corner Shop")).firstMatch
+        XCTAssertTrue(corner.waitForExistence(timeout: 3))
+        corner.tap()
         XCTAssertFalse(app.switches["shopping.purchase.keepRemainder"].exists, "2 of 1 bought: nothing remains")
         attachScreenshot(app, named: "shopping-purchase-two-lots")
         app.buttons["shopping.purchase.confirm"].tap()

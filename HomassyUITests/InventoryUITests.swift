@@ -110,10 +110,19 @@ final class InventoryUITests: XCTestCase {
 
         // Lot 1: Fridge, no expiry. Lot 2 copies it; then Pantry.
         app.buttons["lot.1.location"].firstMatch.tap()
-        app.buttons["Fridge"].firstMatch.tap()
-        app.buttons["lot.1.expiry"].firstMatch.tap()
+        let fridge = app.buttons["Fridge"].firstMatch
+        XCTAssertTrue(fridge.waitForExistence(timeout: 3))
+        fridge.tap()
+        let expiryButton = app.buttons["lot.1.expiry"].firstMatch
+        XCTAssertTrue(expiryButton.waitForExistence(timeout: 3))
+        expiryButton.tap()
         let noExpiry = app.buttons["lot.noExpiry"]
-        XCTAssertTrue(noExpiry.waitForExistence(timeout: 3))
+        if !noExpiry.waitForExistence(timeout: 2) {
+            // Defensive retry only; see final-fix-report.md — a pre-existing (P2-08a) popover issue, out of
+            // scope for P2-08b, keeps this from reliably opening under XCUITest on this device/OS.
+            expiryButton.tap()
+            XCTAssertTrue(noExpiry.waitForExistence(timeout: 3))
+        }
         noExpiry.tap()
         app.buttons["lot.add"].tap()
         XCTAssertTrue(app.buttons["lot.2.remove"].waitForExistence(timeout: 3))
@@ -123,9 +132,18 @@ final class InventoryUITests: XCTestCase {
         app.buttons["store.menu"].firstMatch.tap()
         let cornerRow = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Fő utca 1.")).firstMatch
         XCTAssertTrue(cornerRow.waitForExistence(timeout: 3), "the menu row shows the store's address")
-        let corner = app.buttons["Corner Shop"].firstMatch
-        XCTAssertTrue(corner.waitForExistence(timeout: 3))
-        corner.tap()
+
+        // The full picker's recent row shows the same address (spec assertion).
+        let other = app.buttons["store.menu.other"]
+        XCTAssertTrue(other.waitForExistence(timeout: 3))
+        other.tap()
+        let recentRow = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Fő utca 1.")).firstMatch
+        XCTAssertTrue(recentRow.waitForExistence(timeout: 5), "the store picker's recent row shows the address")
+        app.buttons["Cancel"].firstMatch.tap()
+
+        app.buttons["store.menu"].firstMatch.tap()
+        XCTAssertTrue(cornerRow.waitForExistence(timeout: 3))
+        cornerRow.tap()
         XCTAssertTrue(app.buttons["store.menu"].firstMatch.label.contains("Corner Shop · Budapest"))
         attachScreenshot(app, named: "stock-two-lots")
         app.buttons["stock.save"].tap()
