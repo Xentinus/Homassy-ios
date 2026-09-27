@@ -67,7 +67,12 @@ struct StockLotsSection: View {
                             .labelsHidden()
                             .accessibilityIdentifier("lot.\(number).location")
                         }
-                        LabeledContent("stock.expiresAt") {
+                        // Laid out like the LabeledContent above, but not one: in a Form, LabeledContent turns its
+                        // control into a row-wide accessibility element, so a tap at that element's centre misses
+                        // the trailing button. The button carries the label; the visible title is not read again.
+                        HStack {
+                            Text("stock.expiresAt").accessibilityHidden(true)
+                            Spacer()
                             ExpiryButton(date: $lot.expiresAt, minimum: purchasedAt)
                                 .accessibilityIdentifier("lot.\(number).expiry")
                         }
@@ -141,9 +146,8 @@ private struct ExpiryButton: View {
             }
         }
         .buttonStyle(.bordered)
-        // Silence the button's own label (it would otherwise fall back to the visible short date), so the
-        // enclosing LabeledContent's "stock.expiresAt" label plus this value read once: "Lejárat, október 3."
-        .accessibilityLabel(Text(verbatim: ""))
+        // Reads once as "Lejárat, október 3.": the row's visible title is hidden from VoiceOver.
+        .accessibilityLabel(Text("stock.expiresAt"))
         .accessibilityValue(date.map { Text($0, format: .dateTime.month(.wide).day()) } ?? Text("stock.expiry.none"))
         .onChange(of: showing) { _, open in
             if !open, !cleared { date = draft }

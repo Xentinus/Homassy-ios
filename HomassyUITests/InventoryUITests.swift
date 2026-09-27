@@ -117,12 +117,7 @@ final class InventoryUITests: XCTestCase {
         XCTAssertTrue(expiryButton.waitForExistence(timeout: 3))
         expiryButton.tap()
         let noExpiry = app.buttons["lot.noExpiry"]
-        if !noExpiry.waitForExistence(timeout: 2) {
-            // Defensive retry only; see final-fix-report.md — a pre-existing (P2-08a) popover issue, out of
-            // scope for P2-08b, keeps this from reliably opening under XCUITest on this device/OS.
-            expiryButton.tap()
-            XCTAssertTrue(noExpiry.waitForExistence(timeout: 3))
-        }
+        XCTAssertTrue(noExpiry.waitForExistence(timeout: 3))
         noExpiry.tap()
         app.buttons["lot.add"].tap()
         XCTAssertTrue(app.buttons["lot.2.remove"].waitForExistence(timeout: 3))
