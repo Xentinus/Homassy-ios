@@ -2,11 +2,31 @@ import HomassyCore
 import SwiftUI
 
 /// "Honnan" (P2-08a, store row option A): a pull-down menu, like Calendar's calendar row. It lists the GPS
-/// suggestion with its distance, the recent stores with a checkmark on the chosen one, "Other store…" (the full
-/// picker) and "No store". The user picks; the GPS only suggests.
+/// suggestion with its distance, the recent stores and "No store" as an inline picker (so VoiceOver reads the chosen
+/// one as selected), and "Other store…" (the full picker). The user picks; the GPS only suggests.
 struct StoreMenu: View {
     let model: StoreMenuModel
     let other: () -> Void
+
+    /// A row of the inline picker. An untouched Apple Maps suggestion is not a row: the menu's label names it.
+    private enum Choice: Hashable {
+        case none
+        case store(UUID)
+        case place
+    }
+
+    private var choice: Binding<Choice> {
+        Binding {
+            if model.name == nil { return .none }
+            return model.selectedStoreID.map(Choice.store) ?? .place
+        } set: { new in
+            switch new {
+            case .none: model.choose(nil)
+            case .store(let id): model.choose(id)
+            case .place: break
+            }
+        }
+    }
 
     var body: some View {
         LabeledContent("shopping.purchase.fromWhere") {
@@ -26,35 +46,22 @@ struct StoreMenu: View {
                         .accessibilityIdentifier("store.menu.suggestion")
                     }
                 }
-                if !model.options.isEmpty {
-                    Section {
-                        ForEach(model.options) { option in
-                            Button {
-                                model.choose(option.id)
-                            } label: {
-                                if option.id == model.selectedStoreID {
-                                    Label(option.name, systemImage: "checkmark")
-                                } else {
-                                    Text(verbatim: option.name)
-                                }
-                            }
+                Picker(selection: choice) {
+                    ForEach(model.options) { option in
+                        Text(verbatim: option.name)
+                            .tag(Choice.store(option.id))
                             .accessibilityIdentifier("store.menu.\(option.name)")
-                        }
                     }
+                    Text("store.none")
+                        .tag(Choice.none)
+                        .accessibilityIdentifier("store.menu.none")
+                } label: {
+                    Text("shopping.purchase.fromWhere")
                 }
+                .pickerStyle(.inline)
                 Section {
                     Button(action: other) { Label("store.other", systemImage: "magnifyingglass") }
                         .accessibilityIdentifier("store.menu.other")
-                    Button {
-                        model.choose(nil)
-                    } label: {
-                        if model.name == nil {
-                            Label("store.none", systemImage: "checkmark")
-                        } else {
-                            Text("store.none")
-                        }
-                    }
-                    .accessibilityIdentifier("store.menu.none")
                 }
             } label: {
                 HStack(spacing: 4) {
