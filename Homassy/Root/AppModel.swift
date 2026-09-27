@@ -206,12 +206,21 @@ final class AppModel {
         defer { isBuildingServices = false }
         let sharingService = SharingService(persistence: persistence, spaceStore: spaceStore,
                                             cloud: cloudSharing, userRecordName: userRecordName)
+        #if DEBUG
+        let storeAddressCacheURL = UITestHooks.isActive ? nil : StoreAddressCache.defaultURL
+        let storeAddresses: (any StoreAddressResolving)? = UITestHooks.isActive ? nil : MapKitStoreAddressResolver()
+        #else
+        let storeAddressCacheURL = StoreAddressCache.defaultURL
+        let storeAddresses: (any StoreAddressResolving)? = MapKitStoreAddressResolver()
+        #endif
         let container = ServiceContainer(spaceStore: spaceStore, context: persistence.viewContext,
                                          userRecordName: userRecordName, notificationCenter: Self.notificationCenter,
                                          persistence: persistence, sharing: sharingService,
                                          historyDefaults: Self.appDefaults, syncStatus: syncStatus,
                                          locationAuthorizer: storeLocation,
-                                         storeRemindersEnabled: { StoreReminderSettings.isEnabled })
+                                         storeRemindersEnabled: { StoreReminderSettings.isEnabled },
+                                         storeAddressCacheURL: storeAddressCacheURL,
+                                         storeAddresses: storeAddresses)
         #if DEBUG
         if UITestHooks.isSeeded {
             try? await UITestSeed.populate(container, in: personalSpace)

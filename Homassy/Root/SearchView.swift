@@ -172,7 +172,7 @@ struct SearchView: View {
     let model = AppModel.preview()
     NavigationStack { SearchView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!).environment(model.services!.attribution)
+        .environment(model.services!).environment(model.services!.attribution).environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter())
 }
 
@@ -180,7 +180,7 @@ struct SearchView: View {
     let model = AppModel.preview()
     NavigationStack { SearchView() }
         .environment(model).environment(model.selection).environment(model.undoQueue)
-        .environment(model.services!).environment(model.services!.attribution)
+        .environment(model.services!).environment(model.services!.attribution).environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter())
 }
 #endif

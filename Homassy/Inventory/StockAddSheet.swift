@@ -62,6 +62,7 @@ extension StockFormModel {
     let services = model.services!
     StockAddSheet.picking(in: model.personalSpace!, services: services)
         .environment(services)
+        .environment(services.storeDirectory)
 }
 
 #Preview("Details, landscape", traits: .landscapeLeft) {
@@ -71,5 +72,6 @@ extension StockFormModel {
     let id = ((try? services.products.products(in: space)) ?? []).first?.publicId ?? UUID()
     StockAddSheet.adding(id, in: space, services: services)
         .environment(services)
+        .environment(services.storeDirectory)
 }
 #endif

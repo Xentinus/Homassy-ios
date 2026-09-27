@@ -15,6 +15,7 @@ struct StorePickerView: View {
     @State private var placeCard: MKMapItem?
     @State private var areaSearch: Task<Void, Never>?
     @Environment(\.dismiss) private var dismiss
+    @Environment(StoreDirectory.self) private var directory
 
     /// The When-In-Use authorizer is app-only (P4-02), so the picker owns it.
     init(space: Space, services: ServiceContainer, initialTab: StorePickerModel.Tab = .recent,
@@ -105,6 +106,7 @@ struct StorePickerView: View {
                 model.loadRecent()
                 if model.tab == .nearby { await model.loadNearby() }
             }
+            .task { await directory.refreshLocation() }
         }
     }
 
@@ -120,7 +122,12 @@ struct StorePickerView: View {
                         dismiss()
                     }
                 } label: {
-                    Label { Text(verbatim: store.name) } icon: { Image(systemName: "clock") }
+                    Label {
+                        Text(verbatim: store.name)
+                        if let subtitle = directory.subtitle(ofStore: store.id) {
+                            Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+                        }
+                    } icon: { Image(systemName: "clock") }
                 }
                 .accessibilityIdentifier("store.recent.\(store.name)")
             }

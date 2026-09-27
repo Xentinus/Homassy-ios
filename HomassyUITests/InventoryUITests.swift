@@ -121,10 +121,12 @@ final class InventoryUITests: XCTestCase {
         app.buttons["Pantry"].firstMatch.tap()
 
         app.buttons["store.menu"].firstMatch.tap()
+        let cornerRow = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Fő utca 1.")).firstMatch
+        XCTAssertTrue(cornerRow.waitForExistence(timeout: 3), "the menu row shows the store's address")
         let corner = app.buttons["Corner Shop"].firstMatch
         XCTAssertTrue(corner.waitForExistence(timeout: 3))
         corner.tap()
-        XCTAssertTrue(app.buttons["store.menu"].firstMatch.label.contains("Corner Shop"))
+        XCTAssertTrue(app.buttons["store.menu"].firstMatch.label.contains("Corner Shop · Budapest"))
         attachScreenshot(app, named: "stock-two-lots")
         app.buttons["stock.save"].tap()
 
