@@ -56,13 +56,7 @@ struct StockLotsSection: View {
                             .accessibilityIdentifier("lot.\(number).stepper")
                     }
                     Group {
-                        // Both rows are laid out like a LabeledContent, but are not one: in a Form, LabeledContent
-                        // turns its control into a row-wide accessibility element that also reads the title (the
-                        // picker read "Storage location" twice), and a tap at that element's centre misses the
-                        // trailing expiry button. The controls carry the label; the visible title is not read again.
-                        HStack {
-                            Text("stock.location").accessibilityHidden(true)
-                            Spacer()
+                        LotControlRow(title: "stock.location") {
                             Picker(selection: $lot.storageLocationID) {
                                 Text("inventory.noLocation").tag(UUID?.none)
                                 ForEach(lots.storageOptions) { Text(verbatim: $0.name).tag(Optional($0.id)) }
@@ -73,9 +67,7 @@ struct StockLotsSection: View {
                             .labelsHidden()
                             .accessibilityIdentifier("lot.\(number).location")
                         }
-                        HStack {
-                            Text("stock.expiresAt").accessibilityHidden(true)
-                            Spacer()
+                        LotControlRow(title: "stock.expiresAt") {
                             ExpiryButton(date: $lot.expiresAt, minimum: purchasedAt)
                                 .accessibilityIdentifier("lot.\(number).expiry")
                         }
@@ -122,6 +114,28 @@ struct StockLotsSection: View {
                     Text("stock.lot.count \(lots.lotCount)")
                 }
             }
+        }
+    }
+}
+
+/// A lot's title-and-control row, laid out like a LabeledContent (title, then the control at the trailing edge;
+/// stacked at accessibility sizes), but not one: in a Form, LabeledContent turns its control into a row-wide
+/// accessibility element that also reads the title (the storage picker read "Storage location" twice), and a tap at
+/// that element's centre misses the trailing expiry button. The control carries the label; the visible title is not
+/// read again.
+private struct LotControlRow<Control: View>: View {
+    let title: LocalizedStringKey
+    @ViewBuilder let control: Control
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        let stacked = dynamicTypeSize.isAccessibilitySize
+        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout())
+        layout {
+            Text(title).accessibilityHidden(true)
+            if !stacked { Spacer() }
+            control
         }
     }
 }

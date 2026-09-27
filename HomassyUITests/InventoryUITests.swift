@@ -147,7 +147,16 @@ final class InventoryUITests: XCTestCase {
         XCTAssertTrue(cornerRow.waitForExistence(timeout: 3))
         XCTAssertTrue(cornerRow.isSelected, "VoiceOver reads the chosen store as selected")
         attachScreenshot(app, named: "stock-two-lots-store-menu")
-        cornerRow.tap() // The chosen row stays chosen; the tap only closes the menu.
+        // A tap on the checked row keeps (and confirms) the choice.
+        cornerRow.tap()
+        XCTAssertTrue(cornerRow.waitForNonExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["store.menu"].firstMatch.label.contains("Corner Shop · Budapest"))
+        app.buttons["store.menu"].firstMatch.tap()
+        XCTAssertTrue(cornerRow.waitForExistence(timeout: 3))
+        XCTAssertTrue(cornerRow.isSelected, "the checked row stays chosen after a second tap")
+        XCTAssertFalse(app.buttons["No store"].firstMatch.isSelected)
+        cornerRow.tap()
+        XCTAssertTrue(cornerRow.waitForNonExistence(timeout: 3))
         attachScreenshot(app, named: "stock-two-lots")
         app.buttons["stock.save"].tap()
 
@@ -157,6 +166,34 @@ final class InventoryUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter().wait(for: [three], timeout: 5), .completed)
         XCTAssertTrue(element("inventory.section.Pantry", in: app).exists)
         attachScreenshot(app, named: "stock-two-lots-inventory")
+    }
+
+    func testLotRowsStackAtAccessibilitySizes() {
+        continueAfterFailure = false
+        let app = XCUIApplication.homassy(extraArguments: [
+            "-uiTestSeed", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL",
+        ])
+        app.launch()
+        app.openTab("Inventory")
+        XCTAssertTrue(app.buttons["inventory.row.Bread"].waitForExistence(timeout: 10))
+        _ = openPicker(app)
+        let bread = app.buttons["picker.row.Bread"].firstMatch
+        XCTAssertTrue(bread.waitForExistence(timeout: 5))
+        bread.tap()
+        let location = app.buttons["lot.1.location"].firstMatch
+        XCTAssertTrue(location.waitForExistence(timeout: 5))
+        XCTAssertEqual(location.label, "Storage location, Pantry")
+
+        // Each control sits under its title, at the leading edge.
+        let expiry = app.buttons["lot.1.expiry"].firstMatch
+        for (title, control) in [("Storage location", location), ("Expires", expiry)] {
+            let text = app.staticTexts[title].firstMatch
+            XCTAssertLessThanOrEqual(text.frame.maxY, control.frame.minY, "\(title) stacks")
+            XCTAssertEqual(text.frame.minX, control.frame.minX, accuracy: 1)
+        }
+        attachScreenshot(app, named: "stock-lot-accessibility-size")
+        expiry.tap()
+        XCTAssertTrue(app.buttons["lot.noExpiry"].waitForExistence(timeout: 3))
     }
 
     func testAddStockWithANewProduct() {
