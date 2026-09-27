@@ -119,17 +119,20 @@ struct StockLotsSection: View {
     }
 }
 
-/// A lot's expiry: the short date, or "none". A tap opens a calendar popover with "No expiry date".
+/// A lot's expiry: the short date, or "none". A tap opens a calendar popover with "No expiry date". The day
+/// shown when the popover closes becomes the expiry, even the preselected one, unless "No expiry date" was tapped.
 private struct ExpiryButton: View {
     @Binding var date: Date?
     let minimum: Date
 
     @State private var showing = false
     @State private var draft = Date.now
+    @State private var cleared = false
 
     var body: some View {
         Button {
             draft = date ?? Calendar.current.date(byAdding: .day, value: 7, to: minimum) ?? minimum
+            cleared = false
             showing = true
         } label: {
             if let date {
@@ -141,6 +144,9 @@ private struct ExpiryButton: View {
         .buttonStyle(.bordered)
         .accessibilityLabel(Text("stock.expiresAt"))
         .accessibilityValue(date.map { Text($0, format: .dateTime.month(.wide).day()) } ?? Text("stock.expiry.none"))
+        .onChange(of: showing) { _, open in
+            if !open, !cleared { date = draft }
+        }
         .popover(isPresented: $showing) {
             VStack(spacing: 12) {
                 DatePicker("stock.expiresAt", selection: $draft, in: Calendar.current.startOfDay(for: minimum)...,
@@ -148,6 +154,7 @@ private struct ExpiryButton: View {
                     .datePickerStyle(.graphical)
                     .onChange(of: draft) { _, new in date = new }
                 Button("stock.noExpiry") {
+                    cleared = true
                     date = nil
                     showing = false
                 }

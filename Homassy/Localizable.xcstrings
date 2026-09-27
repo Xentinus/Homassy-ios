@@ -6809,29 +6809,6 @@
         }
       }
     },
-    "shopping.purchase.price" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preis"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Price"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ár"
-          }
-        }
-      }
-    },
     "shopping.purchase.price.footer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7316,29 +7293,6 @@
         }
       }
     },
-    "stock.price" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Preis"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Price"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ár"
-          }
-        }
-      }
-    },
     "stock.priceSplit %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7404,29 +7358,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dátum"
-          }
-        }
-      }
-    },
-    "stock.purchasedAt" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gekauft"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Purchased"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vásárlás"
           }
         }
       }
