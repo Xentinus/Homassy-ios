@@ -6901,29 +6901,6 @@
         }
       }
     },
-    "shopping.purchase.toInventory" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In den Vorrat"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Into the inventory"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A készletbe"
-          }
-        }
-      }
-    },
     "space.new" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7104,29 +7081,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "nincs"
-          }
-        }
-      }
-    },
-    "stock.hasExpiry" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hat ein Ablaufdatum"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Has an expiry date"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Van lejárati dátuma"
           }
         }
       }

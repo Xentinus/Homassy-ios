@@ -31,7 +31,7 @@ struct ShoppingPurchaseTests {
         stack.now.advance(seconds: 60)
 
         let action = try buy(item, PurchaseDetails(quantity: 2, storeID: spar.publicId, price: 459, currency: "HUF",
-                                                   storageLocationID: fridge.publicId))
+                                                   lots: [LotDetails(quantity: 2, storageLocationID: fridge.publicId)]))
         let added = try #require(try stock().first)
         #expect(added.product == milk)
         #expect(added.quantity == 2)
@@ -152,10 +152,10 @@ struct ShoppingPurchaseTests {
             _ = try buy(item, PurchaseDetails(quantity: 1, storeID: foreignStore.publicId))
         }
         #expect(throws: ServiceError.notFound) {
-            _ = try buy(item, PurchaseDetails(quantity: 1, storageLocationID: foreignLocation.publicId))
+            _ = try buy(item, PurchaseDetails(quantity: 1, lots: [LotDetails(quantity: 1, storageLocationID: foreignLocation.publicId)]))
         }
         #expect(throws: ServiceError.expiryBeforePurchase) {
-            _ = try buy(item, PurchaseDetails(quantity: 1, expiresAt: stack.now.date.addingTimeInterval(-3 * 86_400)))
+            _ = try buy(item, PurchaseDetails(quantity: 1, lots: [LotDetails(quantity: 1, expiresAt: stack.now.date.addingTimeInterval(-3 * 86_400))]))
         }
         #expect(throws: ServiceError.readOnlySpace) {
             _ = try buy(item, PurchaseDetails(quantity: 1), shopping: readOnly)
@@ -165,6 +165,33 @@ struct ShoppingPurchaseTests {
         #expect(item.quantity == 1)
         #expect(!pending.contains(item.publicId))
         #expect(!stack.context.hasChanges)
+    }
+
+    @Test func twoLotsBecomeTwoItemsAndUndoRemovesBoth() throws {
+        let milk = try stack.makeProduct("Tej")
+        let fridge = try stack.makeLocation("Hűtő")
+        let garage = try stack.makeLocation("Garázs")
+        let list = try shopping.createList(name: "Heti", in: stack.space)
+        let item = try shopping.addItem(to: list, product: milk, quantity: 3)
+        let action = try buy(item, PurchaseDetails(quantity: 2, price: 900, lots: [
+            LotDetails(quantity: 1, storageLocationID: fridge.publicId),
+            LotDetails(quantity: 1, storageLocationID: garage.publicId)]))
+        let added = try stock().sorted { ($0.storageLocation?.name ?? "") < ($1.storageLocation?.name ?? "") }
+        #expect(added.map(\.storageLocation) == [garage, fridge])
+        #expect(added.map(\.price) == [450, 450])
+        #expect(item.quantity == 1, "the remainder stays on the list")
+        action.revert()
+        #expect(try stock().isEmpty)
+        #expect(try stack.count(PurchaseRecord.self) == 0)
+        #expect(item.quantity == 3)
+    }
+
+    @Test func theLotsSumIsTheBoughtAmount() throws {
+        let list = try shopping.createList(name: "Heti", in: stack.space)
+        let item = try shopping.addItem(to: list, product: try stack.makeProduct("Tej"), quantity: 5)
+        _ = try buy(item, PurchaseDetails(quantity: 99, lots: [LotDetails(quantity: 1), LotDetails(quantity: 2)]))
+        #expect(item.quantity == 2)
+        #expect(try stock().map(\.quantity).reduce(0, +) == 3)
     }
 
     @Test func defaultStorageLocationIsTheLastOneUsed() throws {
