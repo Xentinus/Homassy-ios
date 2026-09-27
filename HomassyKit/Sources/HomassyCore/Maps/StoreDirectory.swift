@@ -33,6 +33,7 @@ public final class StoreDirectory {
     public func refreshLocation() async {
         guard let location, location.access == .authorized,
               let current = await location.currentCoordinate() else { return }
+        guard coordinate != current else { return }
         coordinate = current
     }
 
@@ -75,9 +76,7 @@ public final class StoreDirectory {
             ShoppingLocation.self,
             where: NSPredicate(format: "space == %@ AND name ==[cd] %@ AND self != %@", space, store.name, store))) ?? []
         return twins.contains { twin in
-            guard let identifier = twin.mapItemIdentifier, let other = cache.address(for: identifier)?.locality else {
-                return false
-            }
+            guard let other = self.address(of: twin)?.locality else { return false }
             return other.compare(locality, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
         }
     }

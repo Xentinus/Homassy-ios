@@ -28,6 +28,13 @@ struct StoreLabelTests {
         #expect(StoreLabel.distanceText(1_234, locale: en).contains("1.2"))
     }
 
+    @Test func distanceRoundsToAKilometreBeforeSwitchingUnits() {
+        // 999.6 rounds to 1000, which must render as "1,0 km", not "1000 m".
+        #expect(StoreLabel.distanceText(999.6, locale: hu).hasPrefix("1,0"))
+        #expect(StoreLabel.distanceText(999.6, locale: hu).hasSuffix("km"))
+        #expect(StoreLabel.distanceText(999.4, locale: en).hasSuffix("m"))
+    }
+
     @Test func subtitleJoinsWhatIsKnown() throws {
         let address = try #require(StoreAddress(short: "Sport u. 2–4., Budaörs"))
         let both = try #require(StoreLabel.subtitle(address: address, distance: 1_200, locale: hu))

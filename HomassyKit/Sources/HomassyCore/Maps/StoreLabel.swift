@@ -4,8 +4,9 @@ import Foundation
 public enum StoreLabel {
     /// "650 m" below a kilometre, "1,2 km" from there.
     public static func distanceText(_ metres: Double, locale: Locale = .current) -> String {
-        if metres < 1_000 {
-            return Measurement(value: metres.rounded(), unit: UnitLength.meters).formatted(
+        let rounded = metres.rounded()
+        if rounded < 1_000 {
+            return Measurement(value: rounded, unit: UnitLength.meters).formatted(
                 .measurement(width: .abbreviated, usage: .asProvided,
                              numberFormatStyle: .number.precision(.fractionLength(0))).locale(locale))
         }

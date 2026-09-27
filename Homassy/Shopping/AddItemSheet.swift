@@ -27,7 +27,7 @@ struct AddItemSheet: View {
                 switch model.step {
                 case .what: whatPage
                 case .amount: amountPage
-                case .store: storePage
+                case .store: storePage.task { await directory.refreshLocation() }
                 }
                 if let error = model.errorMessage {
                     Section { Text(verbatim: error).foregroundStyle(.red) }

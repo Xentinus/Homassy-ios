@@ -31,4 +31,14 @@ struct UITestSeedTests {
         let corner = try #require(try services.shoppingLocations.recent(in: env.personal).first)
         #expect(services.storeDirectory.subtitle(ofStore: corner.publicId) == "Fő utca 1., Budapest")
     }
+
+    @Test func upsertingAStoreWiresItsAddressIntoTheDirectory() throws {
+        let env = try ServiceTestEnvironment()
+        let services = container(env)
+        let store = try services.shoppingLocations.upsert(
+            StoreResult(mapItemIdentifier: "I-W", name: "W", latitude: 47.5, longitude: 19.0,
+                        subtitle: "Fő utca 1., Budapest"),
+            in: env.personal)
+        #expect(services.storeDirectory.subtitle(ofStore: store.publicId) == "Fő utca 1., Budapest")
+    }
 }
