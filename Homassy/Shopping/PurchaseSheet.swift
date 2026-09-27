@@ -1,9 +1,10 @@
 import HomassyCore
 import SwiftUI
 
-/// Tapping an item card: how much was bought, whether the rest stays on the list, from where (the nearest
-/// shop is suggested) and for how much, which is recorded for the price trend, and whether it goes into
-/// inventory (default on) with expiry and storage location.
+/// Tapping an item card: whether it goes into inventory (default on), how much was bought (with inventory, as
+/// lots with their own storage location and expiry, P2-08a), whether the rest stays on the list, and from where
+/// and for how much, which is recorded for the price trend. The store comes from the store menu (the nearest shop
+/// is suggested) and the paid total is split across the lots.
 struct PurchaseSheet: View {
     let services: ServiceContainer
 
@@ -25,20 +26,6 @@ struct PurchaseSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    HStack {
-                        TextField("shopping.purchase.quantity", text: $model.quantityText)
-                            .keyboardType(.decimalPad)
-                            .accessibilityIdentifier("shopping.purchase.quantity")
-                        Text("shopping.purchase.of \(model.listedText)").foregroundStyle(.secondary)
-                    }
-                    if model.showsKeepRemainder, let remainder = model.remainderText {
-                        Toggle(isOn: $model.keepRemainder) { Text("shopping.purchase.keepRemainder \(remainder)") }
-                            .accessibilityIdentifier("shopping.purchase.keepRemainder")
-                    }
-                } header: {
-                    Text("shopping.purchase.howMuch")
-                }
-                Section {
                     Toggle("shopping.purchase.addToInventory", isOn: $model.addToInventory.animation())
                         .accessibilityIdentifier("shopping.purchase.addToInventory")
                 } footer: {
@@ -50,8 +37,26 @@ struct PurchaseSheet: View {
                         }
                     }
                 }
-                if model.recordsPurchase { purchaseSections }
-                if model.addToInventory { inventorySection }
+                if model.addToInventory {
+                    StockLotsSection(lots: model.lots, unit: model.unit, purchasedAt: model.purchaseDate,
+                                     listedText: model.listedText, header: "shopping.purchase.howMuch")
+                    if model.showsKeepRemainder, let remainder = model.remainderText {
+                        Section { keepToggle(remainder) }
+                    }
+                } else {
+                    Section {
+                        HStack {
+                            TextField("shopping.purchase.quantity", text: $model.quantityText)
+                                .keyboardType(.decimalPad)
+                                .accessibilityIdentifier("shopping.purchase.quantity")
+                            Text("shopping.purchase.of \(model.listedText)").foregroundStyle(.secondary)
+                        }
+                        if model.showsKeepRemainder, let remainder = model.remainderText { keepToggle(remainder) }
+                    } header: {
+                        Text("shopping.purchase.howMuch")
+                    }
+                }
+                if model.recordsPurchase { purchaseSection }
                 if let error = model.errorMessage {
                     Section { Text(verbatim: error).foregroundStyle(.red) }
                 }
@@ -82,14 +87,15 @@ struct PurchaseSheet: View {
         .presentationDetents([.large])
     }
 
+    private func keepToggle(_ remainder: String) -> some View {
+        Toggle(isOn: $model.keepRemainder) { Text("shopping.purchase.keepRemainder \(remainder)") }
+            .accessibilityIdentifier("shopping.purchase.keepRemainder")
+    }
+
     /// Where and for how much: recorded for the price trend, with or without inventory (P4-05).
-    @ViewBuilder private var purchaseSections: some View {
+    private var purchaseSection: some View {
         Section {
-            StoreSuggestionRow(name: model.storeName, distance: model.suggestedDistance) { pickingStore = true }
-        } header: {
-            Text("shopping.purchase.fromWhere")
-        }
-        Section {
+            StoreMenu(model: model.store) { pickingStore = true }
             HStack {
                 TextField("shopping.purchase.pricePaid", text: $model.priceText)
                     .keyboardType(.decimalPad)
@@ -101,24 +107,12 @@ struct PurchaseSheet: View {
                     .frame(maxWidth: 72)
             }
         } header: {
-            Text("shopping.purchase.price")
+            Text("stock.purchase")
         } footer: {
-            Text("shopping.purchase.price.footer")
-        }
-    }
-
-    private var inventorySection: some View {
-        Section {
-            Toggle("stock.hasExpiry", isOn: $model.hasExpiry.animation())
-            if model.hasExpiry {
-                DatePicker("stock.expiresAt", selection: $model.expiresAt, displayedComponents: .date)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("shopping.purchase.price.footer")
+                if let split = model.priceSplitText { Text("stock.priceSplit \(split)") }
             }
-            Picker("stock.location", selection: $model.storageLocationID) {
-                Text("inventory.noLocation").tag(UUID?.none)
-                ForEach(model.storageOptions) { Text(verbatim: $0.name).tag(Optional($0.id)) }
-            }
-        } header: {
-            Text("shopping.purchase.toInventory")
         }
     }
 

@@ -37,9 +37,9 @@ final class ShoppingUITests: XCTestCase {
         let inventory = app.switches["shopping.purchase.addToInventory"]
         XCTAssertTrue(inventory.waitForExistence(timeout: 5))
         XCTAssertEqual(inventory.value as? String, "1", "adding to inventory is the default")
-        XCTAssertTrue(app.buttons["store.suggestion"].exists)
+        XCTAssertTrue(app.buttons["store.menu"].firstMatch.exists)
         inventory.switches.firstMatch.tap()
-        XCTAssertFalse(app.buttons["store.suggestion"].waitForExistence(timeout: 1), "no store without inventory")
+        XCTAssertFalse(app.buttons["store.menu"].firstMatch.waitForExistence(timeout: 1), "no store without inventory")
         app.buttons["shopping.purchase.confirm"].tap()
         XCTAssertFalse(app.buttons["shopping.item.Napkins"].waitForExistence(timeout: 1))
 
@@ -66,7 +66,7 @@ final class ShoppingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["shopping.item.Napkins"].waitForExistence(timeout: 5))
 
         app.buttons["shopping.item.Napkins"].tap()
-        let quantity = app.textFields["shopping.purchase.quantity"]
+        let quantity = app.textFields["lot.1.quantity"]
         XCTAssertTrue(quantity.waitForExistence(timeout: 5))
         XCTAssertEqual(quantity.value as? String, "2")
         quantity.tap()
@@ -81,6 +81,34 @@ final class ShoppingUITests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 5))
         XCTAssertTrue(card.label.contains("1"), card.label)
         XCTAssertTrue(app.buttons["Undo"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testPurchaseInTwoLotsWithARecentStore() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.createShoppingList(named: "Weekly")
+        app.openShoppingList(named: "Weekly")
+        app.addShoppingItem("Napkins")
+
+        app.buttons["shopping.item.Napkins"].tap()
+        XCTAssertTrue(app.textFields["lot.1.quantity"].waitForExistence(timeout: 5))
+        app.buttons["lot.1.location"].firstMatch.tap()
+        app.buttons["Fridge"].firstMatch.tap()
+        app.buttons["lot.add"].tap()
+        XCTAssertTrue(app.buttons["lot.2.remove"].waitForExistence(timeout: 3))
+        app.buttons["lot.2.location"].firstMatch.tap()
+        app.buttons["Pantry"].firstMatch.tap()
+        app.buttons["store.menu"].firstMatch.tap()
+        app.buttons["Corner Shop"].firstMatch.tap()
+        XCTAssertFalse(app.switches["shopping.purchase.keepRemainder"].exists, "2 of 1 bought: nothing remains")
+        attachScreenshot(app, named: "shopping-purchase-two-lots")
+        app.buttons["shopping.purchase.confirm"].tap()
+        XCTAssertFalse(app.buttons["shopping.item.Napkins"].waitForExistence(timeout: 2))
+
+        app.openTab("Inventory")
+        let cards = app.buttons.matching(identifier: "inventory.row.Napkins")
+        let two = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 2"), object: cards)
+        XCTAssertEqual(XCTWaiter().wait(for: [two], timeout: 8), .completed, "one card in Fridge, one in Pantry")
     }
 
     @MainActor

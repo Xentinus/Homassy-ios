@@ -35,8 +35,9 @@ struct PurchaseFormModelTests {
         #expect(model.quantityText == "1.5")
         #expect(model.quantity == Decimal(string: "1.5")!)
         #expect(model.storeName == "Spar")
-        #expect(model.storageLocationID == fridge.publicId)
-        #expect(model.storageOptions.map(\.name) == ["Hűtő"])
+        #expect(model.lots.lots[0].storageLocationID == fridge.publicId && model.lots.lots[0].expiresAt == nil)
+        #expect(model.lots.storageOptions.map(\.name) == ["Hűtő"])
+        #expect(model.lots.lots[0].quantityText == "1.5")
         #expect(model.currency == "HUF")
         #expect(!model.showsKeepRemainder)
         #expect(model.listedText == Quantity.format(Decimal(string: "1.5")!, unit: .liter, locale: locale))
@@ -46,12 +47,12 @@ struct PurchaseFormModelTests {
         let list = try stack.service.createList(name: "Heti", in: stack.space)
         let item = try stack.service.addItem(to: list, customName: "Alma", quantity: 3)
         let model = makeModel(item)
-        model.quantityText = "1"
+        model.lots.lots[0].quantityText = "1"
         #expect(model.showsKeepRemainder)
         #expect(model.remainderText == Quantity.format(2, unit: .piece, locale: locale))
-        model.quantityText = "4"
+        model.lots.lots[0].quantityText = "4"
         #expect(!model.showsKeepRemainder)
-        model.quantityText = "abc"
+        model.lots.lots[0].quantityText = "abc"
         #expect(!model.canPurchase)
     }
 
@@ -79,10 +80,10 @@ struct PurchaseFormModelTests {
         let item = try stack.service.addItem(to: list, customName: "Alma", quantity: 3)
         let model = makeModel(item)
         model.applySuggestion(.place(StoreSamples.aldiNyugati, distance: 40))
-        model.quantityText = "2"
+        model.lots.lots[0].quantityText = "2"
         model.keepRemainder = true
         model.priceText = "1299.5"
-        model.hasExpiry = true
+        model.lots.lots[0].expiresAt = stack.now.date.addingTimeInterval(7 * 86_400)
 
         let action = model.purchase()
         #expect(model.errorMessage == nil)
@@ -91,7 +92,7 @@ struct PurchaseFormModelTests {
         let stock = try #require(try stack.inventory.items(in: stack.space).first)
         #expect(stock.quantity == 2)
         #expect(stock.price == Decimal(string: "1299.5")!)
-        #expect(stock.expiresAt == model.expiresAt)
+        #expect(stock.expiresAt == model.lots.lots[0].expiresAt)
         #expect(stock.shoppingLocation?.mapItemIdentifier == StoreSamples.aldiNyugati.mapItemIdentifier)
         #expect(item.quantity == 1)
         #expect(try stack.service.items(in: list) == [item])
@@ -100,14 +101,36 @@ struct PurchaseFormModelTests {
     @Test func invalidInputGivesAnErrorAndNoAction() throws {
         let list = try stack.service.createList(name: "Heti", in: stack.space)
         let model = makeModel(try stack.service.addItem(to: list, customName: "Alma"))
-        model.quantityText = "0"
+        model.lots.lots[0].quantityText = "0"
         #expect(model.purchase() == nil)
         #expect(model.errorMessage != nil)
-        model.quantityText = "1"
+        model.lots.lots[0].quantityText = "1"
         model.priceText = "sok"
         #expect(model.purchase() == nil)
         #expect(model.errorMessage != nil)
         #expect(try stack.count(InventoryItem.self) == 0)
+    }
+
+    @Test func theInventoryToggleCarriesTheAmountOver() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let model = makeModel(try stack.service.addItem(to: list, customName: "Alma", quantity: 3))
+        model.lots.lots[0].quantityText = "2"
+        model.addToInventory = false
+        #expect(model.quantityText == "2" && model.quantity == 2)
+        model.quantityText = "1"
+        model.addToInventory = true
+        #expect(model.lots.lots[0].quantityText == "1" && model.quantity == 1)
+    }
+
+    @Test func twoLotsSplitThePriceLine() throws {
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let model = makeModel(try stack.service.addItem(to: list, customName: "Tej", quantity: 2))
+        model.lots.lots[0].quantityText = "1"
+        model.priceText = "900"
+        #expect(model.priceSplitText == nil)
+        model.lots.addLot()
+        #expect(model.quantity == 2 && !model.showsKeepRemainder)
+        #expect(model.priceSplitText != nil)
     }
 
     @Test func switchingInventoryOffOnlyRemovesTheItem() throws {
