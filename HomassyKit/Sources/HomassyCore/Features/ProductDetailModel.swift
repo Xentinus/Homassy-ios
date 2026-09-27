@@ -183,11 +183,11 @@ public final class ProductDetailModel {
         return AmountFormModel(maximum: item.quantity, unit: item.unit, locale: locale)
     }
 
-    /// The edit-stock sheet for one item.
-    public func editForm(for itemID: UUID) -> StockFormModel? {
+    /// The edit-stock sheet for one item (one lot, the store menu from `locations`).
+    public func editForm(for itemID: UUID, locations: ShoppingLocationService) -> StockFormModel? {
         guard let item = try? item(itemID) else { return nil }
         return StockFormModel(mode: .edit(item), inventory: inventory, products: products, storage: storageLocations,
-                              locale: locale)
+                              locations: locations, locale: locale)
     }
 
     /// Other spaces the item can move to (copy then delete, spec §3.3). Empty while there is only Personal.
