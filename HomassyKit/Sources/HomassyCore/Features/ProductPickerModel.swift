@@ -32,6 +32,7 @@ public final class ProductPickerModel {
     public private(set) var sections: [PickerSection] = []
     /// The trimmed search text when no product has exactly that name.
     public private(set) var createCandidate: String?
+    public private(set) var errorMessage: String?
 
     @ObservationIgnored private let products: ProductService
     @ObservationIgnored private let inventory: InventoryService
@@ -53,21 +54,31 @@ public final class ProductPickerModel {
 
     public func reload() {
         let query = searchText.nilIfBlank
-        let found = ((try? products.search(query ?? "", in: space)) ?? []).filter { !pending.contains($0.publicId) }
-        let grouped = Dictionary(grouping: found.map(Self.row)) {
-            ProductListModel.sectionKey(for: $0.name, locale: locale)
-        }
-        let keys = grouped.keys.sorted { lhs, rhs in
-            if lhs == "#" || rhs == "#" { return rhs == "#" && lhs != "#" }
-            return lhs.localizedStandardCompare(rhs) == .orderedAscending
-        }
-        sections = keys.map { PickerSection(id: $0, products: grouped[$0] ?? []) }
-        recents = query == nil ? recentProducts(among: found) : []
-        createCandidate = query.flatMap { text in
-            found.contains { $0.name.compare(text, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame }
-                ? nil : text
+        do {
+            let found = try products.search(query ?? "", in: space).filter { !pending.contains($0.publicId) }
+            let grouped = Dictionary(grouping: found.map(Self.row)) {
+                ProductListModel.sectionKey(for: $0.name, locale: locale)
+            }
+            let keys = grouped.keys.sorted { lhs, rhs in
+                if lhs == "#" || rhs == "#" { return rhs == "#" && lhs != "#" }
+                return lhs.localizedStandardCompare(rhs) == .orderedAscending
+            }
+            sections = keys.map { PickerSection(id: $0, products: grouped[$0] ?? []) }
+            recents = try query == nil ? recentProducts(among: found) : []
+            createCandidate = query.flatMap { text in
+                found.contains { $0.name.compare(text, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame }
+                    ? nil : text
+            }
+            errorMessage = nil
+        } catch {
+            sections = []
+            recents = []
+            createCandidate = nil
+            errorMessage = error.localizedDescription
         }
     }
+
+    public func dismissError() { errorMessage = nil }
 
     /// A scanned code: the matching product, or the normalised code for a new one.
     public func route(barcode: String, symbology: BarcodeSymbology = .other) -> BarcodeRoute? {
@@ -75,11 +86,11 @@ public final class ProductPickerModel {
     }
 
     /// The products whose stock was added last, newest first.
-    private func recentProducts(among visible: [Product]) -> [PickerProduct] {
+    private func recentProducts(among visible: [Product]) throws -> [PickerProduct] {
         let allowed = Set(visible.map(\.objectID))
-        let items = (try? inventory.context.fetchEntities(
+        let items = try inventory.context.fetchEntities(
             InventoryItem.self, where: NSPredicate(format: "product.space == %@", space),
-            sortedBy: [NSSortDescriptor(key: "createdAt", ascending: false)])) ?? []
+            sortedBy: [NSSortDescriptor(key: "createdAt", ascending: false)])
         var seen = Set<NSManagedObjectID>()
         var result: [PickerProduct] = []
         for item in items {
