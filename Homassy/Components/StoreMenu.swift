@@ -18,25 +18,18 @@ struct StoreMenu: View {
         case place
     }
 
-    private var choice: Binding<Choice> {
-        Binding {
-            if model.name == nil { return .none }
-            return model.selectedStoreID.map(Choice.store) ?? .place
-        } set: { new in
-            switch new {
-            case .none: model.choose(nil)
-            case .store(let id): model.choose(id)
-            case .place: break
-            }
-        }
+    private var chosen: Choice {
+        if model.name == nil { return .none }
+        return model.selectedStoreID.map(Choice.store) ?? .place
     }
 
-    /// On while `row` is the chosen one; turning it on chooses it. Turning the chosen row off does nothing.
-    private func isChosen(_ row: Choice) -> Binding<Bool> {
+    /// On while that row (a recent store, nil for "No store") is the chosen one. Any tap chooses it, the checked row
+    /// too: that confirms the choice, so a later GPS suggestion no longer replaces it.
+    private func isChosen(_ id: UUID?) -> Binding<Bool> {
         Binding {
-            choice.wrappedValue == row
-        } set: { isOn in
-            if isOn { choice.wrappedValue = row }
+            chosen == (id.map(Choice.store) ?? .none)
+        } set: { _ in
+            model.choose(id)
         }
     }
 
@@ -60,10 +53,11 @@ struct StoreMenu: View {
                 }
                 // Toggles, not an inline Picker: a menu keeps only the first Text of a Picker row, so the address
                 // would be dropped. A menu Toggle keeps the second Text as the row's subtitle, shows the system
-                // checkmark and is announced as selected.
+                // checkmark and is announced as selected. XCUITest cannot reach menu-item identifiers, so the UI
+                // tests find these rows by their titles.
                 Section {
                     ForEach(model.options) { option in
-                        Toggle(isOn: isChosen(.store(option.id))) {
+                        Toggle(isOn: isChosen(option.id)) {
                             Text(verbatim: option.name)
                             if let subtitle = directory.subtitle(ofStore: option.id) {
                                 Text(verbatim: subtitle)
@@ -71,7 +65,7 @@ struct StoreMenu: View {
                         }
                         .accessibilityIdentifier("store.menu.\(option.name)")
                     }
-                    Toggle(isOn: isChosen(.none)) { Text("store.none") }
+                    Toggle(isOn: isChosen(nil)) { Text("store.none") }
                         .accessibilityIdentifier("store.menu.none")
                 }
                 Section {
