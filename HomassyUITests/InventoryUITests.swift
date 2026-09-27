@@ -123,13 +123,16 @@ final class InventoryUITests: XCTestCase {
         XCTAssertTrue(app.buttons["lot.2.remove"].waitForExistence(timeout: 3))
         app.buttons["lot.2.location"].firstMatch.tap()
         app.buttons["Pantry"].firstMatch.tap()
+        XCTAssertEqual(app.buttons["lot.2.location"].firstMatch.label, "Storage location, Pantry",
+                       "the title is read once")
 
         app.buttons["store.menu"].firstMatch.tap()
         let cornerRow = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Fő utca 1.")).firstMatch
         XCTAssertTrue(cornerRow.waitForExistence(timeout: 3), "the menu row shows the store's address")
 
         // The full picker's recent row shows the same address (spec assertion).
-        let other = app.buttons["store.menu.other"]
+        // Menu rows do not publish their accessibility identifiers, so the row is found by its title.
+        let other = app.buttons["Other store…"]
         XCTAssertTrue(other.waitForExistence(timeout: 3))
         other.tap()
         let recentRow = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Fő utca 1.")).firstMatch
@@ -140,6 +143,11 @@ final class InventoryUITests: XCTestCase {
         XCTAssertTrue(cornerRow.waitForExistence(timeout: 3))
         cornerRow.tap()
         XCTAssertTrue(app.buttons["store.menu"].firstMatch.label.contains("Corner Shop · Budapest"))
+        app.buttons["store.menu"].firstMatch.tap()
+        XCTAssertTrue(cornerRow.waitForExistence(timeout: 3))
+        XCTAssertTrue(cornerRow.isSelected, "VoiceOver reads the chosen store as selected")
+        attachScreenshot(app, named: "stock-two-lots-store-menu")
+        cornerRow.tap() // The chosen row stays chosen; the tap only closes the menu.
         attachScreenshot(app, named: "stock-two-lots")
         app.buttons["stock.save"].tap()
 
