@@ -5,7 +5,7 @@ import Observation
 @Observable
 public final class ProductFormModel {
     public enum Mode {
-        case create(Space, barcode: String?)
+        case create(Space, barcode: String?, name: String? = nil)
         case edit(Product)
     }
 
@@ -24,8 +24,8 @@ public final class ProductFormModel {
         self.service = service
         let space: Space?
         switch mode {
-        case .create(let target, let barcode):
-            draft = ProductDraft(barcode: barcode ?? "")
+        case .create(let target, let barcode, let name):
+            draft = ProductDraft(name: name ?? "", barcode: barcode ?? "")
             space = target
         case .edit(let product):
             draft = ProductDraft(product: product)
@@ -61,7 +61,7 @@ public final class ProductFormModel {
         errorMessage = nil
         do {
             switch mode {
-            case .create(let space, _):
+            case .create(let space, _, _):
                 return try await service.create(in: space, draft: draft)
             case .edit(let product):
                 try await service.update(product, with: draft)
