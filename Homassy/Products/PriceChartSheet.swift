@@ -7,10 +7,13 @@ struct PriceStoreRow: View {
     let model: ProductDetailModel
     let line: PriceSummary.StoreLine
 
+    @Environment(StoreDirectory.self) private var directory
+
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                (line.name.map { Text(verbatim: $0) } ?? Text("product.detail.unknownStore"))
+                ((line.storeID.flatMap { directory.compactName(ofStore: $0) } ?? line.name)
+                    .map { Text(verbatim: $0) } ?? Text("product.detail.unknownStore"))
                 Text(line.latest.date, format: .dateTime.year().month().day())
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -37,6 +40,7 @@ struct PriceChartSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(StoreDirectory.self) private var directory
 
     private var entries: [PriceEntry] { model.chartEntries(storeKey: line.key) }
 
@@ -70,7 +74,9 @@ struct PriceChartSheet: View {
                     }
                 }
             }
-            .navigationTitle(line.name.map { Text(verbatim: $0) } ?? Text("product.detail.unknownStore"))
+            .navigationTitle(
+                (line.storeID.flatMap { directory.compactName(ofStore: $0) } ?? line.name)
+                    .map { Text(verbatim: $0) } ?? Text("product.detail.unknownStore"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("common.close") { dismiss() } }

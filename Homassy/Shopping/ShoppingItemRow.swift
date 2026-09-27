@@ -8,6 +8,8 @@ struct ShoppingItemCard: View {
     let row: ShoppingListModel.Row
     let open: () -> Void
 
+    @Environment(StoreDirectory.self) private var directory
+
     var body: some View {
         Button(action: open) { content }
             .buttonStyle(.plain)
@@ -27,7 +29,8 @@ struct ShoppingItemCard: View {
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
                 if let store = row.storeName {
-                    Label { Text(verbatim: store) } icon: { Image(systemName: "storefront") }
+                    Label { Text(verbatim: directory.compactName(ofStore: row.storeID) ?? store) }
+                        icon: { Image(systemName: "storefront") }
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)

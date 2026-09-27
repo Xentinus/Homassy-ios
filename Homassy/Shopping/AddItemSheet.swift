@@ -12,6 +12,7 @@ struct AddItemSheet: View {
     @State private var recent: [ShoppingLocation] = []
     @FocusState private var focused: Bool
     @Environment(\.dismiss) private var dismiss
+    @Environment(StoreDirectory.self) private var directory
 
     init(list: ShoppingList, services: ServiceContainer, initialQuery: String = "") {
         self.services = services
@@ -135,7 +136,12 @@ struct AddItemSheet: View {
             Section {
                 ForEach(recent, id: \.objectID) { store in
                     Button { model.setStore(store) } label: {
-                        Label { Text(verbatim: store.name) } icon: { Image(systemName: "clock") }
+                        Label {
+                            Text(verbatim: directory.compactName(ofStore: store.publicId) ?? store.name)
+                            if let subtitle = directory.subtitle(ofStore: store.publicId) {
+                                Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+                            }
+                        } icon: { Image(systemName: "clock") }
                     }
                 }
             } header: {
