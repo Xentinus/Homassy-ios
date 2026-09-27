@@ -13,7 +13,6 @@ struct StockLotsSection: View {
     var listedText: String?
     var header: LocalizedStringKey = "stock.lots"
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @FocusState private var focusedLot: UUID?
 
     var body: some View {
@@ -56,22 +55,22 @@ struct StockLotsSection: View {
                             .fixedSize()
                             .accessibilityIdentifier("lot.\(number).stepper")
                     }
-                    let layout = dynamicTypeSize.isAccessibilitySize
-                        ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
-                        : AnyLayout(HStackLayout(spacing: 8))
-                    layout {
-                        Picker(selection: $lot.storageLocationID) {
-                            Text("inventory.noLocation").tag(UUID?.none)
-                            ForEach(lots.storageOptions) { Text(verbatim: $0.name).tag(Optional($0.id)) }
-                        } label: {
-                            Text("stock.location")
+                    Group {
+                        LabeledContent("stock.location") {
+                            Picker(selection: $lot.storageLocationID) {
+                                Text("inventory.noLocation").tag(UUID?.none)
+                                ForEach(lots.storageOptions) { Text(verbatim: $0.name).tag(Optional($0.id)) }
+                            } label: {
+                                Text("stock.location")
+                            }
+                            .pickerStyle(.menu)
+                            .labelsHidden()
+                            .accessibilityIdentifier("lot.\(number).location")
                         }
-                        .pickerStyle(.menu)
-                        .labelsHidden()
-                        .fixedSize()
-                        .accessibilityIdentifier("lot.\(number).location")
-                        ExpiryButton(date: $lot.expiresAt, minimum: purchasedAt)
-                            .accessibilityIdentifier("lot.\(number).expiry")
+                        LabeledContent("stock.expiresAt") {
+                            ExpiryButton(date: $lot.expiresAt, minimum: purchasedAt)
+                                .accessibilityIdentifier("lot.\(number).expiry")
+                        }
                     }
                     .padding(.leading, lots.canRemove ? 34 : 0)
                     if let error = lots.quantityErrors[lot.id] {
@@ -142,7 +141,6 @@ private struct ExpiryButton: View {
             }
         }
         .buttonStyle(.bordered)
-        .accessibilityLabel(Text("stock.expiresAt"))
         .accessibilityValue(date.map { Text($0, format: .dateTime.month(.wide).day()) } ?? Text("stock.expiry.none"))
         .onChange(of: showing) { _, open in
             if !open, !cleared { date = draft }
