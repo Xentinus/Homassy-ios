@@ -14,6 +14,7 @@ struct StockLotsSection: View {
     var header: LocalizedStringKey = "stock.lots"
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @FocusState private var focusedLot: UUID?
 
     var body: some View {
         Section {
@@ -34,14 +35,20 @@ struct StockLotsSection: View {
                             .accessibilityLabel(Text("stock.lot.remove \(number)"))
                             .accessibilityIdentifier("lot.\(number).remove")
                         }
-                        // The prompt, not the title, sizes the field, so the unit sits right after the amount.
-                        TextField("stock.quantity", text: $lot.quantityText, prompt: Text(verbatim: "1"))
-                            .keyboardType(.decimalPad)
-                            .fixedSize()
-                            .frame(minWidth: 44, alignment: .leading)
-                            .accessibilityIdentifier("lot.\(number).quantity")
-                        Text(verbatim: unit.shortLabel(for: lots.quantity(of: lot.id) ?? 1))
-                            .foregroundStyle(.secondary)
+                        // The field hugs the amount so the unit sits right after it; the whole amount-and-unit
+                        // area (at least 88 pt wide, the stepper's height) focuses the field.
+                        HStack(spacing: 4) {
+                            TextField("stock.quantity", text: $lot.quantityText, prompt: Text(verbatim: "0"))
+                                .keyboardType(.decimalPad)
+                                .fixedSize()
+                                .focused($focusedLot, equals: lot.id)
+                                .accessibilityIdentifier("lot.\(number).quantity")
+                            Text(verbatim: unit.shortLabel(for: lots.quantity(of: lot.id) ?? 1))
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(minWidth: 88, maxHeight: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .onTapGesture { focusedLot = lot.id }
                         Spacer(minLength: 0)
                         Stepper("stock.quantity", onIncrement: { lots.step(lot.id, by: 1) },
                                 onDecrement: { lots.step(lot.id, by: -1) })
