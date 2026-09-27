@@ -307,10 +307,12 @@ struct ProductDetailEditTransferTests {
         let env = try ServiceTestEnvironment()
         let eggs = try await env.makeProduct("Eggs")
         let item = try env.stock(eggs, 10, expiresInDays: 20)
-        let form = try #require(model(env, eggs, spaces: [env.personal]).editForm(for: item.publicId))
-        #expect(form.isEditing && form.quantityText == "10")
-        form.quantityText = "8"
-        #expect(form.save() == item)
+        let locations = ShoppingLocationService(spaceStore: env.spaceStore, context: env.context,
+                                                userRecordName: ServiceTestEnvironment.user)
+        let form = try #require(model(env, eggs, spaces: [env.personal]).editForm(for: item.publicId, locations: locations))
+        #expect(form.isEditing && form.lots.lots[0].quantityText == "10")
+        form.lots.lots[0].quantityText = "8"
+        #expect(form.save() == [item])
         #expect(item.quantity == 8)
     }
 

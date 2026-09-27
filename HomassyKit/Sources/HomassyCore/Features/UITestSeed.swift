@@ -20,6 +20,10 @@ public enum UITestSeed {
         let eggs = try await products.create(in: space, draft: ProductDraft(name: "Eggs", category: "Dairy", defaultUnit: .piece))
         let apples = try await products.create(in: space, draft: ProductDraft(name: "Apples", category: "Fruit", defaultUnit: .kilogram))
 
+        try container.shoppingLocations.upsert(
+            StoreResult(mapItemIdentifier: "uitest-corner-shop", name: "Corner Shop", latitude: 47.4979, longitude: 19.0402),
+            in: space)
+
         // P2-08's inventory fixture, brought forward by P2-07 for the product detail (Milk also has a price).
         let inventory = container.inventory
         let calendar = inventory.calendar

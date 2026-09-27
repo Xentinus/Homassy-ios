@@ -25,10 +25,7 @@ struct InventoryView: View {
                                                         object: services.context)) { _ in model?.reload() }
         .barcodeFlow(isScanning: $scanning, space: model?.space)
         .sheet(isPresented: $addingStock) {
-            if let space = model?.space {
-                StockFormSheet(model: StockFormModel(mode: .add(space, productID: nil), inventory: services.inventory,
-                                                     products: services.products, storage: services.storageLocations))
-            }
+            if let space = model?.space { StockAddSheet.picking(in: space, services: services) }
         }
         .sheet(isPresented: $creatingProduct) {
             if let space = model?.space {
@@ -49,7 +46,8 @@ struct InventoryView: View {
             LazyVGrid(columns: columns, alignment: .leading, spacing: 12, pinnedViews: [.sectionHeaders]) {
                 ForEach(model.sections) { section in
                     Section {
-                        ForEach(section.cards) { card in
+                        ForEach(section.cards.map { SectionCard(section: section.id, card: $0) }) { entry in
+                            let card = entry.card
                             NavigationLink(value: ProductRoute(id: card.id)) { ProductCard(card: card) }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("inventory.row.\(card.name)")
@@ -143,6 +141,19 @@ struct InventoryView: View {
         fresh.reload()
         model = fresh
     }
+}
+
+/// A product can have a card in several sections (lots in different places). The lazy grid needs ids that are
+/// unique across all sections, or it draws only one of the cards.
+private struct SectionCard: Identifiable {
+    struct ID: Hashable {
+        let section: InventorySection.Kind
+        let product: UUID
+    }
+
+    let section: InventorySection.Kind
+    let card: ProductCardData
+    var id: ID { ID(section: section, product: card.id) }
 }
 
 #if DEBUG

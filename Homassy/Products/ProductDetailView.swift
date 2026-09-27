@@ -77,8 +77,8 @@ struct ProductDetailView: View {
             if let model { PriceChartSheet(model: model, line: line) }
         }
         .sheet(item: $editingItem) { target in
-            if let form = model?.editForm(for: target.id) {
-                StockFormSheet(model: form)
+            if let form = model?.editForm(for: target.id, locations: services.shoppingLocations) {
+                StockAddSheet(form: form, picker: nil)
             }
         }
         .confirmationDialog("stock.transfer.title", isPresented: Binding(get: { pendingTransfer != nil },

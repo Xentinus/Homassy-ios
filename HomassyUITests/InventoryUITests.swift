@@ -30,6 +30,22 @@ final class InventoryUITests: XCTestCase {
         return XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: element)], timeout: timeout) == .completed
     }
 
+    private func attachScreenshot(_ app: XCUIApplication, named name: String) {
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = name
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
+    /// Opens the add-stock sheet from `+` and waits for the product list.
+    private func openPicker(_ app: XCUIApplication) -> XCUIElement {
+        app.buttons["addMenu"].firstMatch.tap()
+        app.buttons["addMenu.stock"].tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        return search
+    }
+
     func testSectionsExpiringFirstThenLocations() {
         let app = openInventory()
         let expiring = element("inventory.section.expiring", in: app)
@@ -71,31 +87,67 @@ final class InventoryUITests: XCTestCase {
     func testAddStockForAnExistingProduct() {
         let app = openInventory()
         XCTAssertTrue(app.buttons["inventory.row.Bread"].waitForExistence(timeout: 10))
-        app.buttons["addMenu"].firstMatch.tap()
-        app.buttons["addMenu.stock"].tap()
+        _ = openPicker(app)
+        XCTAssertEqual(app.buttons.matching(identifier: "picker.row.Bread").count, 2,
+                       "Bread is listed under Recent (seeded stock) and under B")
+        app.buttons["picker.row.Bread"].firstMatch.tap()
         let save = app.buttons["stock.save"]
         XCTAssertTrue(save.waitForExistence(timeout: 5))
-        XCTAssertFalse(save.isEnabled)
-        element("stock.product", in: app).firstMatch.tap()
-        app.buttons["Bread"].firstMatch.tap()
         XCTAssertTrue(save.isEnabled)
-        replaceText(of: app.textFields["stock.quantity"], with: "2")
+        replaceText(of: app.textFields["lot.1.quantity"], with: "2")
         save.tap()
         XCTAssertTrue(waitForLabel(app.buttons["inventory.row.Bread"], containing: "3\(nbsp)pcs"))
+    }
+
+    func testAddStockInTwoLotsWithAStore() {
+        let app = openInventory()
+        XCTAssertTrue(app.buttons["inventory.row.Bread"].waitForExistence(timeout: 10))
+        let search = openPicker(app)
+        search.tap()
+        search.typeText("bread")
+        app.buttons["picker.row.Bread"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["stock.save"].waitForExistence(timeout: 5))
+
+        // Lot 1: Fridge, no expiry. Lot 2 copies it; then Pantry.
+        app.buttons["lot.1.location"].firstMatch.tap()
+        app.buttons["Fridge"].firstMatch.tap()
+        app.buttons["lot.1.expiry"].firstMatch.tap()
+        let noExpiry = app.buttons["lot.noExpiry"]
+        XCTAssertTrue(noExpiry.waitForExistence(timeout: 3))
+        noExpiry.tap()
+        app.buttons["lot.add"].tap()
+        XCTAssertTrue(app.buttons["lot.2.remove"].waitForExistence(timeout: 3))
+        app.buttons["lot.2.location"].firstMatch.tap()
+        app.buttons["Pantry"].firstMatch.tap()
+
+        app.buttons["store.menu"].firstMatch.tap()
+        let corner = app.buttons["Corner Shop"].firstMatch
+        XCTAssertTrue(corner.waitForExistence(timeout: 3))
+        corner.tap()
+        XCTAssertTrue(app.buttons["store.menu"].firstMatch.label.contains("Corner Shop"))
+        attachScreenshot(app, named: "stock-two-lots")
+        app.buttons["stock.save"].tap()
+
+        // Expiring soon (the seeded, expired Bread), Fridge and Pantry each show a Bread card.
+        let cards = app.buttons.matching(identifier: "inventory.row.Bread")
+        let three = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 3"), object: cards)
+        XCTAssertEqual(XCTWaiter().wait(for: [three], timeout: 5), .completed)
+        XCTAssertTrue(element("inventory.section.Pantry", in: app).exists)
+        attachScreenshot(app, named: "stock-two-lots-inventory")
     }
 
     func testAddStockWithANewProduct() {
         let app = openInventory()
         XCTAssertTrue(app.buttons["inventory.row.Bread"].waitForExistence(timeout: 10))
-        app.buttons["addMenu"].firstMatch.tap()
-        app.buttons["addMenu.stock"].tap()
-        let newProduct = app.buttons["stock.newProduct"]
-        XCTAssertTrue(newProduct.waitForExistence(timeout: 5))
-        newProduct.tap()
+        let search = openPicker(app)
+        search.tap()
+        search.typeText("Paprika")
+        let create = app.buttons["picker.create"]
+        XCTAssertTrue(create.waitForExistence(timeout: 5))
+        create.tap()
         let name = app.textFields["product.form.name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
-        name.tap()
-        name.typeText("Paprika")
+        XCTAssertEqual(name.value as? String, "Paprika")
         app.buttons["product.form.save"].tap()
         let save = app.buttons["stock.save"]
         XCTAssertTrue(save.waitForExistence(timeout: 5))
@@ -114,8 +166,9 @@ final class InventoryUITests: XCTestCase {
         item.tap()
         XCTAssertFalse(app.buttons["stock.transfer"].exists, "no other household to move to")
         app.buttons["stock.edit"].tap()
-        let quantity = app.textFields["stock.quantity"]
+        let quantity = app.textFields["lot.1.quantity"]
         XCTAssertTrue(quantity.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["lot.add"].exists, "editing has one lot")
         replaceText(of: quantity, with: "8")
         app.buttons["stock.save"].tap()
         XCTAssertTrue(waitForLabel(element("stock.group.Fridge", in: app), containing: "8\(nbsp)pcs"))

@@ -32,10 +32,7 @@ private struct BarcodeFlowSheet: View {
                                onAddToInventory: { step = .addStock(id) },
                                onCheckStock: { onCheckStock(id) })
         case .addStock(let id):
-            if let space {
-                StockFormSheet(model: StockFormModel(mode: .add(space, productID: id), inventory: services.inventory,
-                                                     products: services.products, storage: services.storageLocations))
-            }
+            if let space { StockAddSheet.adding(id, in: space, services: services) }
         case .createProduct(let code):
             if let space {
                 ProductFormSheet(model: ProductFormModel(mode: .create(space, barcode: code), service: services.products))

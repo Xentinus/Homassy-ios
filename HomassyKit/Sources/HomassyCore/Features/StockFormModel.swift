@@ -13,7 +13,8 @@ func coreLocalized(_ key: String) -> String {
     Bundle.module.localizedString(forKey: key, value: nil, table: "Localizable")
 }
 
-/// The add-stock and edit-stock sheet.
+/// The add-stock and edit-stock sheet (P2-08a): the product, the shared unit, purchase date, store and paid
+/// total, and the lots, each with its own amount, storage location and expiry. Editing has one lot.
 @MainActor
 @Observable
 public final class StockFormModel {
@@ -23,36 +24,26 @@ public final class StockFormModel {
     }
 
     public let targetSpace: Space?
-    public private(set) var productOptions: [PickerOption] = []
-    public private(set) var locationOptions: [PickerOption] = []
-    public var productID: UUID? {
-        didSet {
-            guard !isEditing, productID != oldValue, let id = productID, let product = productObjects[id] else { return }
-            unit = product.defaultUnit
-        }
-    }
-    public var quantityText: String
+    public private(set) var productID: UUID?
+    public private(set) var productName: String?
     public var unit: MeasureUnit
-    public var hasExpiry: Bool
-    public var expiresAt: Date
+    public let lots: StockLotsModel
+    public let store: StoreMenuModel
     public var purchasedAt: Date
-    public var locationID: UUID?
+    /// The paid total for all lots.
     public var priceText: String
     public var currency: String
-    public private(set) var quantityError: String?
     public private(set) var priceError: String?
     public private(set) var errorMessage: String?
 
-    private let mode: Mode
-    private let inventory: InventoryService
-    private let products: ProductService
-    private let storage: StorageLocationService
-    private let locale: Locale
-    private var productObjects: [UUID: Product] = [:]
-    private var locationObjects: [UUID: StorageLocation] = [:]
+    @ObservationIgnored private let mode: Mode
+    @ObservationIgnored private let inventory: InventoryService
+    @ObservationIgnored private let products: ProductService
+    @ObservationIgnored private let storage: StorageLocationService
+    @ObservationIgnored private let locale: Locale
 
     public init(mode: Mode, inventory: InventoryService, products: ProductService, storage: StorageLocationService,
-                locale: Locale = .current) {
+                locations: ShoppingLocationService, locale: Locale = .current) {
         self.mode = mode
         self.inventory = inventory
         self.products = products
@@ -60,37 +51,41 @@ public final class StockFormModel {
         self.locale = locale
         let calendar = inventory.calendar
         let today = calendar.startOfDay(for: inventory.currentDate())
+        let space: Space? = switch mode {
+        case .add(let target, _): target
+        case .edit(let item): inventory.space(of: item)
+        }
+        targetSpace = space
+        let storageOptions = ((space.flatMap { try? storage.locations(in: $0) }) ?? [])
+            .map { PickerOption(id: $0.publicId, name: $0.name) }
 
         switch mode {
-        case .add(let space, _):
-            targetSpace = space
-            quantityText = Quantity.formatNumber(1, locale: locale)
-            unit = .piece
-            hasExpiry = true
-            expiresAt = calendar.date(byAdding: .day, value: 7, to: today) ?? today
+        case .add(let target, let id):
+            let product = id.flatMap { try? products.product(publicId: $0) }.flatMap { $0.space == target ? $0 : nil }
+            productID = product?.publicId
+            productName = product?.name
+            unit = product?.defaultUnit ?? .piece
             purchasedAt = today
-            locationID = nil
             priceText = ""
             currency = inventory.defaultCurrency
+            let first = StockLot(
+                quantityText: Quantity.formatNumber(1, locale: locale),
+                storageLocationID: ShoppingPurchase.defaultStorageLocation(for: product, inventory: inventory)?.publicId,
+                expiresAt: calendar.date(byAdding: .day, value: 7, to: today) ?? today)
+            lots = StockLotsModel(first: first, storageOptions: storageOptions, allowsMultiple: true, locale: locale)
+            store = StoreMenuModel(preset: nil, product: product, space: space, locations: locations)
         case .edit(let item):
-            targetSpace = inventory.space(of: item)
-            quantityText = Quantity.formatNumber(item.quantity, locale: locale)
+            productID = item.product?.publicId
+            productName = item.product?.name
             unit = item.unit
-            hasExpiry = item.expiresAt != nil
-            expiresAt = item.expiresAt ?? calendar.date(byAdding: .day, value: 7, to: today) ?? today
             purchasedAt = item.purchasedAt ?? today
-            locationID = item.storageLocation?.publicId
             priceText = item.price.map { Quantity.formatNumber($0, locale: locale) } ?? ""
             currency = item.currency ?? inventory.defaultCurrency
-        }
-        refreshOptions()
-        // Property observers do not run inside init, so the default unit is applied here explicitly.
-        switch mode {
-        case .add(_, let productID):
-            self.productID = productID
-            if let productID, let product = productObjects[productID] { unit = product.defaultUnit }
-        case .edit(let item):
-            self.productID = item.product?.publicId
+            let first = StockLot(quantityText: Quantity.formatNumber(item.quantity, locale: locale),
+                                 storageLocationID: item.storageLocation?.publicId, expiresAt: item.expiresAt)
+            lots = StockLotsModel(first: first, storageOptions: storageOptions, allowsMultiple: false, locale: locale)
+            store = StoreMenuModel(preset: item.shoppingLocation, product: item.product, space: space,
+                                   locations: locations)
         }
     }
 
@@ -99,22 +94,40 @@ public final class StockFormModel {
         return false
     }
 
-    public var canSave: Bool { productID != nil }
+    public var hasProduct: Bool { productID != nil }
+    public var canSave: Bool { productID != nil && lots.total != nil }
 
-    public func productCreated(_ product: Product) {
-        refreshOptions()
-        productID = product.publicId
+    /// Picked (or just created) in the product list: its unit, last storage location and stores apply.
+    public func setProduct(_ id: UUID) {
+        guard !isEditing, let product = try? products.product(publicId: id), product.space == targetSpace else { return }
+        productID = id
+        productName = product.name
+        unit = product.defaultUnit
+        if lots.lotCount == 1,
+           let location = ShoppingPurchase.defaultStorageLocation(for: product, inventory: inventory) {
+            lots.lots[0].storageLocationID = location.publicId
+        }
+        store.setProduct(product)
     }
 
-    public func save() -> InventoryItem? {
-        quantityError = nil
+    /// The paid total split across two or more lots; nil for one lot or without a valid price.
+    public var priceShares: [Decimal]? {
+        guard lots.lotCount > 1, let total = parsedPrice, let amounts = lots.amounts else { return nil }
+        return ProportionalSplit.split(total: total, weights: amounts)
+    }
+
+    /// "450 Ft + 450 Ft" for the price footer.
+    public var priceSplitText: String? {
+        guard lots.lotCount > 1, let total = parsedPrice, let amounts = lots.amounts else { return nil }
+        return ProportionalSplit.text(total: total, weights: amounts,
+                                      currency: currency.nilIfBlank ?? inventory.defaultCurrency, locale: locale)
+    }
+
+    public func save() -> [InventoryItem]? {
         priceError = nil
         errorMessage = nil
-        guard let productID, let product = productObjects[productID] else { return nil }
-        guard let quantity = Quantity.parse(quantityText, locale: locale), quantity > 0 else {
-            quantityError = coreLocalized("form.invalidQuantity")
-            return nil
-        }
+        guard let productID, let product = try? products.product(publicId: productID) else { return nil }
+        guard let details = lots.details() else { return nil }
         var price: Decimal?
         if let text = priceText.nilIfBlank {
             guard let parsed = Quantity.parse(text, locale: locale) else {
@@ -123,34 +136,25 @@ public final class StockFormModel {
             }
             price = parsed
         }
-        let location = locationID.flatMap { locationObjects[$0] }
-        let expiry = hasExpiry ? expiresAt : nil
         do {
+            let shop = try store.resolve()
             switch mode {
             case .add:
-                return try inventory.addStock(product: product, quantity: quantity, unit: unit, expiresAt: expiry,
-                                              purchasedAt: purchasedAt, price: price, currency: currency,
-                                              storageLocation: location, shoppingLocation: nil)
+                return try inventory.addStock(product: product, lots: details, unit: unit, purchasedAt: purchasedAt,
+                                              totalPrice: price, currency: currency, shoppingLocation: shop)
             case .edit(let item):
-                try inventory.update(item, quantity: quantity, unit: unit, expiresAt: expiry, purchasedAt: purchasedAt,
-                                     price: price, currency: currency, storageLocation: location)
-                return item
+                let lot = details[0]
+                let location = try lot.storageLocationID.flatMap { try storage.location(publicId: $0) }
+                try inventory.update(item, quantity: lot.quantity, unit: unit, expiresAt: lot.expiresAt,
+                                     purchasedAt: purchasedAt, price: price, currency: currency,
+                                     storageLocation: location, shoppingLocation: shop)
+                return [item]
             }
-        } catch ServiceError.quantityMustBePositive {
-            quantityError = ServiceError.quantityMustBePositive.errorDescription
         } catch {
             errorMessage = error.localizedDescription
         }
         return nil
     }
 
-    private func refreshOptions() {
-        guard let space = targetSpace else { return }
-        let allProducts = (try? products.products(in: space)) ?? []
-        productObjects = Dictionary(allProducts.map { ($0.publicId, $0) }, uniquingKeysWith: { first, _ in first })
-        productOptions = allProducts.map { PickerOption(id: $0.publicId, name: $0.name) }
-        let allLocations = (try? storage.locations(in: space)) ?? []
-        locationObjects = Dictionary(allLocations.map { ($0.publicId, $0) }, uniquingKeysWith: { first, _ in first })
-        locationOptions = allLocations.map { PickerOption(id: $0.publicId, name: $0.name) }
-    }
+    private var parsedPrice: Decimal? { priceText.nilIfBlank.flatMap { Quantity.parse($0, locale: locale) } }
 }

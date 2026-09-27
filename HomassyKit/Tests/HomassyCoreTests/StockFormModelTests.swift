@@ -8,91 +8,108 @@ import Testing
 struct StockFormModelTests {
     static let hu = Locale(identifier: "hu_HU")
 
-    func form(_ env: ServiceTestEnvironment, productID: UUID? = nil) -> StockFormModel {
-        StockFormModel(mode: .add(env.personal, productID: productID), inventory: env.inventoryService(),
-                       products: env.productService(), storage: env.storageService(), locale: Self.hu)
+    func locations(_ env: ServiceTestEnvironment) -> ShoppingLocationService {
+        ShoppingLocationService(spaceStore: env.spaceStore, context: env.context, userRecordName: ServiceTestEnvironment.user)
     }
 
-    @Test func defaultsAndProductUnit() async throws {
+    func form(_ env: ServiceTestEnvironment, productID: UUID? = nil) -> StockFormModel {
+        StockFormModel(mode: .add(env.personal, productID: productID), inventory: env.inventoryService(),
+                       products: env.productService(), storage: env.storageService(), locations: locations(env),
+                       locale: Self.hu)
+    }
+
+    func corner(_ env: ServiceTestEnvironment) throws -> ShoppingLocation {
+        try locations(env).upsert(StoreResult(mapItemIdentifier: "I-CORNER", name: "Corner", latitude: 47.5,
+                                              longitude: 19.05), in: env.personal)
+    }
+
+    @Test func defaultsAndPickingAProduct() async throws {
         let env = try ServiceTestEnvironment()
         let milk = try await env.makeProduct("Milk", unit: .liter)
-        try await env.makeProduct("Bread")
         let form = form(env)
-        #expect(form.productOptions.map(\.name) == ["Bread", "Milk"])
-        #expect(form.quantityText == "1" && form.hasExpiry && form.currency == "HUF")
-        #expect(!form.canSave && !form.isEditing)
-        form.productID = milk.publicId
-        #expect(form.unit == .liter && form.canSave)
+        #expect(!form.canSave && !form.isEditing && !form.hasProduct)
+        #expect(form.lots.lotCount == 1 && form.lots.lots[0].quantityText == "1" && form.lots.allowsMultiple)
+        #expect(form.lots.lots[0].expiresAt == env.day(7))
+        #expect(form.currency == "HUF" && form.purchasedAt == env.day(0))
+        form.setProduct(milk.publicId)
+        #expect(form.unit == .liter && form.canSave && form.productName == "Milk")
         #expect(form.targetSpace == env.personal)
     }
 
-    @Test func savesWithLocaleDecimalsLocationAndPrice() async throws {
+    @Test func theProductsLastLocationIsTheDefault() async throws {
         let env = try ServiceTestEnvironment()
         let fridge = try env.storageService().create(in: env.personal, name: "Fridge", color: nil, isFreezer: false)
-        let milk = try await env.makeProduct("Milk", unit: .liter)
+        let milk = try await env.makeProduct("Milk")
+        try env.stock(milk, 1, location: fridge)
+        #expect(form(env, productID: milk.publicId).lots.lots[0].storageLocationID == fridge.publicId)
+        let picked = form(env)
+        picked.setProduct(milk.publicId)
+        #expect(picked.lots.lots[0].storageLocationID == fridge.publicId)
+    }
+
+    @Test func twoLotsSplitThePriceAndShareTheStore() async throws {
+        let env = try ServiceTestEnvironment()
+        let fridge = try env.storageService().create(in: env.personal, name: "Fridge", color: nil, isFreezer: false)
+        let garage = try env.storageService().create(in: env.personal, name: "Garage", color: nil, isFreezer: false)
+        let milk = try await env.makeProduct("Milk")
+        let store = try corner(env)
         let form = form(env, productID: milk.publicId)
-        #expect(form.locationOptions.map(\.name) == ["Fridge"])
-        form.quantityText = "1,5"
-        form.locationID = fridge.publicId
-        form.priceText = "459,90"
-        form.purchasedAt = env.day(0)
-        form.expiresAt = env.day(6)
-        let item = try #require(form.save())
-        #expect(item.quantity == Decimal(string: "1.5")!)
-        #expect(item.unit == .liter)
-        #expect(item.price == Decimal(string: "459.9")!)
-        #expect(item.storageLocation == fridge && item.expiresAt == env.day(6) && item.currency == "HUF")
+        form.lots.lots[0].storageLocationID = fridge.publicId
+        #expect(form.priceShares == nil, "no split line with one lot")
+        form.lots.addLot()
+        form.lots.lots[1].storageLocationID = garage.publicId
+        form.lots.lots[1].expiresAt = env.day(14)
+        form.priceText = "900"
+        form.store.choose(store.publicId)
+        #expect(form.priceShares == [450, 450])
+        #expect(form.priceSplitText != nil)
+        let items = try #require(form.save())
+        #expect(items.map(\.storageLocation) == [fridge, garage])
+        #expect(items.map(\.expiresAt) == [env.day(7), env.day(14)])
+        #expect(items.map(\.price) == [450, 450])
+        #expect(items.allSatisfy { $0.shoppingLocation == store && $0.purchaseRecordSet.first?.shoppingLocation == store })
     }
 
     @Test func noExpiryStoresNil() async throws {
         let env = try ServiceTestEnvironment()
         let salt = try await env.makeProduct("Salt")
         let form = form(env, productID: salt.publicId)
-        form.hasExpiry = false
-        #expect(try #require(form.save()).expiresAt == nil)
+        form.lots.lots[0].expiresAt = nil
+        #expect(try #require(form.save()).first?.expiresAt == nil)
     }
 
     @Test func validationMessages() async throws {
         let env = try ServiceTestEnvironment()
         let milk = try await env.makeProduct("Milk")
         let form = form(env, productID: milk.publicId)
-        form.quantityText = "abc"
+        form.lots.lots[0].quantityText = "abc"
         #expect(form.save() == nil)
-        #expect(form.quantityError == coreLocalized("form.invalidQuantity"))
-        form.quantityText = "0"
-        #expect(form.save() == nil)
-        #expect(form.quantityError != nil)
-        form.quantityText = "2"
+        #expect(form.lots.quantityErrors[form.lots.lots[0].id] == coreLocalized("form.invalidQuantity"))
+        form.lots.lots[0].quantityText = "2"
         form.priceText = "ingyen"
         #expect(form.save() == nil)
-        #expect(form.quantityError == nil && form.priceError == coreLocalized("form.invalidPrice"))
+        #expect(form.priceError == coreLocalized("form.invalidPrice"))
         form.priceText = ""
         form.purchasedAt = env.day(3)
-        form.expiresAt = env.day(1)
+        form.lots.lots[0].expiresAt = env.day(1)
         #expect(form.save() == nil)
-        #expect(form.errorMessage == ServiceError.expiryBeforePurchase.errorDescription)
+        #expect(form.priceError == nil && form.errorMessage == ServiceError.expiryBeforePurchase.errorDescription)
         #expect(try env.count(InventoryItem.self) == 0)
     }
 
-    @Test func editLoadsAndUpdates() async throws {
+    @Test func editKeepsOneLotAndCanChangeTheStore() async throws {
         let env = try ServiceTestEnvironment()
         let eggs = try await env.makeProduct("Eggs")
         let item = try env.stock(eggs, 10, expiresInDays: 20)
+        let store = try corner(env)
         let form = StockFormModel(mode: .edit(item), inventory: env.inventoryService(), products: env.productService(),
-                                  storage: env.storageService(), locale: Self.hu)
-        #expect(form.isEditing && form.productID == eggs.publicId && form.quantityText == "10" && form.hasExpiry)
-        form.quantityText = "8"
-        #expect(form.save() == item)
-        #expect(item.quantity == 8)
-    }
-
-    @Test func newlyCreatedProductIsSelected() async throws {
-        let env = try ServiceTestEnvironment()
-        let form = form(env)
-        let paprika = try await env.makeProduct("Paprika", unit: .gram)
-        form.productCreated(paprika)
-        #expect(form.productID == paprika.publicId && form.unit == .gram)
-        #expect(form.productOptions.map(\.name) == ["Paprika"])
+                                  storage: env.storageService(), locations: locations(env), locale: Self.hu)
+        #expect(form.isEditing && form.productID == eggs.publicId && form.lots.lots[0].quantityText == "10")
+        #expect(form.lots.lots[0].expiresAt == env.day(20) && !form.lots.allowsMultiple)
+        form.lots.lots[0].quantityText = "8"
+        form.store.choose(store.publicId)
+        #expect(form.save() == [item])
+        #expect(item.quantity == 8 && item.shoppingLocation == store)
     }
 
     @Test func messagesAreTranslated() {
