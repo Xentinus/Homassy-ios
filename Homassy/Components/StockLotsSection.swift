@@ -141,6 +141,9 @@ private struct ExpiryButton: View {
             }
         }
         .buttonStyle(.bordered)
+        // Silence the button's own label (it would otherwise fall back to the visible short date), so the
+        // enclosing LabeledContent's "stock.expiresAt" label plus this value read once: "Lejárat, október 3."
+        .accessibilityLabel(Text(verbatim: ""))
         .accessibilityValue(date.map { Text($0, format: .dateTime.month(.wide).day()) } ?? Text("stock.expiry.none"))
         .onChange(of: showing) { _, open in
             if !open, !cleared { date = draft }
