@@ -56,9 +56,14 @@ public final class StoreDirectory {
     /// The store's Apple Maps category (`MKPointOfInterestCategory` raw value), once known.
     public func category(ofStore id: UUID) -> String? { address(ofStore: id)?.category }
 
-    public func subtitle(ofStore id: UUID) -> String? {
-        guard let store = store(id) else { return nil }
-        return StoreLabel.subtitle(address: address(of: store), distance: distance(to: store), locale: locale)
+    public func subtitle(ofStore id: UUID) -> String? { categoryAndSubtitle(ofStore: id).subtitle }
+
+    /// Both for one row (the store picker's recent rows), from one store fetch.
+    public func categoryAndSubtitle(ofStore id: UUID) -> (category: String?, subtitle: String?) {
+        guard let store = store(id) else { return (nil, nil) }
+        let address = address(of: store)
+        return (address?.category,
+                StoreLabel.subtitle(address: address, distance: distance(to: store), locale: locale))
     }
 
     public func compactName(ofStore id: UUID?) -> String? {

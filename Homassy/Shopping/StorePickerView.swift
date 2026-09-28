@@ -371,14 +371,13 @@ private struct StorePickerCard: View {
                 Button {
                     if let location = model.pickRecent(store.id) { close(.picked(location)) }
                 } label: {
-                    let category = directory.category(ofStore: store.id)
+                    let details = directory.categoryAndSubtitle(ofStore: store.id)
                     Label {
                         Text(verbatim: store.name).foregroundStyle(.primary)
-                        if let subtitle = StoreCategoryIcon.subtitle(category: category,
-                                                                     directory.subtitle(ofStore: store.id)) {
+                        if let subtitle = StoreCategoryIcon.subtitle(category: details.category, details.subtitle) {
                             Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
                         }
-                    } icon: { StoreCategoryIcon(category: category) }
+                    } icon: { StoreCategoryIcon(category: details.category) }
                 }
                 .accessibilityIdentifier("store.recent.\(store.name)")
             }
