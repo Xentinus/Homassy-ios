@@ -5,9 +5,11 @@ extension IntroductionPage {
     var title: LocalizedStringKey {
         switch self {
         case .welcome: "intro.welcome.title"
+        case .free: "intro.free.title"
         case .inventory: "intro.inventory.title"
         case .shopping: "intro.shopping.title"
         case .spaces: "intro.spaces.title"
+        case .privacy: "intro.privacy.title"
         case .notifications: "intro.notifications.title"
         }
     }
@@ -15,19 +17,24 @@ extension IntroductionPage {
     var body: LocalizedStringKey {
         switch self {
         case .welcome: "intro.welcome.body"
+        case .free: "intro.free.body"
         case .inventory: "intro.inventory.body"
         case .shopping: "intro.shopping.body"
         case .spaces: "intro.spaces.body"
+        case .privacy: "intro.privacy.body"
         case .notifications: "intro.notifications.body"
         }
     }
 
+    /// Temporary until Task 2 replaces the symbol with the scenes.
     var symbolName: String {
         switch self {
         case .welcome: "house.fill"
+        case .free: "heart.fill"
         case .inventory: "refrigerator.fill"
         case .shopping: "cart.fill"
         case .spaces: "person.2.fill"
+        case .privacy: "checkmark.shield.fill"
         case .notifications: "bell.badge.fill"
         }
     }

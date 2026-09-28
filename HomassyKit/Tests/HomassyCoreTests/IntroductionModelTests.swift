@@ -29,8 +29,10 @@ struct IntroductionModelTests {
         return defaults
     }
 
-    @Test func hasFivePagesInSpecOrder() {
-        #expect(IntroductionPage.allCases == [.welcome, .inventory, .shopping, .spaces, .notifications])
+    /// P1-10a (user pick 2026-09-26): free comes right after welcome, privacy right before notifications;
+    /// notifications stays last, because Get started asks for the notification permission.
+    @Test func hasSevenPagesInSpecOrder() {
+        #expect(IntroductionPage.allCases == [.welcome, .free, .inventory, .shopping, .spaces, .privacy, .notifications])
     }
 
     @Test func showsOnFirstLaunch() {

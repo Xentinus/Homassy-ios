@@ -1,9 +1,9 @@
 import Foundation
 import Observation
 
-/// The five pages of spec §6.9, in order.
+/// The seven pages of the animated introduction (spec 2026-09-26-animated-introduction-design.md), in order.
 public enum IntroductionPage: Int, CaseIterable, Identifiable, Sendable {
-    case welcome, inventory, shopping, spaces, notifications
+    case welcome, free, inventory, shopping, spaces, privacy, notifications
     public var id: Int { rawValue }
 }
 
