@@ -8,11 +8,17 @@ import Testing
 @MainActor
 final class FakeAddressResolver: StoreAddressResolving {
     var answers: [String: String]
+    var categories: [String: String]
     private(set) var calls: [String] = []
-    init(_ answers: [String: String] = [:]) { self.answers = answers }
-    func shortAddress(forMapItem identifier: String) async -> String? {
+    init(_ answers: [String: String] = [:], categories: [String: String] = [:]) {
+        self.answers = answers
+        self.categories = categories
+    }
+    func details(forMapItem identifier: String) async -> StoreLookup? {
         calls.append(identifier)
-        return answers[identifier]
+        let short = answers[identifier], category = categories[identifier]
+        guard short != nil || category != nil else { return nil }
+        return StoreLookup(shortAddress: short, category: category)
     }
 }
 
@@ -69,6 +75,58 @@ struct StoreDirectoryTests {
         let new = try store("Új", "I-NEW")
         #expect(directory.subtitle(ofStore: new.publicId) == "Fő utca 1., Budapest")
         #expect(directory.address(of: try store("Nincs", "I-NONE")) == nil)
+    }
+
+    @Test func rememberStoresTheCategory() throws {
+        let directory = directory()
+        directory.remember(StoreResult(mapItemIdentifier: "I-NEW", name: "Új", latitude: 47.5, longitude: 19.0,
+                                       subtitle: "Fő utca 1., Budapest", category: "MKPOICategoryFoodMarket"))
+        let new = try store("Új", "I-NEW")
+        #expect(directory.category(ofStore: new.publicId) == "MKPOICategoryFoodMarket")
+        #expect(directory.address(ofStore: new.publicId)?.short == "Fő utca 1., Budapest")
+    }
+
+    @Test func aLookupFillsTheCategory() async throws {
+        let auchan = try store("Auchan", "I-AUCHAN")
+        let resolver = FakeAddressResolver(["I-AUCHAN": "Sport u. 2–4., Budaörs"],
+                                           categories: ["I-AUCHAN": "MKPOICategoryFoodMarket"])
+        let directory = directory(resolver)
+        #expect(directory.category(ofStore: auchan.publicId) == nil)
+        for task in directory.lookups { await task.value }
+        #expect(directory.category(ofStore: auchan.publicId) == "MKPOICategoryFoodMarket")
+        #expect(directory.address(ofStore: auchan.publicId)?.short == "Sport u. 2–4., Budaörs")
+        #expect(resolver.calls == ["I-AUCHAN"])
+    }
+
+    @Test func aCachedAddressWithoutACategoryIsBackfilledOnce() async throws {
+        let cache = StoreAddressCache(fileURL: nil)
+        cache.set(try #require(StoreAddress(short: "Sport u. 2–4., Budaörs")), for: "I-AUCHAN")
+        let auchan = try store("Auchan", "I-AUCHAN")
+        let resolver = FakeAddressResolver(categories: ["I-AUCHAN": "MKPOICategoryFoodMarket"])
+        let directory = directory(resolver, cache: cache)
+        #expect(directory.address(ofStore: auchan.publicId)?.short == "Sport u. 2–4., Budaörs",
+                "the cached address shows while the category is looked up")
+        _ = directory.category(ofStore: auchan.publicId)
+        for task in directory.lookups { await task.value }
+        #expect(directory.category(ofStore: auchan.publicId) == "MKPOICategoryFoodMarket")
+        #expect(directory.address(ofStore: auchan.publicId)?.short == "Sport u. 2–4., Budaörs",
+                "a lookup without an address keeps the cached one")
+        #expect(resolver.calls == ["I-AUCHAN"], "one backfill lookup per run, not two")
+    }
+
+    @Test func aFailedBackfillIsNotRetried() async throws {
+        let cache = StoreAddressCache(fileURL: nil)
+        cache.set(try #require(StoreAddress(short: "Sport u. 2–4., Budaörs")), for: "I-AUCHAN")
+        let auchan = try store("Auchan", "I-AUCHAN")
+        let resolver = FakeAddressResolver()
+        let directory = directory(resolver, cache: cache)
+        _ = directory.category(ofStore: auchan.publicId)
+        for task in directory.lookups { await task.value }
+        _ = directory.category(ofStore: auchan.publicId)
+        _ = directory.subtitle(ofStore: auchan.publicId)
+        #expect(resolver.calls == ["I-AUCHAN"])
+        #expect(directory.category(ofStore: auchan.publicId) == nil)
+        #expect(directory.subtitle(ofStore: auchan.publicId) == "Sport u. 2–4., Budaörs")
     }
 
     @Test func distanceOnlyWhileAuthorized() async throws {

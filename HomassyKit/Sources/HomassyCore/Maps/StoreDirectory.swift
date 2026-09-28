@@ -4,8 +4,9 @@ import Foundation
 import Observation
 
 /// Which store is which (P2-08b, option B): the subtitle "1,2 km · Sport u. 2–4., Budaörs" for pickers, and the
-/// compact "Auchan · Budaörs" elsewhere. Addresses come from `StoreAddressCache`; a missing one is looked up once
-/// per run. The distance uses the last position, read only while location access is already granted.
+/// compact "Auchan · Budaörs" elsewhere. Addresses and categories come from `StoreAddressCache`; a missing address,
+/// or a cached one without a category (P2-08c backfill), is looked up once per run. The distance uses the last
+/// position, read only while location access is already granted.
 @MainActor
 @Observable
 public final class StoreDirectory {
@@ -39,7 +40,7 @@ public final class StoreDirectory {
 
     /// A store picked from Apple Maps: its address is known right away.
     public func remember(_ result: StoreResult) {
-        guard let address = StoreAddress(short: result.subtitle) else { return }
+        guard let address = StoreAddress(short: result.subtitle, category: result.category) else { return }
         cache.set(address, for: result.mapItemIdentifier)
     }
 
@@ -47,10 +48,13 @@ public final class StoreDirectory {
 
     public func address(of store: ShoppingLocation) -> StoreAddress? {
         guard let identifier = store.mapItemIdentifier else { return nil }
-        if let cached = cache.address(for: identifier) { return cached }
-        lookUp(identifier)
-        return nil
+        let cached = cache.address(for: identifier)
+        if cached?.category == nil { lookUp(identifier) }
+        return cached
     }
+
+    /// The store's Apple Maps category (`MKPointOfInterestCategory` raw value), once known.
+    public func category(ofStore id: UUID) -> String? { address(ofStore: id)?.category }
 
     public func subtitle(ofStore id: UUID) -> String? {
         guard let store = store(id) else { return nil }
@@ -90,9 +94,12 @@ public final class StoreDirectory {
     private func lookUp(_ identifier: String) {
         guard let resolver, requested.insert(identifier).inserted else { return }
         lookups.append(Task { [weak self] in
-            guard let short = await resolver.shortAddress(forMapItem: identifier),
-                  let address = StoreAddress(short: short) else { return }
-            self?.cache.set(address, for: identifier)
+            guard let lookup = await resolver.details(forMapItem: identifier), let self else { return }
+            // A backfill without an address keeps the cached one; either way the category is saved.
+            let cached = cache.address(for: identifier)
+            guard let address = StoreAddress(short: lookup.shortAddress ?? cached?.short,
+                                             category: lookup.category ?? cached?.category) else { return }
+            cache.set(address, for: identifier)
         })
     }
 }

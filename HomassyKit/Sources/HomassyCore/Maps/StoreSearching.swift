@@ -6,15 +6,19 @@ public struct StoreResult: Sendable, Equatable, Hashable, Identifiable {
     public var latitude: Double
     public var longitude: Double
     public var subtitle: String?
+    /// The Apple Maps category (`MKPointOfInterestCategory` raw value), for the row's icon and name.
+    public var category: String?
 
     public var id: String { mapItemIdentifier }
 
-    public init(mapItemIdentifier: String, name: String, latitude: Double, longitude: Double, subtitle: String? = nil) {
+    public init(mapItemIdentifier: String, name: String, latitude: Double, longitude: Double, subtitle: String? = nil,
+                category: String? = nil) {
         self.mapItemIdentifier = mapItemIdentifier
         self.name = name
         self.latitude = latitude
         self.longitude = longitude
         self.subtitle = subtitle
+        self.category = category
     }
 
     /// Great-circle distance in metres (haversine, mean Earth radius).

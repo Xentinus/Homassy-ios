@@ -23,7 +23,7 @@ public enum UITestSeed {
         try container.shoppingLocations.upsert(
             StoreResult(mapItemIdentifier: "uitest-corner-shop", name: "Corner Shop", latitude: 47.4979, longitude: 19.0402),
             in: space)
-        if let address = StoreAddress(short: "Fő utca 1., Budapest") {
+        if let address = StoreAddress(short: "Fő utca 1., Budapest", category: "MKPOICategoryFoodMarket") {
             container.storeAddressCache.set(address, for: "uitest-corner-shop")
         }
 
