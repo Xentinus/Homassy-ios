@@ -8686,29 +8686,6 @@
         }
       }
     },
-    "store.details" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Details"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Details"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Részletek"
-          }
-        }
-      }
-    },
     "store.loading" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8824,6 +8801,52 @@
         }
       }
     },
+    "store.results.atAddress" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orte an dieser Adresse"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Places at this address"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Helyek ennél a címnél"
+          }
+        }
+      }
+    },
+    "store.search.clear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suche löschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear search"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keresés törlése"
+          }
+        }
+      }
+    },
     "store.search.places" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8853,19 +8876,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geschäfte oder Adressen suchen"
+            "value" : "Geschäft, Firma oder Adresse"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Search shops or addresses"
+            "value" : "Shop, business or address"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Üzlet vagy cím keresése"
+            "value" : "Üzlet, cég vagy cím"
           }
         }
       }
