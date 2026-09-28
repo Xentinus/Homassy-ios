@@ -54,6 +54,76 @@ final class FakeStoreSearch: StoreSearching {
     }
 }
 
+/// Wraps `FakeStoreSearch` and holds chosen calls until the test releases them, so searches can overlap
+/// and finish in any order (P2-08c final review).
+final class SuspendingStoreSearch: StoreSearching {
+    enum Gate: Hashable, Sendable {
+        case search(String), places(String), around
+    }
+    private struct State {
+        var held: Set<Gate>
+        var waiting: [Gate: [CheckedContinuation<Void, Never>]] = [:]
+    }
+
+    let base: FakeStoreSearch
+    private let state: Mutex<State>
+
+    init(_ base: FakeStoreSearch, holding gates: Set<Gate>) {
+        self.base = base
+        state = Mutex(State(held: gates))
+    }
+
+    var calls: [FakeStoreSearch.Call] { base.calls }
+
+    /// Lets every held and future call through `gate`.
+    func release(_ gate: Gate) {
+        let waiting = state.withLock { state in
+            state.held.remove(gate)
+            return state.waiting.removeValue(forKey: gate) ?? []
+        }
+        waiting.forEach { $0.resume() }
+    }
+
+    /// Waits (a bounded number of short sleeps) until a call is held at `gate`.
+    func waitUntilHeld(_ gate: Gate) async -> Bool {
+        for _ in 0..<2_000 {
+            if state.withLock({ !($0.waiting[gate] ?? []).isEmpty }) { return true }
+            try? await Task.sleep(for: .milliseconds(1))
+        }
+        return false
+    }
+
+    private func pass(_ gate: Gate) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            let goesThrough = state.withLock { state in
+                guard state.held.contains(gate) else { return true }
+                state.waiting[gate, default: []].append(continuation)
+                return false
+            }
+            if goesThrough { continuation.resume() }
+        }
+    }
+
+    func nearby(latitude: Double, longitude: Double, radiusMeters: Double) async throws -> [StoreResult] {
+        try await base.nearby(latitude: latitude, longitude: longitude, radiusMeters: radiusMeters)
+    }
+
+    func search(text: String, latitude: Double, longitude: Double) async throws -> [StoreResult] {
+        await pass(.search(text))
+        return try await base.search(text: text, latitude: latitude, longitude: longitude)
+    }
+
+    func places(text: String, latitude: Double, longitude: Double) async throws -> [PlaceResult] {
+        await pass(.places(text))
+        return try await base.places(text: text, latitude: latitude, longitude: longitude)
+    }
+
+    func around(latitude: Double, longitude: Double, radiusMeters: Double) async throws -> [StoreResult] {
+        await pass(.around)
+        return try await base.around(latitude: latitude, longitude: longitude, radiusMeters: radiusMeters)
+    }
+}
+
 @MainActor
 final class FakeLocation: LocationAuthorizing {
     var access: LocationAccess

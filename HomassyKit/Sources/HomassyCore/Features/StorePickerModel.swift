@@ -33,9 +33,18 @@ public final class StorePickerModel {
     public private(set) var searchResults: [StoreResult] = []
     /// Addresses and places matching the query; picking one moves the map there.
     public private(set) var placeResults: [PlaceResult] = []
-    /// Where the view should move the map (the user's position, or a place from the search).
-    public private(set) var cameraTarget: Coordinate?
-    public private(set) var isLoading = false
+    /// A request to move the map. Each request has its own id, so asking for the same place again (after a pan)
+    /// still moves the camera.
+    public struct CameraTarget: Equatable, Sendable {
+        public let id = UUID()
+        public let coordinate: Coordinate
+    }
+
+    /// Where the view should move the map (the user's position, the fallback centre, or a place from the search).
+    public private(set) var cameraTarget: CameraTarget?
+    /// The query the shown results belong to; while the field differs from it, the view offers suggestions.
+    public private(set) var submittedQuery: String?
+    public var isLoading: Bool { isLoadingNearby || isSearching }
     public private(set) var message: Message?
     public private(set) var userCoordinate: Coordinate?
     /// A shop tapped on the map (a result marker or any Apple Maps place), waiting for "Choose".
@@ -62,6 +71,12 @@ public final class StorePickerModel {
     @ObservationIgnored private let location: any LocationAuthorizing
     @ObservationIgnored private let space: Space
     @ObservationIgnored private var recentObjects: [UUID: ShoppingLocation] = [:]
+    /// Bumped by every new search, focus and clear; a search whose generation is no longer current drops its
+    /// results, so a late answer never lands after a clear or over a newer search.
+    @ObservationIgnored private var searchGeneration = 0
+    private var isLoadingNearby = false
+    /// The current search is running; a stale search never clears it.
+    private var isSearching = false
 
     public init(search: any StoreSearching, locations: ShoppingLocationService,
                 location: any LocationAuthorizing, space: Space) {
@@ -84,8 +99,8 @@ public final class StorePickerModel {
     }
 
     public func loadNearby() async {
-        isLoading = true
-        defer { isLoading = false }
+        isLoadingNearby = true
+        defer { isLoadingNearby = false }
         message = nil
 
         var access = location.access
@@ -100,7 +115,7 @@ public final class StorePickerModel {
             message = .needsLocation
             return
         }
-        if fresh != nil { cameraTarget = center }
+        cameraTarget = CameraTarget(coordinate: center)
         do {
             nearby = try await search.nearby(latitude: center.latitude, longitude: center.longitude,
                                              radiusMeters: Self.nearbyRadiusMeters)
@@ -129,19 +144,28 @@ public final class StorePickerModel {
 
     /// Jumps to an address and lists every business around it, nearest to the address first.
     public func focus(on place: PlaceResult) async {
+        let generation = beginSearch()
+        defer { endSearch(generation) }
+        await applyFocus(place, generation: generation)
+    }
+
+    /// The focus itself, for a search that already owns `generation` (so it is not bumped again).
+    private func applyFocus(_ place: PlaceResult, generation: Int) async {
         addressFocus = place
         placeResults = []
-        cameraTarget = place.coordinate
+        cameraTarget = CameraTarget(coordinate: place.coordinate)
         mapCenter = place.coordinate
         message = nil
         do {
             let found = try await search.around(latitude: place.coordinate.latitude,
                                                 longitude: place.coordinate.longitude,
                                                 radiusMeters: Self.addressRadiusMeters)
+            guard generation == searchGeneration else { return }
             searchResults = MapKitStoreSearch.rank(found, latitude: place.coordinate.latitude,
                                                    longitude: place.coordinate.longitude)
             if searchResults.isEmpty { message = .noResults }
         } catch {
+            guard generation == searchGeneration else { return }
             searchResults = []
             message = .failed
         }
@@ -153,26 +177,29 @@ public final class StorePickerModel {
             clearSearch()
             return
         }
+        let generation = beginSearch()
+        defer { endSearch(generation) }
         guard let center = searchCenter else {
             message = .needsLocation
             return
         }
-        isLoading = true
-        defer { isLoading = false }
         addressFocus = nil
 
         if StoreQuery.isAddress(text) {
             let placeResult = await Self.result { try await self.search.places(text: text, latitude: center.latitude,
                                                                                 longitude: center.longitude) }
+            guard generation == searchGeneration else { return }
             let places = (try? placeResult.get()) ?? []
             if let first = places.first {
-                await focus(on: first)   // clears `message` itself, so no need to set it here too
+                await applyFocus(first, generation: generation)   // clears `message` itself
+                guard generation == searchGeneration else { return }
                 placeResults = Array(places.dropFirst())
                 return
             }
             message = nil
             let shopResult = await Self.result { try await self.search.search(text: text, latitude: center.latitude,
                                                                                longitude: center.longitude) }
+            guard generation == searchGeneration else { return }
             finishBusinessSearch(shopResult: shopResult, placeResult: placeResult, center: center)
             return
         }
@@ -183,7 +210,21 @@ public final class StorePickerModel {
         async let places = Self.result { try await self.search.places(text: text, latitude: center.latitude,
                                                                       longitude: center.longitude) }
         let (shopResult, placeResult) = await (shops, places)
+        guard generation == searchGeneration else { return }
         finishBusinessSearch(shopResult: shopResult, placeResult: placeResult, center: center)
+    }
+
+    /// Starts a search that supersedes every earlier one.
+    private func beginSearch() -> Int {
+        searchGeneration += 1
+        submittedQuery = query
+        isSearching = true
+        return searchGeneration
+    }
+
+    /// Only the current search turns the spinner off.
+    private func endSearch(_ generation: Int) {
+        if generation == searchGeneration { isSearching = false }
     }
 
     /// Shared by the plain business search and the address-with-no-match fallback (P2-08c fix round 1).
@@ -205,9 +246,12 @@ public final class StorePickerModel {
     }
 
     public func clearSearch() {
+        searchGeneration += 1   // drops any search still running
+        isSearching = false
         searchResults = []
         placeResults = []
         addressFocus = nil
+        submittedQuery = nil
         if message == .noResults { message = nil }
     }
 

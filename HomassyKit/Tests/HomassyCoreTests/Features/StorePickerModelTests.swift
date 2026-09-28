@@ -67,6 +67,9 @@ struct StorePickerModelTests {
                                          longitude: StoreSamples.aldiNyugati.longitude,
                                          radius: StorePickerModel.nearbyRadiusMeters)])
         #expect(model.message == .noResults)
+        // Without a position the map still moves to the fallback centre.
+        #expect(model.cameraTarget?.coordinate == Coordinate(latitude: StoreSamples.aldiNyugati.latitude,
+                                                             longitude: StoreSamples.aldiNyugati.longitude))
     }
 
     @Test func searchUsesTheQueryAndCentre() async {
@@ -170,11 +173,17 @@ struct StorePickerModelTests {
 
         await model.focus(on: andrassy)
         #expect(model.addressFocus == andrassy)
-        #expect(model.cameraTarget == andrassy.coordinate)
+        #expect(model.cameraTarget?.coordinate == andrassy.coordinate)
         #expect(model.mapCenter == andrassy.coordinate)
         #expect(model.isShowingSearch)
         #expect(model.placeResults.isEmpty)
         #expect(search.calls.last == .around(latitude: 47.5, longitude: 19.06, radius: StorePickerModel.addressRadiusMeters))
+
+        // Focusing the same address again (after a pan) is a new camera request.
+        let first = model.cameraTarget
+        await model.focus(on: andrassy)
+        #expect(model.cameraTarget?.coordinate == andrassy.coordinate)
+        #expect(model.cameraTarget != first)
     }
 
     @Test func onlyPlacesFoundIsNotAFailure() async {
@@ -193,8 +202,9 @@ struct StorePickerModelTests {
                                    coordinate: Coordinate(latitude: 47.5, longitude: 19.06))
         let other = PlaceResult(id: "a12b", title: "Andrássy út 12, Szeged",
                                 coordinate: Coordinate(latitude: 46.25, longitude: 20.15))
-        let far = StoreResult(mapItemIdentifier: "far", name: "Far", latitude: 47.5010, longitude: 19.0600)
-        let near = StoreResult(mapItemIdentifier: "near", name: "Near", latitude: 47.5001, longitude: 19.0600)
+        // Seen from Deák tér, "Far" is the closer one; from the address, "Near" is.
+        let far = StoreResult(mapItemIdentifier: "far", name: "Far", latitude: 47.4990, longitude: 19.0590)
+        let near = StoreResult(mapItemIdentifier: "near", name: "Near", latitude: 47.5008, longitude: 19.0602)
         let search = FakeStoreSearch(places: ["Andrássy út 12": [andrassy, other]], around: [far, near])
         let model = makeModel(search: search, location: FakeLocation(access: .denied))
         model.mapCenter = StoreSamples.deak
@@ -204,7 +214,36 @@ struct StorePickerModelTests {
         #expect(model.searchResults.map(\.name) == ["Near", "Far"])
         #expect(model.placeResults == [other])
         #expect(model.distanceOrigin == andrassy.coordinate)
+        #expect(search.calls.contains(.around(latitude: 47.5, longitude: 19.06, radius: 150)))
         #expect(!search.calls.contains { if case .search = $0 { true } else { false } })
+    }
+
+    @Test func aroundFailingIsReported() async {
+        let place = PlaceResult(id: "p", title: "Fő utca 1", coordinate: Coordinate(latitude: 47.5, longitude: 19.0))
+        let model = makeModel(search: FakeStoreSearch(fails: true), location: FakeLocation(access: .denied))
+        await model.focus(on: place)
+        #expect(model.addressFocus == place)
+        #expect(model.searchResults.isEmpty)
+        #expect(model.message == .failed)
+    }
+
+    @Test func theSubmittedQueryIsRememberedUntilTheSearchIsCleared() async {
+        let place = PlaceResult(id: "p", title: "Fő utca 1", coordinate: Coordinate(latitude: 47.5, longitude: 19.0))
+        let search = FakeStoreSearch(search: ["posta": [StoreSamples.sparAstoria]])
+        let model = makeModel(search: search, location: FakeLocation(access: .denied))
+        model.mapCenter = StoreSamples.deak
+        #expect(model.submittedQuery == nil)
+        model.query = "posta"
+        await model.runSearch()
+        #expect(model.submittedQuery == "posta")
+
+        model.query = "posta budaörs"             // editing: the view shows suggestions again
+        #expect(model.query != model.submittedQuery)
+        await model.focus(on: place)
+        #expect(model.submittedQuery == "posta budaörs")
+
+        model.clearSearch()
+        #expect(model.submittedQuery == nil)
     }
 
     @Test func anAddressWithoutAMatchFallsBackToTheBusinessSearch() async {
@@ -259,5 +298,89 @@ struct StorePickerModelTests {
         #expect(!model.isShowingSearch)
         #expect(model.distanceOrigin != andrassy.coordinate)
         #expect(model.distanceOrigin == here)
+    }
+
+    // MARK: Overlapping searches (P2-08c final review)
+
+    @Test func aSearchClearedWhileRunningLeavesNothingBehind() async {
+        let andrassy = PlaceResult(id: "a12", title: "Andrássy út 12",
+                                   coordinate: Coordinate(latitude: 47.5, longitude: 19.06))
+        let search = SuspendingStoreSearch(
+            FakeStoreSearch(places: ["Andrássy út 12": [andrassy]], around: [StoreSamples.sparAstoria]),
+            holding: [.places("Andrássy út 12")])
+        let model = StorePickerModel(search: search, locations: locations, location: FakeLocation(access: .denied),
+                                     space: stack.space)
+        model.mapCenter = StoreSamples.deak
+        model.query = "Andrássy út 12"
+        let running = Task { await model.runSearch() }
+        #expect(await search.waitUntilHeld(.places("Andrássy út 12")))
+        #expect(model.isLoading)
+
+        model.query = ""
+        model.clearSearch()
+        #expect(!model.isLoading)
+        search.release(.places("Andrássy út 12"))
+        await running.value
+
+        #expect(model.addressFocus == nil)
+        #expect(model.searchResults.isEmpty)
+        #expect(model.placeResults.isEmpty)
+        #expect(model.cameraTarget == nil)
+        #expect(model.mapCenter == StoreSamples.deak)
+        #expect(!model.isShowingSearch)
+        #expect(!model.isLoading)
+        #expect(!search.calls.contains { if case .around = $0 { true } else { false } })
+    }
+
+    @Test func whenSearchesFinishOutOfOrderTheNewerOneWins() async {
+        let andrassy = PlaceResult(id: "a12", title: "Andrássy út 12",
+                                   coordinate: Coordinate(latitude: 47.5, longitude: 19.06))
+        let search = SuspendingStoreSearch(
+            FakeStoreSearch(search: ["aldi": [StoreSamples.aldiNyugati]],
+                            places: ["Andrássy út 12": [andrassy]], around: [StoreSamples.sparAstoria]),
+            holding: [.around])
+        let model = StorePickerModel(search: search, locations: locations, location: FakeLocation(access: .denied),
+                                     space: stack.space)
+        model.mapCenter = StoreSamples.deak
+        model.query = "Andrássy út 12"
+        let older = Task { await model.runSearch() }
+        #expect(await search.waitUntilHeld(.around))
+
+        model.query = "aldi"
+        await model.runSearch()
+        #expect(model.searchResults == [StoreSamples.aldiNyugati])
+        #expect(!model.isLoading, "the older search is stale, so it keeps no spinner")
+
+        search.release(.around)
+        await older.value
+        #expect(model.searchResults == [StoreSamples.aldiNyugati])
+        #expect(model.addressFocus == nil, "no address header over the business results")
+        #expect(model.submittedQuery == "aldi")
+        #expect(!model.isLoading)
+    }
+
+    @Test func anOlderSearchFinishingFirstKeepsTheNewerSpinner() async {
+        let search = SuspendingStoreSearch(
+            FakeStoreSearch(search: ["spar": [StoreSamples.sparAstoria], "aldi": [StoreSamples.aldiNyugati]]),
+            holding: [.search("spar"), .search("aldi")])
+        let model = StorePickerModel(search: search, locations: locations, location: FakeLocation(access: .denied),
+                                     space: stack.space)
+        model.mapCenter = StoreSamples.deak
+        model.query = "spar"
+        let older = Task { await model.runSearch() }
+        #expect(await search.waitUntilHeld(.search("spar")))
+        model.query = "aldi"
+        let newer = Task { await model.runSearch() }
+        #expect(await search.waitUntilHeld(.search("aldi")))
+
+        search.release(.search("spar"))
+        await older.value
+        #expect(model.isLoading, "the newer search is still running")
+        #expect(model.searchResults.isEmpty, "the older results are dropped")
+
+        search.release(.search("aldi"))
+        await newer.value
+        #expect(model.searchResults == [StoreSamples.aldiNyugati])
+        #expect(!model.isLoading)
     }
 }
