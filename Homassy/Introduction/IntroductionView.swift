@@ -1,7 +1,7 @@
 import HomassyCore
 import SwiftUI
 
-/// Swipeable first-launch introduction with page dots, Skip, Next and Get started.
+/// Swipeable first-launch introduction (P1-10, animated in P1-10a) with page dots, Skip, Next and Get started.
 struct IntroductionView: View {
     @Bindable var model: IntroductionModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -9,7 +9,7 @@ struct IntroductionView: View {
     var body: some View {
         TabView(selection: $model.currentPage) {
             ForEach(IntroductionPage.allCases) { page in
-                IntroductionPageView(page: page)
+                IntroductionPageView(page: page, isActive: model.currentPage == page)
                     .tag(page)
             }
         }
@@ -54,15 +54,3 @@ struct IntroductionView: View {
         .tint(.accentColor)
     }
 }
-
-#if DEBUG
-#Preview("Introduction") {
-    IntroductionView(model: IntroductionModel(defaults: UserDefaults(suiteName: "IntroductionPreview")!,
-                                              notifications: UITestNotificationAuthorizer()))
-}
-
-#Preview("Introduction, landscape", traits: .landscapeLeft) {
-    IntroductionView(model: IntroductionModel(defaults: UserDefaults(suiteName: "IntroductionPreview")!,
-                                              notifications: UITestNotificationAuthorizer()))
-}
-#endif

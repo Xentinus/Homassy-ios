@@ -25,27 +25,13 @@ extension IntroductionPage {
         case .notifications: "intro.notifications.body"
         }
     }
-
-    /// Temporary until Task 2 replaces the symbol with the scenes.
-    var symbolName: String {
-        switch self {
-        case .welcome: "house.fill"
-        case .free: "heart.fill"
-        case .inventory: "refrigerator.fill"
-        case .shopping: "cart.fill"
-        case .spaces: "person.2.fill"
-        case .privacy: "checkmark.shield.fill"
-        case .notifications: "bell.badge.fill"
-        }
-    }
 }
 
-/// One page: a large animated symbol, a title and a short text. Side by side when height is compact.
+/// One page: an animated scene, a title and a short text. Side by side when height is compact.
 struct IntroductionPageView: View {
     let page: IntroductionPage
+    let isActive: Bool
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @ScaledMetric(relativeTo: .largeTitle) private var symbolSize: CGFloat = 96
 
     var body: some View {
         GeometryReader { proxy in
@@ -62,24 +48,23 @@ struct IntroductionPageView: View {
     private var layout: some View {
         if verticalSizeClass == .compact {
             HStack(spacing: 40) {
-                symbol
+                scene.frame(maxWidth: 340, maxHeight: 260)
                 text(alignment: .leading)
             }
-            .frame(maxWidth: 720)
+            .frame(maxWidth: 760)
         } else {
             VStack(spacing: 28) {
-                symbol
+                scene.frame(maxWidth: 340).frame(height: 300)
                 text(alignment: .center)
             }
             .frame(maxWidth: 520)
         }
     }
 
-    private var symbol: some View {
-        Image(systemName: page.symbolName)
-            .font(.system(size: symbolSize))
-            .foregroundStyle(.tint)
-            .symbolEffect(.breathe, isActive: !reduceMotion)
+    /// Capped at `.large`: the text scales fully, the illustration never pushes it off screen.
+    private var scene: some View {
+        IntroScene(page: page, isActive: isActive)
+            .dynamicTypeSize(...DynamicTypeSize.large)
             .accessibilityHidden(true)
     }
 
@@ -96,13 +81,9 @@ struct IntroductionPageView: View {
     }
 }
 
-#Preview("Pages") {
-    TabView {
-        ForEach(IntroductionPage.allCases) { IntroductionPageView(page: $0) }
-    }
-    .tabViewStyle(.page)
-}
-
-#Preview("Landscape", traits: .landscapeLeft) {
-    IntroductionPageView(page: .shopping)
+/// Replaced in Task 3 by `IntroScenes.swift`.
+struct IntroScene: View {
+    let page: IntroductionPage
+    let isActive: Bool
+    var body: some View { Color.clear }
 }
