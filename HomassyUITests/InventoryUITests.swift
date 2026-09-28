@@ -145,6 +145,16 @@ final class InventoryUITests: XCTestCase {
         XCTAssertTrue(app.textFields["store.search"].waitForNonExistence(timeout: 5))
         XCTAssertTrue(app.buttons["stock.save"].waitForExistence(timeout: 5))
 
+        // A pick reports the store and closes both levels too.
+        app.buttons["store.menu"].firstMatch.tap()
+        XCTAssertTrue(other.waitForExistence(timeout: 3))
+        other.tap()
+        XCTAssertTrue(recentRow.waitForExistence(timeout: 5))
+        recentRow.tap()
+        XCTAssertTrue(app.textFields["store.search"].waitForNonExistence(timeout: 5), "the pick closes the card")
+        XCTAssertTrue(app.buttons["stock.save"].waitForExistence(timeout: 5), "the stock sheet stays")
+        XCTAssertTrue(app.buttons["store.menu"].firstMatch.label.contains("Corner Shop"), "the pick is reported")
+
         app.buttons["store.menu"].firstMatch.tap()
         XCTAssertTrue(cornerRow.waitForExistence(timeout: 3))
         cornerRow.tap()

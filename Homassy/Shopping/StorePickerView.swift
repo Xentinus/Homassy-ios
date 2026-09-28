@@ -16,6 +16,8 @@ struct StorePickerView: View {
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var mapSelection: MapSelection<String>?
     @State private var areaSearch: Task<Void, Never>?
+    /// The region the map last settled on, so the nearby shops can reload there when a search is cleared.
+    @State private var visibleRegion: MKCoordinateRegion?
     @State private var showsCard = true
     @State private var detent: PresentationDetent = .medium
     @State private var outcome: Outcome?
@@ -50,6 +52,22 @@ struct StorePickerView: View {
             }
             .onChange(of: mapSelection) { _, selection in Task { await resolve(selection) } }
             .onChange(of: model.addressFocus) { _, focus in if focus != nil { detent = .medium } }
+            .onChange(of: model.selectedPlace) { _, place in
+                if place != nil && detent == Self.lowDetent { detent = .medium }
+            }
+            .onChange(of: model.isShowingSearch) { _, showing in
+                // The shown list swaps, so a selection from the old one is stale.
+                clearMapSelection()
+                if showing {
+                    areaSearch?.cancel()
+                } else if let visibleRegion {
+                    scheduleAreaSearch(in: visibleRegion)
+                }
+            }
+            .onChange(of: model.nearby.map(\.id)) { _, ids in
+                // Only a marker selection belongs to the list; an Apple Maps place stays on the map.
+                if let id = mapSelection?.value, !ids.contains(id) { clearMapSelection() }
+            }
             .task {
                 model.loadRecent()
                 await model.loadNearby()
@@ -59,6 +77,7 @@ struct StorePickerView: View {
 
     /// The card closes first; its onDismiss then reports the pick and closes the picker (two sheets, in order).
     private func close(_ result: Outcome) {
+        guard outcome == nil else { return }   // the card may still be animating away
         outcome = result
         showsCard = false
     }
@@ -79,19 +98,33 @@ struct StorePickerView: View {
         }
         .mapFeatureSelectionDisabled { $0.kind != .pointOfInterest }
         .onMapCameraChange(frequency: .onEnd) { context in
-            guard !model.isShowingSearch else { return }
-            let center = Coordinate(latitude: context.region.center.latitude,
-                                    longitude: context.region.center.longitude)
-            let radius = context.region.span.latitudeDelta * 111_000 / 2
-            areaSearch?.cancel()
-            areaSearch = Task {
-                try? await Task.sleep(for: .milliseconds(400))
-                guard !Task.isCancelled else { return }
-                await model.searchArea(center: center, radiusMeters: radius)
+            visibleRegion = context.region
+            guard !model.isShowingSearch else {
+                areaSearch?.cancel()
+                return
             }
+            scheduleAreaSearch(in: context.region)
         }
         .accessibilityIdentifier("store.map")
         .accessibilityHint(Text("store.map.hint"))
+    }
+
+    /// The shops in the visible area, debounced; never while search or address results are showing.
+    /// Cancelling also covers an in-flight search: `searchArea` drops its results once its task is cancelled.
+    private func scheduleAreaSearch(in region: MKCoordinateRegion) {
+        let center = Coordinate(latitude: region.center.latitude, longitude: region.center.longitude)
+        let radius = region.span.latitudeDelta * 111_000 / 2
+        areaSearch?.cancel()
+        areaSearch = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled, !model.isShowingSearch else { return }
+            await model.searchArea(center: center, radiusMeters: radius)
+        }
+    }
+
+    private func clearMapSelection() {
+        mapSelection = nil
+        model.clearSelection()
     }
 
     /// A tapped marker selects our result; a tapped Apple Maps place is looked up by its feature.
@@ -120,6 +153,7 @@ private struct StorePickerCard: View {
 
     @FocusState private var searchFocused: Bool
     @Environment(StoreDirectory.self) private var directory
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(spacing: 0) {
@@ -145,7 +179,7 @@ private struct StorePickerCard: View {
 
     private var searchField: some View {
         HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary).accessibilityHidden(true)
             TextField("store.search.prompt", text: $model.query)
                 .focused($searchFocused)
                 .submitLabel(.search)
@@ -224,26 +258,41 @@ private struct StorePickerCard: View {
         .scrollDismissesKeyboard(.immediately)
     }
 
-    /// A place tapped on the map, waiting for "Choose".
+    /// A place tapped on the map, waiting for "Choose". At accessibility sizes the button goes under the name.
     private func selectionSection(_ place: StoreResult) -> some View {
         Section {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: place.name).font(.headline)
-                    if let subtitle = place.subtitle {
-                        Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
-                    }
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) {
+                    selectedName(place)
+                    chooseButton
                 }
-                Spacer(minLength: 0)
-                Button {
-                    if let location = model.pickSelected() { close(.picked(location)) }
-                } label: {
-                    Text("store.chooseSelected")
+            } else {
+                HStack(spacing: 12) {
+                    selectedName(place)
+                    Spacer(minLength: 0)
+                    chooseButton
                 }
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier("store.chooseSelected")
             }
         }
+    }
+
+    private func selectedName(_ place: StoreResult) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: place.name).font(.headline)
+            if let subtitle = place.subtitle {
+                Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var chooseButton: some View {
+        Button {
+            if let location = model.pickSelected() { close(.picked(location)) }
+        } label: {
+            Text("store.chooseSelected")
+        }
+        .buttonStyle(.borderedProminent)
+        .accessibilityIdentifier("store.chooseSelected")
     }
 
     private var recentSection: some View {
@@ -297,20 +346,39 @@ private struct StorePickerCard: View {
         Button {
             if let location = model.pick(result) { close(.picked(location)) }
         } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: result.name).foregroundStyle(.primary)
-                    if let subtitle = result.subtitle {
-                        Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+            Group {
+                if typeSize.isAccessibilitySize {
+                    // At accessibility sizes the distance goes under the name.
+                    VStack(alignment: .leading, spacing: 2) {
+                        resultName(result)
+                        distance(of: result)
                     }
-                }
-                Spacer(minLength: 8)
-                if let distance = model.distanceText(for: result) {
-                    Text(verbatim: distance).font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    HStack {
+                        resultName(result)
+                        Spacer(minLength: 8)
+                        distance(of: result)
+                    }
                 }
             }
             .contentShape(Rectangle())
         }
         .accessibilityIdentifier("store.result.\(result.name)")
+    }
+
+    private func resultName(_ result: StoreResult) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: result.name).foregroundStyle(.primary)
+            if let subtitle = result.subtitle {
+                Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder private func distance(of result: StoreResult) -> some View {
+        if let distance = model.distanceText(for: result) {
+            Text(verbatim: distance).font(.caption).monospacedDigit().foregroundStyle(.secondary)
+        }
     }
 }
