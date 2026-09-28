@@ -140,6 +140,12 @@ final class InventoryUITests: XCTestCase {
         let recentRow = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Fő utca 1.")).firstMatch
         XCTAssertTrue(recentRow.waitForExistence(timeout: 5), "the store picker's recent row shows the address")
         attachScreenshot(app, named: "store-picker-card")
+        // An address jumps the map there, above the card. It needs Apple Maps, so the result is not asserted.
+        let storeSearch = app.textFields["store.search"]
+        storeSearch.tap()
+        storeSearch.typeText("Andrássy út 12\n")
+        _ = app.staticTexts["Places at this address"].waitForExistence(timeout: 10)
+        attachScreenshot(app, named: "store-picker-address")
         app.buttons["Cancel"].firstMatch.tap()
         // Cancel closes the card and the map beneath it; the stock sheet stays.
         XCTAssertTrue(app.textFields["store.search"].waitForNonExistence(timeout: 5))

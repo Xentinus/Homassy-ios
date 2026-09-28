@@ -9,7 +9,8 @@ struct StorePickerView: View {
     let onPick: (ShoppingLocation?) -> Void
 
     fileprivate enum Outcome { case cancelled, picked(ShoppingLocation?) }
-    static let lowDetent = PresentationDetent.height(200)
+    static let lowDetentHeight: CGFloat = 200
+    static let lowDetent = PresentationDetent.height(lowDetentHeight)
 
     @State private var model: StorePickerModel
     @State private var completer = StoreCompleter()
@@ -21,6 +22,15 @@ struct StorePickerView: View {
     @State private var showsCard = true
     @State private var detent: PresentationDetent = .medium
     @State private var outcome: Outcome?
+    /// Area searches wait for the first nearby load, so the list does not flicker or load twice.
+    @State private var hasLoadedNearby = false
+    /// The card's top edge and the map's bottom edge (global), measured, so the map can keep clear of the card.
+    @State private var cardTop: CGFloat?
+    @State private var mapBottom: CGFloat?
+    /// How much of the map the card covers, applied once the card settles on a detent (not while it is dragged).
+    @State private var mapInset = Self.lowDetentHeight
+    @State private var lowInset = Self.lowDetentHeight
+    @State private var insetUpdate: Task<Void, Never>?
     @Environment(\.dismiss) private var dismiss
     @Environment(StoreDirectory.self) private var directory
 
@@ -32,12 +42,15 @@ struct StorePickerView: View {
     }
 
     var body: some View {
-        map
+        insetMap
             .ignoresSafeArea(edges: .bottom)
             // The picker closes only through the card, so its onDismiss stays the one place that reports.
             .interactiveDismissDisabled()
             .sheet(isPresented: $showsCard, onDismiss: finish) {
-                StorePickerCard(model: model, completer: completer, detent: $detent, close: close)
+                StorePickerCard(model: model, completer: completer, detent: $detent, close: close) { top in
+                    cardTop = top
+                    settleMapInset()
+                }
                     .environment(directory)
                     .presentationDetents([Self.lowDetent, .medium, .large], selection: $detent)
                     .presentationBackgroundInteraction(.enabled(upThrough: .medium))
@@ -45,12 +58,13 @@ struct StorePickerView: View {
                     .interactiveDismissDisabled()
             }
             .onChange(of: model.cameraTarget) { _, target in
-                guard let target else { return }
+                guard let target = target?.coordinate else { return }
                 position = .region(MKCoordinateRegion(
                     center: CLLocationCoordinate2D(latitude: target.latitude, longitude: target.longitude),
                     latitudinalMeters: 1_500, longitudinalMeters: 1_500))
             }
-            .onChange(of: mapSelection) { _, selection in Task { await resolve(selection) } }
+            // A newer selection cancels the lookup of an older one, so the highlighted place is the one chosen.
+            .task(id: mapSelection) { await resolve(mapSelection) }
             .onChange(of: model.addressFocus) { _, focus in if focus != nil { detent = .medium } }
             .onChange(of: model.selectedPlace) { _, place in
                 if place != nil && detent == Self.lowDetent { detent = .medium }
@@ -64,15 +78,48 @@ struct StorePickerView: View {
                     scheduleAreaSearch(in: visibleRegion)
                 }
             }
-            .onChange(of: model.nearby.map(\.id)) { _, ids in
+            .onChange(of: shownResults.map(\.id)) { _, ids in
                 // Only a marker selection belongs to the list; an Apple Maps place stays on the map.
                 if let id = mapSelection?.value, !ids.contains(id) { clearMapSelection() }
             }
             .task {
                 model.loadRecent()
                 await model.loadNearby()
+                hasLoadedNearby = true
             }
             .task { await directory.refreshLocation() }
+            .onChange(of: detent) { settleMapInset() }
+            .onDisappear {
+                areaSearch?.cancel()
+                insetUpdate?.cancel()
+            }
+    }
+
+    /// The results the map and the list show: the search, or the shops nearby.
+    private var shownResults: [StoreResult] { model.isShowingSearch ? model.searchResults : model.nearby }
+
+    /// The card's height is kept out of the map, so the camera centres in the visible part and MapKit puts its
+    /// logo and Legal link above the card.
+    private var insetMap: some View {
+        map
+            .safeAreaPadding(.bottom, mapInset)
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { bottom in
+                mapBottom = bottom
+                settleMapInset()
+            }
+    }
+
+    /// Measures what the card covers once it has stopped moving, so dragging it does not slide the map.
+    /// The large detent hides the map, so it keeps the low detent's inset.
+    private func settleMapInset() {
+        insetUpdate?.cancel()
+        insetUpdate = Task {
+            try? await Task.sleep(for: .milliseconds(150))
+            guard !Task.isCancelled, let cardTop, let mapBottom else { return }
+            let covered = max(0, mapBottom - cardTop)
+            if detent == Self.lowDetent { lowInset = covered }
+            mapInset = detent == .large ? lowInset : covered
+        }
     }
 
     /// The card closes first; its onDismiss then reports the pick and closes the picker (two sheets, in order).
@@ -90,7 +137,7 @@ struct StorePickerView: View {
     private var map: some View {
         Map(position: $position, selection: $mapSelection) {
             UserAnnotation()
-            ForEach(model.isShowingSearch ? model.searchResults : model.nearby) { result in
+            ForEach(shownResults) { result in
                 Marker(result.name, systemImage: "storefront",
                        coordinate: CLLocationCoordinate2D(latitude: result.latitude, longitude: result.longitude))
                     .tag(MapSelection(result.id))
@@ -99,7 +146,7 @@ struct StorePickerView: View {
         .mapFeatureSelectionDisabled { $0.kind != .pointOfInterest }
         .onMapCameraChange(frequency: .onEnd) { context in
             visibleRegion = context.region
-            guard !model.isShowingSearch else {
+            guard hasLoadedNearby, !model.isShowingSearch else {
                 areaSearch?.cancel()
                 return
             }
@@ -133,12 +180,12 @@ struct StorePickerView: View {
             model.clearSelection()
             return
         }
-        let shown = model.isShowingSearch ? model.searchResults : model.nearby
-        if let id = selection.value, let result = shown.first(where: { $0.id == id }) {
+        if let id = selection.value, let result = shownResults.first(where: { $0.id == id }) {
             model.select(result)
-        } else if let feature = selection.feature,
-                  let item = try? await MKMapItemRequest(feature: feature).mapItem,
-                  let result = StoreResult(mapItem: item) {
+        } else if let feature = selection.feature {
+            model.clearSelection()   // "Choose" must not save the previous place while this one loads
+            let item = try? await MKMapItemRequest(feature: feature).mapItem
+            guard !Task.isCancelled, let item, let result = StoreResult(mapItem: item) else { return }
             model.select(result)
         }
     }
@@ -150,6 +197,8 @@ private struct StorePickerCard: View {
     let completer: StoreCompleter
     @Binding var detent: PresentationDetent
     let close: (StorePickerView.Outcome) -> Void
+    /// Reports the card's top edge (global), so the map behind it can keep clear of it.
+    let reportTop: (CGFloat) -> Void
 
     @FocusState private var searchFocused: Bool
     @Environment(StoreDirectory.self) private var directory
@@ -162,6 +211,7 @@ private struct StorePickerCard: View {
             list
         }
         .overlay { if model.isLoading { ProgressView("store.loading") } }
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { reportTop($0) }
     }
 
     private var header: some View {
@@ -209,7 +259,9 @@ private struct StorePickerCard: View {
     private var list: some View {
         List {
             if let place = model.selectedPlace { selectionSection(place) }
-            if model.isShowingSearch {
+            if showsSuggestions {
+                suggestionsSection
+            } else if model.isShowingSearch {
                 Section {
                     ForEach(model.searchResults) { resultRow($0) }
                 } header: {
@@ -220,22 +272,6 @@ private struct StorePickerCard: View {
                         ForEach(model.placeResults) { placeRow($0) }
                     } header: {
                         Text("store.search.places")
-                    }
-                }
-            } else if !model.query.isEmpty && !completer.suggestions.isEmpty {
-                Section {
-                    ForEach(completer.suggestions, id: \.self) { suggestion in
-                        Button {
-                            model.query = suggestion
-                            searchFocused = false
-                            Task { await model.runSearch() }
-                        } label: {
-                            Label {
-                                Text(verbatim: suggestion).foregroundStyle(.primary)
-                            } icon: {
-                                Image(systemName: "magnifyingglass")
-                            }
-                        }
                     }
                 }
             } else {
@@ -256,6 +292,30 @@ private struct StorePickerCard: View {
         }
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.immediately)
+    }
+
+    /// Suggestions while the user edits the query; the results of the submitted query come back once they stop.
+    private var showsSuggestions: Bool {
+        searchFocused && !model.query.isEmpty && !completer.suggestions.isEmpty
+            && model.query != model.submittedQuery
+    }
+
+    private var suggestionsSection: some View {
+        Section {
+            ForEach(completer.suggestions, id: \.self) { suggestion in
+                Button {
+                    model.query = suggestion
+                    searchFocused = false
+                    Task { await model.runSearch() }
+                } label: {
+                    Label {
+                        Text(verbatim: suggestion).foregroundStyle(.primary)
+                    } icon: {
+                        Image(systemName: "magnifyingglass")
+                    }
+                }
+            }
+        }
     }
 
     /// A place tapped on the map, waiting for "Choose". At accessibility sizes the button goes under the name.
