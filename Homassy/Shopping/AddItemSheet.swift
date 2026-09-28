@@ -8,7 +8,7 @@ struct AddItemSheet: View {
 
     @State private var model: AddItemFlowModel
     @State private var authorizer = CoreLocationAuthorizer()
-    @State private var pickingStore: StorePickerModel.Tab?
+    @State private var pickingStore = false
     @State private var recent: [ShoppingLocation] = []
     @FocusState private var focused: Bool
     @Environment(\.dismiss) private var dismiss
@@ -36,9 +36,9 @@ struct AddItemSheet: View {
             .navigationTitle(Text("shopping.add.title \(model.stepNumber) \(AddItemFlowModel.Step.allCases.count)"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
-            .sheet(item: $pickingStore) { tab in
+            .sheet(isPresented: $pickingStore) {
                 if let space = model.space {
-                    StorePickerView(space: space, services: services, initialTab: tab) { model.setStore($0) }
+                    StorePickerView(space: space, services: services) { model.setStore($0) }
                 }
             }
             .task(id: model.step) {
@@ -128,7 +128,7 @@ struct AddItemSheet: View {
 
     @ViewBuilder private var storePage: some View {
         Section {
-            StoreSuggestionRow(name: model.storeName, distance: model.suggestedDistance) { pickingStore = .recent }
+            StoreSuggestionRow(name: model.storeName, distance: model.suggestedDistance) { pickingStore = true }
         } header: {
             Text("shopping.add.where")
         }
@@ -149,7 +149,7 @@ struct AddItemSheet: View {
             }
         }
         Section {
-            Button { pickingStore = .nearby } label: { Label("shopping.add.map", systemImage: "map") }
+            Button { pickingStore = true } label: { Label("shopping.add.map", systemImage: "map") }
                 .accessibilityIdentifier("shopping.add.map")
             Button { model.setStore(nil) } label: { Label("shopping.form.store.none", systemImage: "cart") }
                 .accessibilityIdentifier("shopping.add.anyStore")

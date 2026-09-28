@@ -2,7 +2,7 @@ import HomassyCore
 import MapKit
 import Observation
 
-/// As-you-type shop names and addresses for the search field, from Apple Maps.
+/// As-you-type business names and addresses for the search field, from Apple Maps (any business, P2-08c).
 @MainActor
 @Observable
 final class StoreCompleter: NSObject, MKLocalSearchCompleterDelegate {
@@ -13,7 +13,6 @@ final class StoreCompleter: NSObject, MKLocalSearchCompleterDelegate {
         super.init()
         completer.delegate = self
         completer.resultTypes = [.pointOfInterest, .address]
-        completer.pointOfInterestFilter = MKPointOfInterestFilter(including: MapKitStoreSearch.categories)
     }
 
     func update(query: String, center: Coordinate?) {

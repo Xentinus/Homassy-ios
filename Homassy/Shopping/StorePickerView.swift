@@ -2,96 +2,45 @@ import HomassyCore
 import MapKit
 import SwiftUI
 
-/// Picks a store from Apple Maps: recent stores, or shops on an interactive map that follows the user's panning
-/// (any shop on the map can be tapped and chosen). The search finds shops by name and addresses, which move
-/// the map there.
+/// Picks a store (P2-08c, the Apple Maps pattern): a full map behind a bottom card with the search, the recent
+/// stores and the shops nearby. The search finds any business, nearest first; an address jumps the map there and
+/// lists the places at it. Tap a marker or any Apple Maps place to select it.
 struct StorePickerView: View {
     let onPick: (ShoppingLocation?) -> Void
+
+    fileprivate enum Outcome { case cancelled, picked(ShoppingLocation?) }
+    static let lowDetent = PresentationDetent.height(200)
 
     @State private var model: StorePickerModel
     @State private var completer = StoreCompleter()
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var mapSelection: MapSelection<String>?
-    @State private var placeCard: MKMapItem?
     @State private var areaSearch: Task<Void, Never>?
+    @State private var showsCard = true
+    @State private var detent: PresentationDetent = .medium
+    @State private var outcome: Outcome?
     @Environment(\.dismiss) private var dismiss
     @Environment(StoreDirectory.self) private var directory
 
     /// The When-In-Use authorizer is app-only (P4-02), so the picker owns it.
-    init(space: Space, services: ServiceContainer, initialTab: StorePickerModel.Tab = .recent,
-         onPick: @escaping (ShoppingLocation?) -> Void) {
+    init(space: Space, services: ServiceContainer, onPick: @escaping (ShoppingLocation?) -> Void) {
         self.onPick = onPick
-        _model = State(initialValue: StorePickerModel(search: services.storeSearch,
-                                                      locations: services.shoppingLocations,
-                                                      location: CoreLocationAuthorizer(), space: space,
-                                                      initialTab: initialTab))
+        _model = State(initialValue: StorePickerModel(search: services.storeSearch, locations: services.shoppingLocations,
+                                                      location: CoreLocationAuthorizer(), space: space))
     }
 
     var body: some View {
-        NavigationStack {
-            List {
-                if model.isShowingSearch {
-                    if !model.placeResults.isEmpty {
-                        Section {
-                            ForEach(model.placeResults) { placeRow($0) }
-                        } header: {
-                            Text("store.search.places")
-                        }
-                    }
-                    if !model.searchResults.isEmpty {
-                        Section {
-                            ForEach(model.searchResults) { resultRow($0) }
-                        } header: {
-                            Text("store.search.results")
-                        }
-                    }
-                } else {
-                    Section {
-                        Picker(selection: $model.tab) {
-                            Text("store.tab.recent").tag(StorePickerModel.Tab.recent)
-                            Text("store.tab.nearby").tag(StorePickerModel.Tab.nearby)
-                        } label: {
-                            EmptyView()
-                        }
-                        .pickerStyle(.segmented)
-                        .accessibilityIdentifier("store.tabs")
-                    }
-                    switch model.tab {
-                    case .recent: recentSection
-                    case .nearby: nearbySection
-                    }
-                }
-                if let message = model.message {
-                    Section { Text(verbatim: message.text).foregroundStyle(.secondary) }
-                }
-                Section {
-                    Button("store.none", role: .destructive) {
-                        onPick(nil)
-                        dismiss()
-                    }
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                if let place = model.selectedPlace { selectionBar(place) }
-            }
-            .navigationTitle(Text("store.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("common.cancel") { dismiss() } }
-            }
-            .searchable(text: $model.query, prompt: Text("store.search.prompt"))
-            .searchSuggestions {
-                ForEach(completer.suggestions, id: \.self) { suggestion in
-                    Text(verbatim: suggestion).searchCompletion(suggestion)
-                }
-            }
-            .onSubmit(of: .search) { Task { await model.runSearch() } }
-            .onChange(of: model.query) { _, query in
-                if query.isEmpty { model.clearSearch() }
-                completer.update(query: query, center: model.searchCenter)
-            }
-            .onChange(of: model.tab) { _, tab in
-                if tab == .nearby { Task { await model.loadNearby() } }
+        map
+            .ignoresSafeArea(edges: .bottom)
+            // The picker closes only through the card, so its onDismiss stays the one place that reports.
+            .interactiveDismissDisabled()
+            .sheet(isPresented: $showsCard, onDismiss: finish) {
+                StorePickerCard(model: model, completer: completer, detent: $detent, close: close)
+                    .environment(directory)
+                    .presentationDetents([Self.lowDetent, .medium, .large], selection: $detent)
+                    .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+                    .presentationDragIndicator(.visible)
+                    .interactiveDismissDisabled()
             }
             .onChange(of: model.cameraTarget) { _, target in
                 guard let target else { return }
@@ -100,13 +49,200 @@ struct StorePickerView: View {
                     latitudinalMeters: 1_500, longitudinalMeters: 1_500))
             }
             .onChange(of: mapSelection) { _, selection in Task { await resolve(selection) } }
-            .overlay { if model.isLoading { ProgressView("store.loading") } }
-            .mapItemDetailSheet(item: $placeCard)
+            .onChange(of: model.addressFocus) { _, focus in if focus != nil { detent = .medium } }
             .task {
                 model.loadRecent()
-                if model.tab == .nearby { await model.loadNearby() }
+                await model.loadNearby()
             }
             .task { await directory.refreshLocation() }
+    }
+
+    /// The card closes first; its onDismiss then reports the pick and closes the picker (two sheets, in order).
+    private func close(_ result: Outcome) {
+        outcome = result
+        showsCard = false
+    }
+
+    private func finish() {
+        if case .picked(let location) = outcome { onPick(location) }
+        dismiss()
+    }
+
+    private var map: some View {
+        Map(position: $position, selection: $mapSelection) {
+            UserAnnotation()
+            ForEach(model.isShowingSearch ? model.searchResults : model.nearby) { result in
+                Marker(result.name, systemImage: "storefront",
+                       coordinate: CLLocationCoordinate2D(latitude: result.latitude, longitude: result.longitude))
+                    .tag(MapSelection(result.id))
+            }
+        }
+        .mapFeatureSelectionDisabled { $0.kind != .pointOfInterest }
+        .onMapCameraChange(frequency: .onEnd) { context in
+            guard !model.isShowingSearch else { return }
+            let center = Coordinate(latitude: context.region.center.latitude,
+                                    longitude: context.region.center.longitude)
+            let radius = context.region.span.latitudeDelta * 111_000 / 2
+            areaSearch?.cancel()
+            areaSearch = Task {
+                try? await Task.sleep(for: .milliseconds(400))
+                guard !Task.isCancelled else { return }
+                await model.searchArea(center: center, radiusMeters: radius)
+            }
+        }
+        .accessibilityIdentifier("store.map")
+        .accessibilityHint(Text("store.map.hint"))
+    }
+
+    /// A tapped marker selects our result; a tapped Apple Maps place is looked up by its feature.
+    private func resolve(_ selection: MapSelection<String>?) async {
+        guard let selection else {
+            model.clearSelection()
+            return
+        }
+        let shown = model.isShowingSearch ? model.searchResults : model.nearby
+        if let id = selection.value, let result = shown.first(where: { $0.id == id }) {
+            model.select(result)
+        } else if let feature = selection.feature,
+                  let item = try? await MKMapItemRequest(feature: feature).mapItem,
+                  let result = StoreResult(mapItem: item) {
+            model.select(result)
+        }
+    }
+}
+
+/// The bottom card: the search field, then the selection, the search results or Recent and Nearby.
+private struct StorePickerCard: View {
+    @Bindable var model: StorePickerModel
+    let completer: StoreCompleter
+    @Binding var detent: PresentationDetent
+    let close: (StorePickerView.Outcome) -> Void
+
+    @FocusState private var searchFocused: Bool
+    @Environment(StoreDirectory.self) private var directory
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+            searchField
+            list
+        }
+        .overlay { if model.isLoading { ProgressView("store.loading") } }
+    }
+
+    private var header: some View {
+        HStack {
+            Button("common.cancel") { close(.cancelled) }
+            Spacer()
+            Text("store.title").font(.headline)
+            Spacer()
+            // Keeps the title centred: as wide as the cancel button, and invisible.
+            Text("common.cancel").hidden().accessibilityHidden(true)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField("store.search.prompt", text: $model.query)
+                .focused($searchFocused)
+                .submitLabel(.search)
+                .onSubmit { Task { await model.runSearch() } }
+                .autocorrectionDisabled()
+                .accessibilityIdentifier("store.search")
+            if !model.query.isEmpty {
+                Button { model.query = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("store.search.clear"))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 12).fill(.quaternary))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .onChange(of: searchFocused) { _, focused in if focused { detent = .large } }
+        .onChange(of: model.query) { _, query in
+            if query.isEmpty { model.clearSearch() }
+            completer.update(query: query, center: model.searchCenter)
+        }
+    }
+
+    private var list: some View {
+        List {
+            if let place = model.selectedPlace { selectionSection(place) }
+            if model.isShowingSearch {
+                Section {
+                    ForEach(model.searchResults) { resultRow($0) }
+                } header: {
+                    Text(model.addressFocus != nil ? "store.results.atAddress" : "store.search.results")
+                }
+                if !model.placeResults.isEmpty {
+                    Section {
+                        ForEach(model.placeResults) { placeRow($0) }
+                    } header: {
+                        Text("store.search.places")
+                    }
+                }
+            } else if !model.query.isEmpty && !completer.suggestions.isEmpty {
+                Section {
+                    ForEach(completer.suggestions, id: \.self) { suggestion in
+                        Button {
+                            model.query = suggestion
+                            searchFocused = false
+                            Task { await model.runSearch() }
+                        } label: {
+                            Label {
+                                Text(verbatim: suggestion).foregroundStyle(.primary)
+                            } icon: {
+                                Image(systemName: "magnifyingglass")
+                            }
+                        }
+                    }
+                }
+            } else {
+                recentSection
+                Section {
+                    ForEach(model.nearby) { resultRow($0) }
+                } header: {
+                    Text("store.tab.nearby")
+                }
+            }
+            if let message = model.message {
+                Section { Text(verbatim: message.text).foregroundStyle(.secondary) }
+            }
+            Section {
+                Button("store.none", role: .destructive) { close(.picked(nil)) }
+                    .accessibilityIdentifier("store.none")
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .scrollDismissesKeyboard(.immediately)
+    }
+
+    /// A place tapped on the map, waiting for "Choose".
+    private func selectionSection(_ place: StoreResult) -> some View {
+        Section {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: place.name).font(.headline)
+                    if let subtitle = place.subtitle {
+                        Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Spacer(minLength: 0)
+                Button {
+                    if let location = model.pickSelected() { close(.picked(location)) }
+                } label: {
+                    Text("store.chooseSelected")
+                }
+                .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier("store.chooseSelected")
+            }
         }
     }
 
@@ -117,13 +253,10 @@ struct StorePickerView: View {
             }
             ForEach(model.recent) { store in
                 Button {
-                    if let location = model.pickRecent(store.id) {
-                        onPick(location)
-                        dismiss()
-                    }
+                    if let location = model.pickRecent(store.id) { close(.picked(location)) }
                 } label: {
                     Label {
-                        Text(verbatim: store.name)
+                        Text(verbatim: store.name).foregroundStyle(.primary)
                         if let subtitle = directory.subtitle(ofStore: store.id) {
                             Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
                         }
@@ -135,71 +268,16 @@ struct StorePickerView: View {
                 let ids = offsets.map { model.recent[$0].id }
                 ids.forEach(model.deleteRecent)
             }
+        } header: {
+            Text("store.tab.recent")
         }
     }
 
-    private var nearbySection: some View {
-        Section {
-            Map(position: $position, selection: $mapSelection) {
-                UserAnnotation()
-                ForEach(model.nearby) { result in
-                    Marker(result.name, systemImage: "cart",
-                           coordinate: CLLocationCoordinate2D(latitude: result.latitude, longitude: result.longitude))
-                        .tag(MapSelection(result.id))
-                }
-            }
-            .mapFeatureSelectionDisabled { $0.kind != .pointOfInterest }
-            .frame(height: 320)
-            .listRowInsets(EdgeInsets())
-            .onMapCameraChange(frequency: .onEnd) { context in
-                let center = Coordinate(latitude: context.region.center.latitude,
-                                        longitude: context.region.center.longitude)
-                let radius = context.region.span.latitudeDelta * 111_000 / 2
-                areaSearch?.cancel()
-                areaSearch = Task {
-                    try? await Task.sleep(for: .milliseconds(400))
-                    guard !Task.isCancelled else { return }
-                    await model.searchArea(center: center, radiusMeters: radius)
-                }
-            }
-            .accessibilityIdentifier("store.map")
-            Text("store.map.hint").font(.footnote).foregroundStyle(.secondary)
-            ForEach(model.nearby) { resultRow($0) }
-        }
-    }
-
-    private func selectionBar(_ place: StoreResult) -> some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: place.name).font(.headline)
-                if let subtitle = place.subtitle {
-                    Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            Spacer(minLength: 0)
-            Button { Task { placeCard = await mapItem(for: place) } } label: {
-                Image(systemName: "info.circle")
-            }
-            .accessibilityLabel(Text("store.details"))
-            Button {
-                if let location = model.pickSelected() {
-                    onPick(location)
-                    dismiss()
-                }
-            } label: {
-                Text("store.chooseSelected")
-            }
-            .buttonStyle(.borderedProminent)
-            .accessibilityIdentifier("store.chooseSelected")
-        }
-        .padding()
-        .background(.bar)
-    }
-
-    /// An address or town from the search: moves the map there, and the shops around it load.
+    /// An address or town from the search: jumps the map there and lists the places at it.
     private func placeRow(_ place: PlaceResult) -> some View {
         Button {
-            Task { await model.goTo(place) }
+            searchFocused = false
+            Task { await model.focus(on: place) }
         } label: {
             Label {
                 VStack(alignment: .leading, spacing: 2) {
@@ -216,51 +294,23 @@ struct StorePickerView: View {
     }
 
     private func resultRow(_ result: StoreResult) -> some View {
-        HStack {
-            Button {
-                if let location = model.pick(result) {
-                    onPick(location)
-                    dismiss()
-                }
-            } label: {
+        Button {
+            if let location = model.pick(result) { close(.picked(location)) }
+        } label: {
+            HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: result.name)
+                    Text(verbatim: result.name).foregroundStyle(.primary)
                     if let subtitle = result.subtitle {
                         Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+                Spacer(minLength: 8)
+                if let distance = model.distanceText(for: result) {
+                    Text(verbatim: distance).font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                }
             }
-            .buttonStyle(.plain)
-            Button {
-                Task { placeCard = await mapItem(for: result) }
-            } label: {
-                Image(systemName: "info.circle")
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(Text("store.details"))
+            .contentShape(Rectangle())
         }
-    }
-
-    /// A tapped marker selects our result; a tapped Apple Maps place is looked up by its feature.
-    private func resolve(_ selection: MapSelection<String>?) async {
-        guard let selection else {
-            model.clearSelection()
-            return
-        }
-        if let id = selection.value, let result = model.nearby.first(where: { $0.id == id }) {
-            model.select(result)
-        } else if let feature = selection.feature,
-                  let item = try? await MKMapItemRequest(feature: feature).mapItem,
-                  let result = StoreResult(mapItem: item) {
-            model.select(result)
-        }
-    }
-
-    /// Fresh details for the place card come from Apple Maps by identifier (§6.7).
-    private func mapItem(for result: StoreResult) async -> MKMapItem? {
-        guard let identifier = MKMapItem.Identifier(rawValue: result.mapItemIdentifier) else { return nil }
-        return try? await MKMapItemRequest(mapItemIdentifier: identifier).mapItem
+        .accessibilityIdentifier("store.result.\(result.name)")
     }
 }
