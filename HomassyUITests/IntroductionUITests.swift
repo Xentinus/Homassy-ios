@@ -1,22 +1,40 @@
 import XCTest
 
+/// P1-10 introduction, animated in P1-10a (user pick 1I · 2C · 3B · 4B · 5C · 8H · 6C, 2026-09-26).
 final class IntroductionUITests: XCTestCase {
+    /// Titles after the welcome page, in order.
+    private let laterTitles = ["Completely free", "Know what's at home", "Shopping made simple",
+                               "Personal and shared", "Your data is yours", "Stay ahead of expiry dates"]
+
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
 
     @MainActor
-    func testFirstLaunchShowsIntroductionOnceThenTheGate() throws {
-        let app = XCUIApplication.homassy(accountState: "noAccount", skipIntroduction: false,
+    private func launch(accountState: String = "noAccount") -> XCUIApplication {
+        let app = XCUIApplication.homassy(accountState: accountState, skipIntroduction: false,
                                           extraArguments: ["-resetIntroduction"])
         app.launch()
+        return app
+    }
 
+    @MainActor
+    func testFreeIsTheSecondPage() throws {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["Welcome to Homassy"].waitForExistence(timeout: 10))
+        app.buttons["Next"].tap()
+        XCTAssertTrue(app.staticTexts["Completely free"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Every feature is for everyone, with no subscription, no ads and no premium tier."].exists)
+    }
+
+    @MainActor
+    func testFirstLaunchShowsIntroductionOnceThenTheGate() throws {
+        let app = launch()
         XCTAssertTrue(app.staticTexts["Welcome to Homassy"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["Skip"].exists)
         XCTAssertFalse(app.staticTexts["iCloud is required"].exists)
 
-        for title in ["Know what's at home", "Shopping made simple", "Personal and shared",
-                      "Stay ahead of expiry dates"] {
+        for title in laterTitles {
             app.swipeLeft()
             XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 3), "Page \(title) not shown")
         }
@@ -34,10 +52,7 @@ final class IntroductionUITests: XCTestCase {
 
     @MainActor
     func testSkipGoesStraightToTheMainShell() throws {
-        let app = XCUIApplication.homassy(accountState: "available", skipIntroduction: false,
-                                          extraArguments: ["-resetIntroduction"])
-        app.launch()
-
+        let app = launch(accountState: "available")
         let skip = app.buttons["introduction.skip"]
         XCTAssertTrue(skip.waitForExistence(timeout: 10))
         XCTAssertEqual(skip.label, "Skip")
@@ -46,26 +61,15 @@ final class IntroductionUITests: XCTestCase {
     }
 
     @MainActor
-    func testNextButtonAdvances() throws {
-        let app = XCUIApplication.homassy(accountState: "noAccount", skipIntroduction: false,
-                                          extraArguments: ["-resetIntroduction"])
-        app.launch()
-
-        XCTAssertTrue(app.buttons["Next"].waitForExistence(timeout: 10))
-        app.buttons["Next"].tap()
-        XCTAssertTrue(app.staticTexts["Know what's at home"].waitForExistence(timeout: 3))
-    }
-
-    @MainActor
     func testLandscapeShowsTheSamePage() throws {
-        let app = XCUIApplication.homassy(accountState: "noAccount", skipIntroduction: false,
-                                          extraArguments: ["-resetIntroduction"])
-        app.launch()
+        let app = launch()
         defer { XCUIDevice.shared.orientation = .portrait }
-
         XCTAssertTrue(app.staticTexts["Welcome to Homassy"].waitForExistence(timeout: 10))
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(app.staticTexts["Welcome to Homassy"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Next"].isHittable)
+        app.buttons["Next"].tap()
+        XCTAssertTrue(app.staticTexts["Completely free"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["Next"].isHittable)
     }
 }
