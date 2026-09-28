@@ -150,8 +150,7 @@ public final class StorePickerModel {
     public func runSearch() async {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
-            searchResults = []
-            placeResults = []
+            clearSearch()
             return
         }
         guard let center = searchCenter else {
@@ -160,20 +159,36 @@ public final class StorePickerModel {
         }
         isLoading = true
         defer { isLoading = false }
-        message = nil
         addressFocus = nil
-        if StoreQuery.isAddress(text),
-           let places = try? await search.places(text: text, latitude: center.latitude, longitude: center.longitude),
-           let first = places.first {
-            await focus(on: first)
-            placeResults = Array(places.dropFirst())
+
+        if StoreQuery.isAddress(text) {
+            let placeResult = await Self.result { try await self.search.places(text: text, latitude: center.latitude,
+                                                                                longitude: center.longitude) }
+            let places = (try? placeResult.get()) ?? []
+            if let first = places.first {
+                await focus(on: first)   // clears `message` itself, so no need to set it here too
+                placeResults = Array(places.dropFirst())
+                return
+            }
+            message = nil
+            let shopResult = await Self.result { try await self.search.search(text: text, latitude: center.latitude,
+                                                                               longitude: center.longitude) }
+            finishBusinessSearch(shopResult: shopResult, placeResult: placeResult, center: center)
             return
         }
+
+        message = nil
         async let shops = Self.result { try await self.search.search(text: text, latitude: center.latitude,
                                                                      longitude: center.longitude) }
         async let places = Self.result { try await self.search.places(text: text, latitude: center.latitude,
                                                                       longitude: center.longitude) }
         let (shopResult, placeResult) = await (shops, places)
+        finishBusinessSearch(shopResult: shopResult, placeResult: placeResult, center: center)
+    }
+
+    /// Shared by the plain business search and the address-with-no-match fallback (P2-08c fix round 1).
+    private func finishBusinessSearch(shopResult: Result<[StoreResult], any Error>,
+                                       placeResult: Result<[PlaceResult], any Error>, center: Coordinate) {
         placeResults = (try? placeResult.get()) ?? []
         let origin = userCoordinate ?? center
         searchResults = MapKitStoreSearch.rank((try? shopResult.get()) ?? [], latitude: origin.latitude,
