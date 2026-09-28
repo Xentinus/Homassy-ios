@@ -63,6 +63,21 @@ struct StoreLabelTests {
         #expect(StoreAddressCache(fileURL: url).address(for: "I-1") == address)
     }
 
+    @Test func theCategoryRoundTripsAndALegacyFileWithoutItDecodes() throws {
+        let url = FileManager.default.temporaryDirectory.appending(path: "store-addresses-\(UUID()).json")
+        defer { try? FileManager.default.removeItem(at: url) }
+        // A P2-08b file: no category field.
+        try Data(#"{"I-1":{"short":"Fő utca 1., Budapest","street":"Fő utca 1.","locality":"Budapest"}}"#.utf8)
+            .write(to: url)
+        let legacy = try #require(StoreAddressCache(fileURL: url).address(for: "I-1"))
+        #expect(legacy.short == "Fő utca 1., Budapest" && legacy.locality == "Budapest")
+        #expect(legacy.category == nil)
+        let cache = StoreAddressCache(fileURL: url)
+        cache.set(try #require(StoreAddress(short: "Fő utca 1., Budapest", category: "MKPOICategoryBakery")), for: "I-1")
+        #expect(StoreAddressCache(fileURL: url).address(for: "I-1")?.category == "MKPOICategoryBakery")
+        #expect(StoreAddress(short: " ", category: "MKPOICategoryBakery") == nil)
+    }
+
     @Test func aCorruptFileStartsEmptyAndMemoryOnlyWorks() throws {
         let url = FileManager.default.temporaryDirectory.appending(path: "store-addresses-\(UUID()).json")
         defer { try? FileManager.default.removeItem(at: url) }

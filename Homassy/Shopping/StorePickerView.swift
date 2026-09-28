@@ -191,7 +191,8 @@ struct StorePickerView: View {
     }
 }
 
-/// The bottom card: the search field, then the selection, the search results or Recent and Nearby.
+/// The bottom card: the search field with a close button, then the selection, the search results or Recent and
+/// Nearby. Every place row leads with its Apple Maps category icon, and its subtitle with the category name.
 private struct StorePickerCard: View {
     @Bindable var model: StorePickerModel
     let completer: StoreCompleter
@@ -206,25 +207,29 @@ private struct StorePickerCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            header
-            searchField
+            searchRow
             list
         }
         .overlay { if model.isLoading { ProgressView("store.loading") } }
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { reportTop($0) }
     }
 
-    private var header: some View {
-        HStack {
-            Button("common.cancel") { close(.cancelled) }
-            Spacer()
-            Text("store.title").font(.headline)
-            Spacer()
-            // Keeps the title centred: as wide as the cancel button, and invisible.
-            Text("common.cancel").hidden().accessibilityHidden(true)
+    /// The search field and, to its right, a round glass close button (Apple Maps, iOS 26); no header row.
+    /// The top padding keeps the field clear of the drag indicator.
+    private var searchRow: some View {
+        HStack(spacing: 12) {
+            searchField
+            Button { close(.cancelled) } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .controlSize(.large)
+            .accessibilityLabel(Text("common.cancel"))
         }
         .padding(.horizontal, 16)
-        .padding(.top, 12)
+        .padding(.top, 20)
+        .padding(.bottom, 12)
     }
 
     private var searchField: some View {
@@ -247,8 +252,6 @@ private struct StorePickerCard: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(RoundedRectangle(cornerRadius: 12).fill(.quaternary))
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
         .onChange(of: searchFocused) { _, focused in if focused { detent = .large } }
         .onChange(of: model.query) { _, query in
             if query.isEmpty { model.clearSearch() }
@@ -337,11 +340,15 @@ private struct StorePickerCard: View {
     }
 
     private func selectedName(_ place: StoreResult) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: place.name).font(.headline)
-            if let subtitle = place.subtitle {
-                Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+        Label {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: place.name).font(.headline)
+                if let subtitle = StoreCategoryIcon.subtitle(category: place.category, place.subtitle) {
+                    Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+                }
             }
+        } icon: {
+            StoreCategoryIcon(category: place.category)
         }
     }
 
@@ -364,12 +371,14 @@ private struct StorePickerCard: View {
                 Button {
                     if let location = model.pickRecent(store.id) { close(.picked(location)) }
                 } label: {
+                    let category = directory.category(ofStore: store.id)
                     Label {
                         Text(verbatim: store.name).foregroundStyle(.primary)
-                        if let subtitle = directory.subtitle(ofStore: store.id) {
+                        if let subtitle = StoreCategoryIcon.subtitle(category: category,
+                                                                     directory.subtitle(ofStore: store.id)) {
                             Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
                         }
-                    } icon: { Image(systemName: "clock") }
+                    } icon: { StoreCategoryIcon(category: category) }
                 }
                 .accessibilityIdentifier("store.recent.\(store.name)")
             }
@@ -406,7 +415,7 @@ private struct StorePickerCard: View {
         Button {
             if let location = model.pick(result) { close(.picked(location)) }
         } label: {
-            Group {
+            Label {
                 if typeSize.isAccessibilitySize {
                     // At accessibility sizes the distance goes under the name.
                     VStack(alignment: .leading, spacing: 2) {
@@ -421,6 +430,8 @@ private struct StorePickerCard: View {
                         distance(of: result)
                     }
                 }
+            } icon: {
+                StoreCategoryIcon(category: result.category)
             }
             .contentShape(Rectangle())
         }
@@ -430,7 +441,7 @@ private struct StorePickerCard: View {
     private func resultName(_ result: StoreResult) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(verbatim: result.name).foregroundStyle(.primary)
-            if let subtitle = result.subtitle {
+            if let subtitle = StoreCategoryIcon.subtitle(category: result.category, result.subtitle) {
                 Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
             }
         }

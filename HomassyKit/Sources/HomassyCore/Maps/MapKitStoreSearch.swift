@@ -98,6 +98,7 @@ extension StoreResult {
         guard let identifier = mapItem.identifier?.rawValue, let name = mapItem.name, !name.isEmpty else { return nil }
         let coordinate = mapItem.location.coordinate
         self.init(mapItemIdentifier: identifier, name: name, latitude: coordinate.latitude,
-                  longitude: coordinate.longitude, subtitle: mapItem.address?.shortAddress)
+                  longitude: coordinate.longitude, subtitle: mapItem.address?.shortAddress,
+                  category: mapItem.pointOfInterestCategory?.rawValue)
     }
 }
