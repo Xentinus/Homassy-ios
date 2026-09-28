@@ -34,6 +34,8 @@ public protocol StoreSearching: Sendable {
     func search(text: String, latitude: Double, longitude: Double) async throws -> [StoreResult]
     /// Addresses and places (streets, towns) for moving the map there.
     func places(text: String, latitude: Double, longitude: Double) async throws -> [PlaceResult]
+    /// Every business near a point, with no category filter (the places at an address, P2-08c).
+    func around(latitude: Double, longitude: Double, radiusMeters: Double) async throws -> [StoreResult]
 }
 
 /// An address or place from a search; the store picker moves the map to it.

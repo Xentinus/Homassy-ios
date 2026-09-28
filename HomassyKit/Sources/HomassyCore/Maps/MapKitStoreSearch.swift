@@ -2,6 +2,7 @@ import Foundation
 import MapKit
 
 public struct MapKitStoreSearch: StoreSearching {
+    /// The idle Nearby list only; the business search and `around` match every point of interest.
     public static var categories: [MKPointOfInterestCategory] { [.foodMarket, .store, .bakery, .pharmacy] }
     public static let searchRadiusMeters: Double = 30_000
 
@@ -15,6 +16,10 @@ public struct MapKitStoreSearch: StoreSearching {
         let query = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return [] }
         return try await Self.runSearch(query: query, latitude: latitude, longitude: longitude)
+    }
+
+    public func around(latitude: Double, longitude: Double, radiusMeters: Double) async throws -> [StoreResult] {
+        try await Self.runAround(latitude: latitude, longitude: longitude, radiusMeters: radiusMeters)
     }
 
     /// Region for address searches: wide, so a town or a street across the country is found too.
@@ -46,11 +51,18 @@ public struct MapKitStoreSearch: StoreSearching {
     }
 
     @MainActor
+    private static func runAround(latitude: Double, longitude: Double, radiusMeters: Double) async throws -> [StoreResult] {
+        let center = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+        let request = MKLocalPointsOfInterestRequest(center: center, radius: radiusMeters)
+        let response = try await MKLocalSearch(request: request).start()
+        return rank(response.mapItems.compactMap(StoreResult.init(mapItem:)), latitude: latitude, longitude: longitude)
+    }
+
+    @MainActor
     private static func runSearch(query: String, latitude: Double, longitude: Double) async throws -> [StoreResult] {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
         request.resultTypes = .pointOfInterest
-        request.pointOfInterestFilter = MKPointOfInterestFilter(including: categories)
         request.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
                                             latitudinalMeters: searchRadiusMeters,
                                             longitudinalMeters: searchRadiusMeters)
