@@ -80,10 +80,3 @@ struct IntroductionPageView: View {
         .multilineTextAlignment(alignment == .center ? .center : .leading)
     }
 }
-
-/// Replaced in Task 3 by `IntroScenes.swift`.
-struct IntroScene: View {
-    let page: IntroductionPage
-    let isActive: Bool
-    var body: some View { Color.clear }
-}

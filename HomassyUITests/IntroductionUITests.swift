@@ -72,4 +72,25 @@ final class IntroductionUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Completely free"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["Next"].isHittable)
     }
+
+    /// Device review aid (previews time out in Xcode 27): one screenshot per page after its scene has finished.
+    /// Export with `xcrun xcresulttool export attachments`.
+    @MainActor
+    func testEveryPageFinishesItsScene() throws {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["Welcome to Homassy"].waitForExistence(timeout: 10))
+        let names = ["welcome", "free", "inventory", "shopping", "spaces", "privacy", "notifications"]
+        for (index, name) in names.enumerated() {
+            if index > 0 {
+                app.buttons["Next"].tap()
+                XCTAssertTrue(app.staticTexts[laterTitles[index - 1]].waitForExistence(timeout: 3))
+            }
+            sleep(4)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "intro-\(index + 1)-\(name)"
+            shot.lifetime = .keepAlways
+            add(shot)
+        }
+        XCTAssertTrue(app.buttons["Get started"].exists)
+    }
 }
