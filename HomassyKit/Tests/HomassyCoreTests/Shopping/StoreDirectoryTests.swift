@@ -86,6 +86,20 @@ struct StoreDirectoryTests {
         #expect(directory.address(ofStore: new.publicId)?.short == "Fő utca 1., Budapest")
     }
 
+    @Test func categoryAndSubtitleComeFromOneCall() throws {
+        let cache = StoreAddressCache(fileURL: nil)
+        cache.set(try #require(StoreAddress(short: "Sport u. 2–4., Budaörs", category: "MKPOICategoryFoodMarket")),
+                  for: "I-AUCHAN")
+        let auchan = try store("Auchan", "I-AUCHAN")
+        let directory = directory(cache: cache)
+        let both = directory.categoryAndSubtitle(ofStore: auchan.publicId)
+        #expect(both.category == "MKPOICategoryFoodMarket")
+        #expect(both.subtitle == "Sport u. 2–4., Budaörs")
+        #expect(both.subtitle == directory.subtitle(ofStore: auchan.publicId))
+        let missing = directory.categoryAndSubtitle(ofStore: UUID())
+        #expect(missing.category == nil && missing.subtitle == nil)
+    }
+
     @Test func aLookupFillsTheCategory() async throws {
         let auchan = try store("Auchan", "I-AUCHAN")
         let resolver = FakeAddressResolver(["I-AUCHAN": "Sport u. 2–4., Budaörs"],

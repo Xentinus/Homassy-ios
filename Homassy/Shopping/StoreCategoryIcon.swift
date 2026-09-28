@@ -16,16 +16,16 @@ struct StoreCategoryIcon: View {
             .accessibilityHidden(true)   // the category name is read in the row text
     }
 
-    /// The localized category name, or nil for an unknown or missing category.
-    static func name(for category: String?) -> LocalizedStringKey? {
-        style(for: category).key.map { LocalizedStringKey($0) }
-    }
-
     /// The category name first, then the rest: "Hipermarket · Sport u. 2–4., Budaörs".
     static func subtitle(category: String?, _ rest: String?) -> String? {
-        let name = style(for: category).key.map { String(localized: String.LocalizationValue($0)) }
-        let parts = [name, rest].compactMap { $0 }.filter { !$0.isEmpty }
+        let parts = [name(for: category), rest].compactMap { $0 }.filter { !$0.isEmpty }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// The localized category name, or nil for an unknown or missing category. A String, so it can be joined
+    /// with the address in one `Text(verbatim:)` without a new catalog key.
+    private static func name(for category: String?) -> String? {
+        style(for: category).key.map { String(localized: String.LocalizationValue($0)) }
     }
 
     private struct Style {
