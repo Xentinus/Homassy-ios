@@ -9,7 +9,8 @@ public struct MapKitStoreSearch: StoreSearching {
     public init() {}
 
     public func nearby(latitude: Double, longitude: Double, radiusMeters: Double) async throws -> [StoreResult] {
-        try await Self.runNearby(latitude: latitude, longitude: longitude, radiusMeters: radiusMeters)
+        try await Self.runPoints(latitude: latitude, longitude: longitude, radiusMeters: radiusMeters,
+                                 filter: MKPointOfInterestFilter(including: Self.categories))
     }
 
     public func search(text: String, latitude: Double, longitude: Double) async throws -> [StoreResult] {
@@ -18,8 +19,9 @@ public struct MapKitStoreSearch: StoreSearching {
         return try await Self.runSearch(query: query, latitude: latitude, longitude: longitude)
     }
 
+    /// Every business near a point, with no category filter (the places at an address, P2-08c).
     public func around(latitude: Double, longitude: Double, radiusMeters: Double) async throws -> [StoreResult] {
-        try await Self.runAround(latitude: latitude, longitude: longitude, radiusMeters: radiusMeters)
+        try await Self.runPoints(latitude: latitude, longitude: longitude, radiusMeters: radiusMeters, filter: nil)
     }
 
     /// Region for address searches: wide, so a town or a street across the country is found too.
@@ -41,19 +43,13 @@ public struct MapKitStoreSearch: StoreSearching {
             }
     }
 
+    /// Points of interest near a point; `filter` narrows to `categories` for `nearby`, or nil for `around`.
     @MainActor
-    private static func runNearby(latitude: Double, longitude: Double, radiusMeters: Double) async throws -> [StoreResult] {
+    private static func runPoints(latitude: Double, longitude: Double, radiusMeters: Double,
+                                   filter: MKPointOfInterestFilter?) async throws -> [StoreResult] {
         let center = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
         let request = MKLocalPointsOfInterestRequest(center: center, radius: radiusMeters)
-        request.pointOfInterestFilter = MKPointOfInterestFilter(including: categories)
-        let response = try await MKLocalSearch(request: request).start()
-        return rank(response.mapItems.compactMap(StoreResult.init(mapItem:)), latitude: latitude, longitude: longitude)
-    }
-
-    @MainActor
-    private static func runAround(latitude: Double, longitude: Double, radiusMeters: Double) async throws -> [StoreResult] {
-        let center = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-        let request = MKLocalPointsOfInterestRequest(center: center, radius: radiusMeters)
+        request.pointOfInterestFilter = filter
         let response = try await MKLocalSearch(request: request).start()
         return rank(response.mapItems.compactMap(StoreResult.init(mapItem:)), latitude: latitude, longitude: longitude)
     }

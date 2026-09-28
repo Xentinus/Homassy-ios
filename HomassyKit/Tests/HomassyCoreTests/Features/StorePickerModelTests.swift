@@ -215,6 +215,7 @@ struct StorePickerModelTests {
         await model.runSearch()
         #expect(model.addressFocus == nil)
         #expect(model.searchResults == [StoreSamples.sparAstoria])
+        #expect(search.calls.filter { $0 == .places(text: "Spar 24") }.count == 1)
     }
 
     @Test func businessResultsAreNearestToTheUserFirst() async {
@@ -239,5 +240,24 @@ struct StorePickerModelTests {
         #expect(model.isShowingSearch)
         model.clearSearch()
         #expect(model.addressFocus == nil && !model.isShowingSearch)
+    }
+
+    @Test func clearingTheQueryAfterAnAddressSearchDropsTheStaleFocus() async {
+        let here = Coordinate(latitude: 47.4979, longitude: 19.0402)
+        let andrassy = PlaceResult(id: "andrassy", title: "Andrássy út 12",
+                                   coordinate: Coordinate(latitude: 47.5, longitude: 19.06))
+        let search = FakeStoreSearch(places: ["Andrássy út 12": [andrassy]])
+        let model = makeModel(search: search, location: FakeLocation(access: .authorized, coordinate: here))
+        await model.loadNearby()
+        model.query = "Andrássy út 12"
+        await model.runSearch()
+        #expect(model.addressFocus == andrassy)
+
+        model.query = ""
+        await model.runSearch()
+        #expect(model.addressFocus == nil)
+        #expect(!model.isShowingSearch)
+        #expect(model.distanceOrigin != andrassy.coordinate)
+        #expect(model.distanceOrigin == here)
     }
 }
