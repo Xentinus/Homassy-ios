@@ -4,11 +4,6 @@ import Observation
 @MainActor
 @Observable
 public final class StorePickerModel {
-    public enum Tab: Hashable, Sendable, Identifiable {
-        case recent, nearby
-        public var id: Self { self }
-    }
-
     public enum Message: Equatable, Sendable {
         case needsLocation, noResults, failed
 
@@ -31,7 +26,6 @@ public final class StorePickerModel {
     /// The area search follows the visible map, within these bounds.
     public static let areaRadiusRange: ClosedRange<Double> = 250...5_000
 
-    public var tab: Tab = .recent
     public var query = ""
     public var mapCenter: Coordinate?
     public private(set) var recent: [RecentStore] = []
@@ -47,9 +41,21 @@ public final class StorePickerModel {
     /// A shop tapped on the map (a result marker or any Apple Maps place), waiting for "Choose".
     public private(set) var selectedPlace: StoreResult?
 
+    public static let addressRadiusMeters: Double = 150
+    /// The address the search jumped to; distances are measured from it (P2-08c).
+    public private(set) var addressFocus: PlaceResult?
+
     /// Where to search: the map the user is looking at, else the user, else the last store used.
     public var searchCenter: Coordinate? { mapCenter ?? userCoordinate ?? recent.lazy.compactMap(\.coordinate).first }
-    public var isShowingSearch: Bool { !searchResults.isEmpty || !placeResults.isEmpty }
+    public var isShowingSearch: Bool { !searchResults.isEmpty || !placeResults.isEmpty || addressFocus != nil }
+
+    /// Where distances in the list are measured from: the focused address, the user, or the map centre.
+    public var distanceOrigin: Coordinate? { addressFocus?.coordinate ?? userCoordinate ?? mapCenter }
+
+    public func distanceText(for result: StoreResult) -> String? {
+        guard let origin = distanceOrigin else { return nil }
+        return StoreLabel.distanceText(result.distance(toLatitude: origin.latitude, longitude: origin.longitude))
+    }
 
     @ObservationIgnored private let search: any StoreSearching
     @ObservationIgnored private let locations: ShoppingLocationService
@@ -58,8 +64,7 @@ public final class StorePickerModel {
     @ObservationIgnored private var recentObjects: [UUID: ShoppingLocation] = [:]
 
     public init(search: any StoreSearching, locations: ShoppingLocationService,
-                location: any LocationAuthorizing, space: Space, initialTab: Tab = .recent) {
-        self.tab = initialTab
+                location: any LocationAuthorizing, space: Space) {
         self.search = search
         self.locations = locations
         self.location = location
@@ -122,12 +127,24 @@ public final class StorePickerModel {
         }
     }
 
-    /// Moves the map to a place from the search and shows the shops around it.
-    public func goTo(_ place: PlaceResult) async {
-        tab = .nearby
-        clearSearch()
+    /// Jumps to an address and lists every business around it, nearest to the address first.
+    public func focus(on place: PlaceResult) async {
+        addressFocus = place
+        placeResults = []
         cameraTarget = place.coordinate
-        await searchArea(center: place.coordinate, radiusMeters: Self.nearbyRadiusMeters)
+        mapCenter = place.coordinate
+        message = nil
+        do {
+            let found = try await search.around(latitude: place.coordinate.latitude,
+                                                longitude: place.coordinate.longitude,
+                                                radiusMeters: Self.addressRadiusMeters)
+            searchResults = MapKitStoreSearch.rank(found, latitude: place.coordinate.latitude,
+                                                   longitude: place.coordinate.longitude)
+            if searchResults.isEmpty { message = .noResults }
+        } catch {
+            searchResults = []
+            message = .failed
+        }
     }
 
     public func runSearch() async {
@@ -144,13 +161,23 @@ public final class StorePickerModel {
         isLoading = true
         defer { isLoading = false }
         message = nil
+        addressFocus = nil
+        if StoreQuery.isAddress(text),
+           let places = try? await search.places(text: text, latitude: center.latitude, longitude: center.longitude),
+           let first = places.first {
+            await focus(on: first)
+            placeResults = Array(places.dropFirst())
+            return
+        }
         async let shops = Self.result { try await self.search.search(text: text, latitude: center.latitude,
                                                                      longitude: center.longitude) }
         async let places = Self.result { try await self.search.places(text: text, latitude: center.latitude,
                                                                       longitude: center.longitude) }
         let (shopResult, placeResult) = await (shops, places)
-        searchResults = (try? shopResult.get()) ?? []
         placeResults = (try? placeResult.get()) ?? []
+        let origin = userCoordinate ?? center
+        searchResults = MapKitStoreSearch.rank((try? shopResult.get()) ?? [], latitude: origin.latitude,
+                                               longitude: origin.longitude)
         if case .failure = shopResult, case .failure = placeResult {
             message = .failed
         } else if searchResults.isEmpty && placeResults.isEmpty {
@@ -165,6 +192,7 @@ public final class StorePickerModel {
     public func clearSearch() {
         searchResults = []
         placeResults = []
+        addressFocus = nil
         if message == .noResults { message = nil }
     }
 
