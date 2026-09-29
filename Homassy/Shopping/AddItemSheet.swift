@@ -2,7 +2,8 @@ import CoreData
 import HomassyCore
 import SwiftUI
 
-/// The stepwise add: 1. what (a product or a new custom item), 2. how much, 3. where from.
+/// The stepwise add: 0. which list (with two or more), 1. what (a product or a new custom item), 2. how much,
+/// 3. where from.
 struct AddItemSheet: View {
     let services: ServiceContainer
 
@@ -14,9 +15,11 @@ struct AddItemSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(StoreDirectory.self) private var directory
 
-    init(list: ShoppingList, services: ServiceContainer, initialQuery: String = "") {
+    init(lists: [ShoppingList], preselected: UUID?, services: ServiceContainer, initialQuery: String = "") {
         self.services = services
-        let model = AddItemFlowModel(list: list, shopping: services.shopping, locations: services.shoppingLocations)
+        let model = AddItemFlowModel(lists: lists, preselected: preselected,
+                                     lastUsed: LastUsedShoppingList(defaults: ShoppingDefaults.store),
+                                     shopping: services.shopping, locations: services.shoppingLocations)
         model.query = initialQuery
         _model = State(initialValue: model)
     }
@@ -76,6 +79,22 @@ struct AddItemSheet: View {
     }
 
     @ViewBuilder private var whatPage: some View {
+        if model.listOptions.count > 1 {
+            Section {
+                Picker("shopping.add.list", selection: $model.selectedListID) {
+                    ForEach(model.listOptions) { option in
+                        Label {
+                            Text(verbatim: option.name)
+                        } icon: {
+                            Image(systemName: "circle.fill").foregroundStyle(ListColor.color(option.color))
+                        }
+                        .tag(Optional(option.id))
+                    }
+                }
+                .pickerStyle(.menu)
+                .accessibilityIdentifier("shopping.add.list")
+            }
+        }
         Section {
             TextField("shopping.add.query", text: $model.query)
                 .focused($focused)

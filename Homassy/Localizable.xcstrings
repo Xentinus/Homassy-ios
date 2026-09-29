@@ -70,6 +70,29 @@
         }
       }
     },
+    "add.shoppingItem" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eintrag hinzufügen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add item"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tétel hozzáadása"
+          }
+        }
+      }
+    },
     "add.shoppingList" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6649,6 +6672,29 @@
         }
       }
     },
+    "shopping.add.list" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liste"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "List"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lista"
+          }
+        }
+      }
+    },
     "shopping.add.map" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6810,29 +6856,6 @@
         }
       }
     },
-    "shopping.detail.add" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Eintrag hinzufügen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add item"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tétel hozzáadása"
-          }
-        }
-      }
-    },
     "shopping.detail.empty.message" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6875,6 +6898,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A lista üres"
+          }
+        }
+      }
+    },
+    "shopping.filter.all" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mind"
           }
         }
       }
@@ -7109,6 +7155,121 @@
         }
       }
     },
+    "shopping.grouping" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group by"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Csoportosítás"
+          }
+        }
+      }
+    },
+    "shopping.grouping.list" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach Liste"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By list"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lista szerint"
+          }
+        }
+      }
+    },
+    "shopping.grouping.store" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach Geschäft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By store"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Üzlet szerint"
+          }
+        }
+      }
+    },
+    "shopping.home.done.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nichts mehr zu kaufen. Tippe auf +, um etwas hinzuzufügen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing left to buy. Tap + to add an item."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nincs több megveendő tétel. Koppints a + gombra egy új tételhez."
+          }
+        }
+      }
+    },
+    "shopping.home.done.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alles erledigt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All done"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minden megvan"
+          }
+        }
+      }
+    },
     "shopping.item.deadline %@" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7151,29 +7312,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Megnyitja a vásárlást: mennyiség, üzlet és készlet"
-          }
-        }
-      }
-    },
-    "shopping.list.missing" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diese Liste gibt es nicht mehr"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This list no longer exists"
-          }
-        },
-        "hu" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ez a lista már nem létezik"
           }
         }
       }
@@ -7454,6 +7592,75 @@
         }
       }
     },
+    "shopping.manage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen verwalten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage lists"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listák kezelése"
+          }
+        }
+      }
+    },
+    "shopping.manage.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tippe auf eine Liste, um Name und Farbe zu ändern. Die Filterleiste zeigt die Listen in dieser Reihenfolge."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap a list to change its name and colour. The filter strip shows the lists in this order."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koppints egy listára a név és a szín módosításához. A szűrő csík is ebben a sorrendben mutatja a listákat."
+          }
+        }
+      }
+    },
+    "shopping.more" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Továbbiak"
+          }
+        }
+      }
+    },
     "shopping.noSpace" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7726,6 +7933,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mennyiség"
+          }
+        }
+      }
+    },
+    "shopping.section.noStore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Geschäft angegeben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No store set"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nincs üzlet megadva"
           }
         }
       }

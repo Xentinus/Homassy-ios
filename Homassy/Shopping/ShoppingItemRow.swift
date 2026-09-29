@@ -1,11 +1,14 @@
 import HomassyCore
 import SwiftUI
 
-/// One item on the list's card grid (README "Card layout"): picture, name, quantity, store, deadline and note.
+/// One item on the Shopping card grid (README "Card layout"): picture, name, quantity, store (or its list, when
+/// grouped by store), deadline and note.
 /// A deadline within 14 days draws the card yellow, a passed one red, exactly like stock expiry.
 /// A tap opens the purchase sheet.
 struct ShoppingItemCard: View {
-    let row: ShoppingListModel.Row
+    let row: ShoppingOverviewModel.Row
+    /// Store grouping (P4-03a): the store is the section title, so the card names the list instead.
+    var showsList = false
     let open: () -> Void
 
     @Environment(StoreDirectory.self) private var directory
@@ -28,7 +31,16 @@ struct ShoppingItemCard: View {
                 Text(verbatim: row.quantityText)
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
-                if let store = row.storeName {
+                if showsList {
+                    Label {
+                        Text(verbatim: row.listName)
+                    } icon: {
+                        Image(systemName: "circle.fill").foregroundStyle(ListColor.color(row.listColor))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                } else if let store = row.storeName {
                     Label { Text(verbatim: directory.compactName(ofStore: row.storeID) ?? store) }
                         icon: { Image(systemName: "storefront") }
                         .font(.caption)

@@ -14,23 +14,21 @@ final class ShoppingUITests: XCTestCase {
     }
 
     @MainActor
-    func testCreateListAndAddItem() {
+    func testCreateListAndAddItemShowsTheCardStraightAway() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")
-        app.openShoppingList(named: "Weekly")
         app.addShoppingItem("Napkins")
 
-        XCTAssertTrue(app.navigationBars["Weekly"].exists)
+        XCTAssertTrue(app.navigationBars["Shopping"].exists, "no list to open: the card is on the tab itself")
         XCTAssertTrue(app.buttons["shopping.item.Napkins"].exists)
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.buttons["shopping.list.Weekly"].label.contains("1 to buy"))
+        XCTAssertFalse(app.buttons["shopping.filter.all"].exists, "one list: no filter strip")
+        XCTAssertFalse(app.staticTexts["shopping.section.list.Weekly"].exists, "one list: no section header")
     }
 
     @MainActor
     func testPurchaseWithoutInventoryOnlyRemovesTheItemAndUndoBringsItBack() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")
-        app.openShoppingList(named: "Weekly")
         app.addShoppingItem("Napkins")
 
         app.buttons["shopping.item.Napkins"].tap()
@@ -53,7 +51,6 @@ final class ShoppingUITests: XCTestCase {
     func testCardOpensThePurchaseSheetAndKeepsTheRemainder() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")
-        app.openShoppingList(named: "Weekly")
         app.addShoppingItem("Napkins")
 
         // Make it two first: long press → Edit.
@@ -87,7 +84,6 @@ final class ShoppingUITests: XCTestCase {
     func testPurchaseInTwoLotsWithARecentStore() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")
-        app.openShoppingList(named: "Weekly")
         app.addShoppingItem("Napkins")
 
         app.buttons["shopping.item.Napkins"].tap()
@@ -117,7 +113,6 @@ final class ShoppingUITests: XCTestCase {
     func testADeadlineWithinTwoWeeksIsShownOnTheCard() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")
-        app.openShoppingList(named: "Weekly")
         app.addShoppingItem("Napkins")
         app.addShoppingItem("Candles")
 
@@ -137,9 +132,9 @@ final class ShoppingUITests: XCTestCase {
     func testStepwiseAdd() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")
-        app.openShoppingList(named: "Weekly")
 
-        app.buttons["shopping.detail.add"].tap()
+        app.buttons["addMenu"].firstMatch.tap()
+        app.buttons["addMenu.shoppingItem"].firstMatch.tap()
         let query = app.textFields["shopping.add.query"]
         XCTAssertTrue(query.waitForExistence(timeout: 5))
         query.tap()
@@ -172,7 +167,7 @@ final class ShoppingUITests: XCTestCase {
     func testCustomListColourIsOffered() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.buttons["addMenu"].firstMatch.tap()
-        app.buttons["addMenu.shoppingItem"].firstMatch.tap()
+        app.buttons["addMenu.shoppingList"].firstMatch.tap()
         XCTAssertTrue(app.textFields["shopping.listEditor.name"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["color.custom"].firstMatch.waitForExistence(timeout: 3))
     }
@@ -181,7 +176,6 @@ final class ShoppingUITests: XCTestCase {
     func testMenuDeleteThenUndo() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")
-        app.openShoppingList(named: "Weekly")
         app.addShoppingItem("Napkins")
 
         app.shoppingItemMenu("Napkins", action: "Delete")
@@ -191,31 +185,71 @@ final class ShoppingUITests: XCTestCase {
     }
 
     // Drag to reorder is not UI-tested: XCUITest drag and drop on the card grid is unreliable on the device
-    // (2026-09-25). `ShoppingListModelTests.dragOntoAnotherCardMovesIt` covers the reordering, and the manual
+    // (2026-09-25). `ShoppingOverviewModelTests.dragOntoAnotherCardReordersWithinTheList` covers the reordering, and the manual
     // checklist covers the gesture.
 
     @MainActor
-    func testRotationKeepsTheOpenListAndShowsTheGrid() {
+    func testRotationKeepsTheFilterAndTheGrid() {
         let app = XCUIApplication.launchedOnShoppingTab()
         defer { XCUIDevice.shared.orientation = .portrait }
         app.createShoppingList(named: "Weekly")
         app.createShoppingList(named: "Party")
-        app.openShoppingList(named: "Weekly")
-        app.addShoppingItem("Napkins")
+        app.addShoppingItem("Napkins", list: "Weekly")
+        app.addShoppingItem("Candles", list: "Weekly")
+        app.selectShoppingFilter("Weekly")
 
         XCUIDevice.shared.orientation = .landscapeLeft
-        XCTAssertTrue(app.navigationBars["Weekly"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["shopping.item.Napkins"].exists)
-
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        let weekly = app.buttons["shopping.list.Weekly"]
-        let party = app.buttons["shopping.list.Party"]
-        XCTAssertTrue(weekly.waitForExistence(timeout: 3))
-        XCTAssertTrue(party.exists)
-        XCTAssertEqual(weekly.frame.minY, party.frame.minY, accuracy: 2, "compact height shows two columns")
-
+        let napkins = app.buttons["shopping.item.Napkins"]
+        let candles = app.buttons["shopping.item.Candles"]
+        XCTAssertTrue(napkins.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["shopping.filter.Weekly"].isSelected)
+        XCTAssertEqual(napkins.frame.minY, candles.frame.minY, accuracy: 2, "landscape shows the cards side by side")
         XCUIDevice.shared.orientation = .portrait
-        XCTAssertTrue(weekly.waitForExistence(timeout: 3))
-        XCTAssertLessThan(weekly.frame.minY, party.frame.minY)
+        XCTAssertTrue(napkins.waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testAllShowsEveryListAndAChipFilters() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.createShoppingList(named: "Weekly")
+        app.createShoppingList(named: "Party")
+        app.addShoppingItem("Napkins", list: "Weekly")
+        app.addShoppingItem("Candles", list: "Party")
+
+        XCTAssertTrue(app.buttons["shopping.filter.all"].isSelected)
+        XCTAssertTrue(app.staticTexts["shopping.section.list.Weekly"].exists
+                      || app.otherElements["shopping.section.list.Weekly"].exists)
+        XCTAssertTrue(app.buttons["shopping.item.Napkins"].exists)
+        XCTAssertTrue(app.buttons["shopping.item.Candles"].exists)
+        XCTAssertEqual(app.buttons["shopping.filter.Party"].value as? String, "1 to buy")
+        attachScreenshot(app, named: "shopping-home-all")
+
+        app.selectShoppingFilter("Party")
+        XCTAssertTrue(app.buttons["shopping.item.Candles"].exists)
+        XCTAssertFalse(app.buttons["shopping.item.Napkins"].waitForExistence(timeout: 1))
+        app.addShoppingItem("Balloons")                           // preset to the filtered list
+        app.selectShoppingFilter(nil)
+        XCTAssertEqual(app.buttons["shopping.filter.Party"].value as? String, "2 to buy")
+    }
+
+    @MainActor
+    func testGroupingByStoreShowsStoreSectionsAndTheListOnTheCard() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.createShoppingList(named: "Weekly")
+        app.createShoppingList(named: "Party")
+        app.addShoppingItem("Napkins", list: "Weekly", store: "Corner Shop")
+        app.addShoppingItem("Candles", list: "Party")
+
+        app.chooseShoppingGrouping("By store")
+        let store = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH %@", "shopping.section.store.Corner Shop")).firstMatch
+        XCTAssertTrue(store.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["shopping.section.noStore"].exists)
+        let napkins = app.buttons["shopping.item.Napkins"]
+        XCTAssertTrue(napkins.label.contains("Weekly"), napkins.label)
+        attachScreenshot(app, named: "shopping-home-by-store")
+
+        app.chooseShoppingGrouping("By list")
+        XCTAssertTrue(app.descendants(matching: .any)["shopping.section.list.Weekly"].waitForExistence(timeout: 3))
     }
 }
