@@ -87,4 +87,29 @@ struct BackgroundRefreshSessionTests {
         #expect(log.entries == ["reschedule", "step"])
         #expect(task.completions == [true])
     }
+
+    @Test func containerStepsRecomputeTheSummariesAndTheBadge() async throws {
+        let env = try ServiceTestEnvironment()
+        let milk = try await env.makeProduct("Milk", unit: .liter)
+        let center = FakeNotificationCenter()
+        let services = ServiceContainer(spaceStore: env.spaceStore, context: env.context,
+                                        userRecordName: ServiceTestEnvironment.user,
+                                        notificationCenter: center, storeSearch: FakeStoreSearch())
+        // The container's coordinators use the real clock, so the fixture is relative to today.
+        let calendar = Calendar.current
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: .now))!
+        _ = try services.inventory.addStock(product: milk, quantity: 1, unit: .liter, expiresAt: tomorrow,
+                                            purchasedAt: nil, price: nil, currency: nil,
+                                            storageLocation: nil, shoppingLocation: nil)
+        let task = FakeBackgroundTask()
+
+        let session = BackgroundRefreshSession(task: task, steps: services.backgroundRefreshSteps, reschedule: {})
+        session.start()
+        await session.waitUntilFinished()
+
+        #expect(await center.badge == 1)
+        #expect(await center.identifiers.contains { $0.hasPrefix(NotificationPlanner.dailyPrefix) })
+        #expect(services.storeReminders.lastPlan.isEmpty)       // no location authorizer: store reminders stay idle
+        #expect(task.completions == [true])
+    }
 }

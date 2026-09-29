@@ -47,6 +47,19 @@ public final class StoreReminderCoordinator {
     }
 
     public func refresh() async {
+        await refresh(position: .live)
+    }
+
+    /// Background app refresh (N-01). When In Use location gives no live position in the background, so this uses
+    /// the last known one. Without it the pending reminders stay as they are rather than shrinking to the assigned
+    /// stores; switched off, without permission or with nothing waiting it still removes them.
+    public func refreshInBackground() async {
+        await refresh(position: .lastKnown)
+    }
+
+    private enum PositionSource { case live, lastKnown }
+
+    private func refresh(position source: PositionSource) async {
         guard isEnabled(), let location, location.access == .authorized else {
             lastPlan = await scheduler.rescheduleStoreReminders([])
             return
@@ -56,14 +69,23 @@ public final class StoreReminderCoordinator {
             lastPlan = await scheduler.rescheduleStoreReminders([])
             return
         }
-        let position = await location.currentCoordinate()
+        let position: Coordinate?
+        switch source {
+        case .live: position = await location.currentCoordinate()
+        case .lastKnown: position = location.lastKnownCoordinate
+        }
+        if position == nil, source == .lastKnown { return }
         var branches: [String: [StoreResult]] = [:]
         if let position {
             for group in groups {
+                // An expired background run stops searching; nothing has been rescheduled yet.
+                guard !Task.isCancelled else { return }
                 branches[group.key] = (try? await search.search(text: group.displayName, latitude: position.latitude,
                                                                 longitude: position.longitude)) ?? []
             }
         }
+        // An expired background run (or a newer foreground refresh) must not replace the reminders half-way.
+        guard !Task.isCancelled else { return }
         let plan = StoreReminderPlanner.plan(groups: groups, branches: branches, position: position,
                                              budget: StoreReminderPlanner.maxRegions, locale: locale)
         lastPlan = await scheduler.rescheduleStoreReminders(plan)

@@ -99,4 +99,15 @@ public final class ServiceContainer {
         if let selectedID, let match = spaces.first(where: { $0.publicId == selectedID }) { return match }
         return spaces.first
     }
+
+    /// What a background app refresh recomputes (N-01), in order: the expiry summaries and the badge, then the
+    /// store arrival reminders. The session checks for expiration between the steps.
+    public var backgroundRefreshSteps: [@MainActor () async -> Void] {
+        let notifications = notifications
+        let storeReminders = storeReminders
+        return [
+            { await notifications.refresh() },
+            { await storeReminders.refreshInBackground() },
+        ]
+    }
 }
