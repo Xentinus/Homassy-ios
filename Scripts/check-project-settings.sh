@@ -75,6 +75,9 @@ expect_plist() {
 }
 plutil -lint -s Homassy/Info.plist || fail=1
 expect_plist Homassy/Info.plist CKSharingSupported true
+# N-01: background app refresh. Plain Info.plist keys, no entitlement (works on the free Personal Team).
+expect_plist Homassy/Info.plist BGTaskSchedulerPermittedIdentifiers:0 com.homassy.app.refresh
+expect_plist Homassy/Info.plist UIBackgroundModes:0 fetch
 
 for path in HomassyKit/Package.swift HomassyKit/Sources/HomassyCore/HomassyCore.swift HomassyUITests/HomassyUITests.swift Scripts/check-project-settings.sh; do
   if git check-ignore -q "$path"; then echo "FAIL $path is git-ignored"; fail=1; fi

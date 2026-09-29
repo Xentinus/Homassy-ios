@@ -239,6 +239,28 @@ final class AppModel {
         startRemoteChanges(for: container)
     }
 
+    /// The services for work without a scene (N-01 background refresh): a background launch never shows RootView,
+    /// so the account check, the Personal space bootstrap and the service build run here. Safe to call while
+    /// RootView builds them too; returns nil when the account is not available or the task was cancelled.
+    func prepareServices() async -> ServiceContainer? {
+        if let services { return services }
+        if accountGate.state != .available { await accountGate.refresh() }
+        guard accountGate.state == .available, let userRecordName = accountGate.userRecordName else { return nil }
+        if personalSpace == nil {
+            do {
+                personalSpace = try spaceStore.bootstrapPersonalSpace(userRecordName: userRecordName)
+            } catch {
+                bootstrapError = error
+                return nil
+            }
+        }
+        await buildServices()
+        while services == nil, isBuildingServices {            // RootView's build is still running
+            do { try await Task.sleep(for: .milliseconds(50)) } catch { return nil }
+        }
+        return services
+    }
+
     /// Merges and deduplicates imported history, flashes rows others changed, and refreshes the expiry
     /// schedule and badge when anything it depends on changed.
     private func startRemoteChanges(for container: ServiceContainer) {

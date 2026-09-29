@@ -46,6 +46,14 @@ final class CoreLocationAuthorizer: NSObject, LocationAuthorizing, CLLocationMan
         return nil
     }
 
+    /// The position Core Location already has, if it is at most a day old (N-01). Reading it starts no updates, so
+    /// it works in a background launch with When In Use access.
+    var lastKnownCoordinate: Coordinate? {
+        guard access == .authorized, let location = manager.location,
+              location.timestamp.timeIntervalSinceNow > -24 * 60 * 60 else { return nil }
+        return Coordinate(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+    }
+
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         MainActor.assumeIsolated {
             let current = self.access
