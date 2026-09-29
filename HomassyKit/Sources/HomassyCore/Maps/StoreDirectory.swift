@@ -72,6 +72,10 @@ public final class StoreDirectory {
         return StoreLabel.compact(name: store.name, address: address, useStreet: sharesLocality(store, address))
     }
 
+    /// Metres from the last known position, for ordering the Shopping tab's store sections. Nil without a
+    /// location, without store coordinates, or for an unknown store.
+    public func distance(ofStore id: UUID) -> Double? { store(id).flatMap(distance(to:)) }
+
     private func distance(to store: ShoppingLocation) -> Double? {
         guard let coordinate, let latitude = store.latitude, let longitude = store.longitude else { return nil }
         return CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)

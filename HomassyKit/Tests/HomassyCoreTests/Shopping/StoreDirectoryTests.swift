@@ -157,6 +157,17 @@ struct StoreDirectoryTests {
         #expect(subtitle.contains("1,2") && subtitle.hasSuffix(" · Sport u. 2–4., Budaörs"))
     }
 
+    @Test func distanceByStoreIdNeedsALocation() async throws {
+        let auchan = try store("Auchan", "I-AUCHAN", lat: 47.4600, lon: 18.9500)
+        let here = Coordinate(latitude: 47.4600, longitude: 18.9660)   // about 1,2 km east
+        #expect(directory().distance(ofStore: auchan.publicId) == nil)
+        let allowed = directory(location: FakeLocation(access: .authorized, coordinate: here))
+        await allowed.refreshLocation()
+        let metres = try #require(allowed.distance(ofStore: auchan.publicId))
+        #expect(metres > 1_100 && metres < 1_300)
+        #expect(allowed.distance(ofStore: UUID()) == nil)
+    }
+
     @Test func sameNameSameLocalityShowsTheStreet() throws {
         let cache = StoreAddressCache(fileURL: nil)
         cache.set(try #require(StoreAddress(short: "Sport u. 2–4., Budaörs")), for: "I-A1")
