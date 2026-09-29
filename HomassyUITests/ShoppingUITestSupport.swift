@@ -13,25 +13,37 @@ extension XCUIApplication {
 
     func createShoppingList(named name: String) {
         buttons["addMenu"].firstMatch.tap()
-        buttons["addMenu.shoppingItem"].firstMatch.tap()
+        buttons["addMenu.shoppingList"].firstMatch.tap()
         let field = textFields["shopping.listEditor.name"]
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap()
         field.typeText(name)
         buttons["shopping.listEditor.save"].tap()
-        XCTAssertTrue(buttons["shopping.list.\(name)"].waitForExistence(timeout: 5))
+        XCTAssertTrue(field.waitForNonExistence(timeout: 5))
     }
 
-    func openShoppingList(named name: String) {
-        buttons["shopping.list.\(name)"].tap()
-        XCTAssertTrue(buttons["shopping.detail.add"].waitForExistence(timeout: 5))
+    /// Taps a chip on the filter strip; `nil` is "All". The strip shows only with two or more lists.
+    func selectShoppingFilter(_ name: String?) {
+        let chip = buttons[name.map { "shopping.filter.\($0)" } ?? "shopping.filter.all"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 5))
+        chip.tap()
+        XCTAssertTrue(chip.isSelected)
     }
 
-    /// Adds an item through the stepwise sheet: a custom name (not one of the seeded products), 1 piece, any store.
-    func addShoppingItem(_ name: String) {
-        buttons["shopping.detail.add"].tap()
+    /// Adds an item through the stepwise sheet: a custom name (not one of the seeded products), 1 piece. `list`
+    /// picks the list on the first step (needs two or more lists); `store` taps a recent store on the last step
+    /// (the seed has "Corner Shop"), otherwise no store.
+    func addShoppingItem(_ name: String, list: String? = nil, store: String? = nil) {
+        buttons["addMenu"].firstMatch.tap()
+        buttons["addMenu.shoppingItem"].firstMatch.tap()
         let query = textFields["shopping.add.query"]
         XCTAssertTrue(query.waitForExistence(timeout: 5))
+        if let list {
+            buttons["shopping.add.list"].firstMatch.tap()
+            let option = buttons[list].firstMatch             // menu items: by label, not identifier
+            XCTAssertTrue(option.waitForExistence(timeout: 3))
+            option.tap()
+        }
         query.tap()
         query.typeText(name)
         buttons["shopping.add.next"].tap()
@@ -39,8 +51,21 @@ extension XCUIApplication {
         buttons["shopping.add.next"].tap()
         let confirm = buttons["shopping.add.confirm"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        if let store {
+            let row = buttons.matching(NSPredicate(format: "label BEGINSWITH %@", store)).firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: 3))
+            row.tap()
+        }
         confirm.tap()
         XCTAssertTrue(buttons["shopping.item.\(name)"].waitForExistence(timeout: 5))
+    }
+
+    /// "•••" → a grouping option, by its English label ("By list", "By store").
+    func chooseShoppingGrouping(_ label: String) {
+        buttons["shopping.more"].firstMatch.tap()
+        let option = buttons[label].firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 3))
+        option.tap()
     }
 
     /// Long-press menu on an item card.
@@ -50,6 +75,4 @@ extension XCUIApplication {
         XCTAssertTrue(item.waitForExistence(timeout: 3))
         item.tap()
     }
-
-
 }
