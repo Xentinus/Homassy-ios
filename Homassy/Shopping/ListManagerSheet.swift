@@ -2,7 +2,8 @@ import HomassyCore
 import SwiftUI
 
 /// "Listák kezelése" (P4-03a): the space's lists in edit mode. Drag reorders (the filter strip follows), delete asks
-/// first, a tap opens the name and colour editor, and "New list" sits under the lists.
+/// first, a tap opens the name and colour editor, and "New list" sits under the lists. The "N to buy" line doubles as
+/// the attribution caption for a list another member just changed (P5-04).
 struct ListManagerSheet: View {
     let model: ShoppingListsModel
     @State private var editor: ListEditorSheet.Mode?
@@ -57,9 +58,11 @@ struct ListManagerSheet: View {
             Circle().fill(ListColor.color(summary.color)).frame(width: 12, height: 12).accessibilityHidden(true)
             Text(verbatim: summary.name).foregroundStyle(.primary)
             Spacer(minLength: 8)
-            Text("shopping.lists.remaining \(summary.remaining)")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            AttributionCaption(ids: [summary.id]) {
+                Text("shopping.lists.remaining \(summary.remaining)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
             Image(systemName: "chevron.forward")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.tertiary)
