@@ -51,8 +51,8 @@ public final class StoreReminderCoordinator {
     }
 
     /// Background app refresh (N-01). When In Use location gives no live position in the background, so this uses
-    /// the last known one. Without it the pending reminders stay as they are rather than shrinking to the assigned
-    /// stores; switched off, without permission or with nothing waiting it still removes them.
+    /// the last known one. Without it, or when a branch search fails (offline), the pending reminders stay as they
+    /// are rather than shrinking to the assigned stores; switched off, without permission or with nothing waiting it still removes them.
     public func refreshInBackground() async {
         await refresh(position: .lastKnown)
     }
@@ -80,8 +80,14 @@ public final class StoreReminderCoordinator {
             for group in groups {
                 // An expired background run stops searching; nothing has been rescheduled yet.
                 guard !Task.isCancelled else { return }
-                branches[group.key] = (try? await search.search(text: group.displayName, latitude: position.latitude,
-                                                                longitude: position.longitude)) ?? []
+                do {
+                    branches[group.key] = try await search.search(text: group.displayName, latitude: position.latitude,
+                                                                  longitude: position.longitude)
+                } catch {
+                    // Offline in the background: keep what the last foreground run planned, like a missing position.
+                    if source == .lastKnown { return }
+                    branches[group.key] = []
+                }
             }
         }
         // An expired background run (or a newer foreground refresh) must not replace the reminders half-way.
