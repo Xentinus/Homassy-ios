@@ -22,7 +22,7 @@ final class ShoppingUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Shopping"].exists, "no list to open: the card is on the tab itself")
         XCTAssertTrue(app.buttons["shopping.item.Napkins"].exists)
         XCTAssertFalse(app.buttons["shopping.filter.all"].exists, "one list: no filter strip")
-        XCTAssertFalse(app.staticTexts["shopping.section.list.Weekly"].exists, "one list: no section header")
+        XCTAssertFalse(app.descendants(matching: .any)["shopping.section.list.Weekly"].exists, "one list: no section header")
     }
 
     @MainActor

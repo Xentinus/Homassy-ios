@@ -194,7 +194,32 @@ struct ShoppingHomeView: View {
         return true
     }
 
-    private func header(_ section: ShoppingOverviewModel.Section) -> some View {
+    /// One line at normal sizes; at accessibility sizes the count and distance go under the title and the title wraps.
+    @ViewBuilder private func header(_ section: ShoppingOverviewModel.Section) -> some View {
+        let stacked = dynamicTypeSize.isAccessibilitySize
+        Group {
+            if stacked {
+                VStack(alignment: .leading, spacing: 2) {
+                    headerTitle(section)
+                    headerCount(section)
+                }
+            } else {
+                HStack(spacing: 6) {
+                    headerTitle(section).lineLimit(1)
+                    Spacer(minLength: 8)
+                    headerCount(section).lineLimit(1)
+                }
+            }
+        }
+        .font(.headline)
+        .padding(.top, 8)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(verbatim: headerSpokenText(section)))
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityIdentifier(headerIdentifier(section))
+    }
+
+    private func headerTitle(_ section: ShoppingOverviewModel.Section) -> some View {
         HStack(spacing: 6) {
             switch section.kind {
             case .list(let chip):
@@ -206,18 +231,14 @@ struct ShoppingHomeView: View {
             case .noStore:
                 Text("shopping.section.noStore").foregroundStyle(.secondary)
             }
-            Spacer(minLength: 8)
-            Text(verbatim: countText(section))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
         }
-        .font(.headline)
-        .lineLimit(1)
-        .padding(.top, 8)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
-        .accessibilityIdentifier(headerIdentifier(section))
+    }
+
+    private func headerCount(_ section: ShoppingOverviewModel.Section) -> some View {
+        Text(verbatim: countText(section))
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
     }
 
     private func countText(_ section: ShoppingOverviewModel.Section) -> String {
@@ -225,6 +246,20 @@ struct ShoppingHomeView: View {
             return "\(StoreLabel.distanceText(distance)) · \(section.rows.count)"
         }
         return "\(section.rows.count)"
+    }
+
+    /// "Weekly, 3 to buy" / "Auchan · Budaörs, 1,2 km, 3 to buy" instead of the bare numbers.
+    private func headerSpokenText(_ section: ShoppingOverviewModel.Section) -> String {
+        var parts: [String]
+        switch section.kind {
+        case .list(let chip): parts = [chip.name]
+        case .store(_, let title, let distance):
+            parts = [title]
+            if let distance { parts.append(StoreLabel.distanceText(distance)) }
+        case .noStore: parts = [String(localized: "shopping.section.noStore")]
+        }
+        parts.append(String(localized: "shopping.lists.remaining \(section.rows.count)"))
+        return parts.joined(separator: ", ")
     }
 
     private func headerIdentifier(_ section: ShoppingOverviewModel.Section) -> String {
@@ -254,8 +289,7 @@ struct ShoppingHomeView: View {
                 .draggable(row.id.uuidString)
                 .dropDestination(for: String.self) { ids, _ in
                     guard let dragged = ids.first.flatMap(UUID.init(uuidString:)) else { return false }
-                    withAnimation(reduceMotion ? nil : .snappy) { model.moveItem(dragged, onto: row.id) }
-                    return true
+                    return withAnimation(reduceMotion ? nil : .snappy) { model.moveItem(dragged, onto: row.id) }
                 }
         } else {
             base

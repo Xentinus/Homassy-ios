@@ -159,6 +159,25 @@ struct ShoppingOverviewModelTests {
         #expect(model.sections.map(names) == [["A"]])
     }
 
+    @Test func aFilterDoesNotSurviveWhileTheStripIsHidden() throws {
+        let heti = try stack.service.createList(name: "Heti", in: stack.space)
+        let drog = try stack.service.createList(name: "Drogéria", in: stack.space)
+        try stack.service.addItem(to: heti, customName: "A")
+
+        let model = makeModel()
+        model.filter = drog.publicId
+        try stack.service.deleteList(heti)                    // one list left: the strip is hidden
+        model.reload()
+        #expect(!model.showsStrip)
+        #expect(model.filter == nil)
+        #expect(ShoppingHomePreferences(defaults: defaults).filter(for: stack.space.publicId) == nil)
+
+        try stack.service.createList(name: "Új", in: stack.space)    // the strip is back, on "Mind"
+        model.reload()
+        #expect(model.showsStrip)
+        #expect(model.filter == nil)
+    }
+
     // MARK: Store grouping
 
     @Test func storeGroupingOrdersNearestFirstThenItemsWithoutAStore() throws {
@@ -188,6 +207,21 @@ struct ShoppingOverviewModelTests {
         let model = makeModel()
         model.grouping = .store
         #expect(model.sections.map(label) == ["store:Aldi", "store:Coop", "store:Spar"])
+    }
+
+    @Test func storesWithTheSameNameKeepAStableOrder() throws {
+        let heti = try stack.service.createList(name: "Heti", in: stack.space)
+        var ids: [UUID] = []
+        for index in 0..<6 {
+            let store = try stack.makeStore("Spar")
+            ids.append(store.publicId)
+            try stack.service.addItem(to: heti, customName: "x\(index)", shoppingLocation: store)
+        }
+        let expected = ids.sorted { $0.uuidString < $1.uuidString }.map { "store-\($0.uuidString)" }
+        let model = makeModel()
+        model.grouping = .store
+        for _ in 0..<20 { #expect(model.sections.map(\.id) == expected) }
+        #expect(makeModel().sections.map(\.id) == expected)
     }
 
     @Test func aKnownDistanceComesBeforeAnUnknownOne() throws {
@@ -244,12 +278,12 @@ struct ShoppingOverviewModelTests {
         let c = try stack.service.addItem(to: heti, customName: "C")
         let model = makeModel()
 
-        model.moveItem(c.publicId, onto: a.publicId)
+        #expect(model.moveItem(c.publicId, onto: a.publicId))
         #expect(model.sections.map(names) == [["C", "A", "B"]])
         #expect(makeModel().sections.map(names) == [["C", "A", "B"]])
-        model.moveItem(c.publicId, onto: try #require(model.sections.first?.rows.last).id)
+        #expect(model.moveItem(c.publicId, onto: try #require(model.sections.first?.rows.last).id))
         #expect(model.sections.map(names) == [["A", "B", "C"]])
-        model.moveItem(a.publicId, onto: a.publicId)
+        #expect(!model.moveItem(a.publicId, onto: a.publicId))
         #expect(model.sections.map(names) == [["A", "B", "C"]])
     }
 
@@ -261,10 +295,10 @@ struct ShoppingOverviewModelTests {
         let d = try stack.service.addItem(to: drog, customName: "D")
         let model = makeModel()
 
-        model.moveItem(d.publicId, onto: a.publicId)
+        #expect(!model.moveItem(d.publicId, onto: a.publicId))
         #expect(model.sections.map(names) == [["A", "B"], ["D"]])
         model.grouping = .store
-        model.moveItem(b.publicId, onto: a.publicId)
+        #expect(!model.moveItem(b.publicId, onto: a.publicId))
         model.grouping = .list
         #expect(model.sections.map(names) == [["A", "B"], ["D"]])
     }

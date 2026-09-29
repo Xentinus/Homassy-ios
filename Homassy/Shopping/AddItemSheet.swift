@@ -78,6 +78,16 @@ struct AddItemSheet: View {
         }
     }
 
+    /// Menu items draw template images, so the colour is baked in to survive.
+    @ViewBuilder private func listDot(_ color: String?) -> some View {
+        if let dot = UIImage(systemName: "circle.fill")?
+            .withTintColor(UIColor(ListColor.color(color)), renderingMode: .alwaysOriginal) {
+            Image(uiImage: dot)
+        } else {
+            Image(systemName: "circle.fill")
+        }
+    }
+
     @ViewBuilder private var whatPage: some View {
         if model.listOptions.count > 1 {
             Section {
@@ -86,7 +96,7 @@ struct AddItemSheet: View {
                         Label {
                             Text(verbatim: option.name)
                         } icon: {
-                            Image(systemName: "circle.fill").foregroundStyle(ListColor.color(option.color))
+                            listDot(option.color)
                         }
                         .tag(Optional(option.id))
                     }
