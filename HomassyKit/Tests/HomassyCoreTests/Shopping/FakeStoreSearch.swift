@@ -129,12 +129,17 @@ final class FakeLocation: LocationAuthorizing {
     var access: LocationAccess
     var grantOnRequest: Bool
     var coordinate: Coordinate?
+    var lastKnown: Coordinate?
     private(set) var requests = 0
+    /// How often a live position was asked for (N-01: a background refresh never does).
+    private(set) var liveRequests = 0
 
-    init(access: LocationAccess = .notDetermined, grantOnRequest: Bool = true, coordinate: Coordinate? = nil) {
+    init(access: LocationAccess = .notDetermined, grantOnRequest: Bool = true, coordinate: Coordinate? = nil,
+         lastKnown: Coordinate? = nil) {
         self.access = access
         self.grantOnRequest = grantOnRequest
         self.coordinate = coordinate
+        self.lastKnown = lastKnown
     }
 
     func requestWhenInUse() async -> LocationAccess {
@@ -144,8 +149,11 @@ final class FakeLocation: LocationAuthorizing {
     }
 
     func currentCoordinate() async -> Coordinate? {
-        access == .authorized ? coordinate : nil
+        liveRequests += 1
+        return access == .authorized ? coordinate : nil
     }
+
+    var lastKnownCoordinate: Coordinate? { access == .authorized ? lastKnown : nil }
 }
 
 enum StoreSamples {

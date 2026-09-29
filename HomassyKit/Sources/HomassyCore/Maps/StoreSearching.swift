@@ -77,4 +77,11 @@ public protocol LocationAuthorizing: AnyObject {
     var access: LocationAccess { get }
     func requestWhenInUse() async -> LocationAccess
     func currentCoordinate() async -> Coordinate?
+    /// The most recent position the system already has, without starting updates (N-01: a background refresh gets
+    /// no live position with When In Use). Nil when there is none, it is stale, or access is not authorized.
+    var lastKnownCoordinate: Coordinate? { get }
+}
+
+extension LocationAuthorizing {
+    public var lastKnownCoordinate: Coordinate? { nil }
 }
