@@ -63,6 +63,21 @@ struct BackgroundRefreshSessionTests {
         #expect(task.completions == [false])
     }
 
+    @Test func expirationBeforeStartRunsNothingAndCompletesOnce() async {
+        let task = FakeBackgroundTask()
+        let log = Log()
+        let session = BackgroundRefreshSession(task: task, steps: [{ log.entries.append("step") }],
+                                               reschedule: { log.entries.append("reschedule") })
+        session.expire()
+        session.start()
+        await session.waitUntilFinished()
+        for _ in 0..<10 { await Task.yield() }
+
+        #expect(log.entries.isEmpty)
+        #expect(session.outcome == .expired)
+        #expect(task.completions == [false])
+    }
+
     @Test func expirationAfterCompletionReportsNothingMore() async {
         let task = FakeBackgroundTask()
         let session = BackgroundRefreshSession(task: task, steps: [{}], reschedule: {})

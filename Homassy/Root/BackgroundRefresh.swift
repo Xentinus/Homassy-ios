@@ -59,7 +59,11 @@ enum BackgroundRefresh {
 
     private static func runSteps() async {
         guard let services = await AppModel.shared.prepareServices() else {
-            log.notice("Background refresh skipped: no services (account not available)")
+            if Task.isCancelled {
+                log.notice("Background refresh cancelled while preparing services")
+            } else {
+                log.notice("Background refresh skipped: no services (account unavailable or bootstrap failed)")
+            }
             return
         }
         for step in services.backgroundRefreshSteps {

@@ -64,6 +64,45 @@ struct StoreReminderBackgroundRefreshTests {
         #expect(await center.identifiers == ["store-auchan-0", "store-auchan-1"])
     }
 
+    @Test func aFailedSearchLeavesTheRemindersAsTheyAre() async throws {
+        try addItem("Milk", store: "Auchan Budaörs")
+        let center = FakeNotificationCenter()
+        await center.seedLocation(["store-auchan-0", "store-auchan-1"])
+        let search = FakeStoreSearch(search: ["Auchan": [csomor]], fails: true)
+
+        await coordinator(center: center, search: search,
+                          location: FakeLocation(access: .authorized, coordinate: nil, lastKnown: home))
+            .refreshInBackground()
+
+        #expect(search.calls == [.search(text: "Auchan", latitude: 47.50, longitude: 19.05)])
+        #expect(await center.removed.isEmpty)
+        #expect(await center.identifiers == ["store-auchan-0", "store-auchan-1"])
+    }
+
+    @Test func aFailedSearchInTheForegroundStillReschedulesToTheAssignedStores() async throws {
+        try addItem("Milk", store: "Auchan Budaörs")
+        let center = FakeNotificationCenter()
+        await center.seedLocation(["store-auchan-0", "store-auchan-1"])
+        let search = FakeStoreSearch(fails: true)
+
+        await coordinator(center: center, search: search,
+                          location: FakeLocation(access: .authorized, coordinate: home, lastKnown: nil)).refresh()
+
+        #expect(await center.identifiers == ["store-auchan-0"])
+    }
+
+    @Test func deniedAccessRemovesWithoutAskingForALivePosition() async throws {
+        try addItem("Milk", store: "Auchan Budaörs")
+        let center = FakeNotificationCenter()
+        await center.seedLocation(["store-auchan-0", "store-auchan-1"])
+        let location = FakeLocation(access: .denied, coordinate: home, lastKnown: home)
+
+        await coordinator(center: center, search: FakeStoreSearch(), location: location).refreshInBackground()
+
+        #expect(await center.identifiers.isEmpty)
+        #expect(location.liveRequests == 0)
+    }
+
     @Test func switchedOffStillRemoves() async throws {
         try addItem("Milk", store: "Auchan Budaörs")
         let center = FakeNotificationCenter()

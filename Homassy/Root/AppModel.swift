@@ -249,6 +249,7 @@ final class AppModel {
         if personalSpace == nil {
             do {
                 personalSpace = try spaceStore.bootstrapPersonalSpace(userRecordName: userRecordName)
+                bootstrapError = nil
             } catch {
                 bootstrapError = error
                 return nil

@@ -32,7 +32,7 @@ public final class BackgroundRefreshSession {
     }
 
     public func start() {
-        guard work == nil else { return }
+        guard work == nil, outcome == nil else { return }
         reschedule()
         // The system calls this on an arbitrary queue, so the closure is `@Sendable` and hops to the main actor
         // explicitly instead of inheriting main-actor isolation (which traps off-main at runtime).
