@@ -146,15 +146,20 @@ public final class ShoppingOverviewModel {
         }
     }
 
-    /// Nearest first; a store with a distance before one without; otherwise A–Z.
+    /// Nearest first; a store with a distance before one without; otherwise A–Z, then by id.
     private static func storeOrder(_ left: Section, _ right: Section) -> Bool {
-        guard case let .store(_, leftTitle, leftDistance) = left.kind,
-              case let .store(_, rightTitle, rightDistance) = right.kind else { return false }
+        guard case let .store(leftID, leftTitle, leftDistance) = left.kind,
+              case let .store(rightID, rightTitle, rightDistance) = right.kind else { return false }
         switch (leftDistance, rightDistance) {
         case let (l?, r?) where l != r: return l < r
         case (.some, nil): return true
         case (nil, .some): return false
-        default: return leftTitle.localizedStandardCompare(rightTitle) == .orderedAscending
+        default:
+            switch leftTitle.localizedStandardCompare(rightTitle) {
+            case .orderedAscending: return true
+            case .orderedDescending: return false
+            case .orderedSame: return leftID.uuidString < rightID.uuidString   // total order: stable between reads
+            }
         }
     }
 
@@ -174,7 +179,8 @@ public final class ShoppingOverviewModel {
             lists = all.map { ListInfo(id: $0.publicId, name: $0.name, color: $0.color) }
             items = map
             allRows = rows
-            if let filter, !lists.contains(where: { $0.id == filter }) { self.filter = nil }
+            // Without a strip there is no way to see or clear a filter, so it must not linger.
+            if let filter, lists.count < 2 || !lists.contains(where: { $0.id == filter }) { self.filter = nil }
         } catch {
             errorMessage = FeatureError.message(for: error)
         }
@@ -188,24 +194,29 @@ public final class ShoppingOverviewModel {
     }
 
     /// Drag and drop on the card grid: moves `id` to where `target` is. Only in list grouping, only within a list.
-    public func moveItem(_ id: UUID, onto target: UUID) {
+    /// Returns true only when a new order was persisted, so the drop can snap back otherwise.
+    @discardableResult
+    public func moveItem(_ id: UUID, onto target: UUID) -> Bool {
         guard canReorder, id != target,
               let dragged = allRows.first(where: { $0.id == id }),
               let dropped = allRows.first(where: { $0.id == target }),
-              dragged.listID == dropped.listID else { return }
+              dragged.listID == dropped.listID else { return false }
         let listRows = allRows.filter { $0.listID == dragged.listID }
         let visible = listRows.filter { !pending.contains($0.id) }
         let ids = visible.map(\.id)
-        guard let from = ids.firstIndex(of: id), let to = ids.firstIndex(of: target) else { return }
+        guard let from = ids.firstIndex(of: id), let to = ids.firstIndex(of: target) else { return false }
         let ordered = Reordering.move(visible.compactMap { items[$0.id] }, fromOffsets: IndexSet(integer: from),
                                       toOffset: to > from ? to + 1 : to)
         let hidden = listRows.filter { pending.contains($0.id) }.compactMap { items[$0.id] }
+        var persisted = false
         do {
             try service.reorderItems(ordered + hidden)
+            persisted = true
         } catch {
             errorMessage = FeatureError.message(for: error)
         }
         reload()
+        return persisted
     }
 
     public func dismissError() { errorMessage = nil }
