@@ -20,6 +20,7 @@ struct ShoppingHomeView: View {
     @State private var purchasing: Target?
     @State private var adding: AddRequest?
     @State private var listEditor: ListEditorSheet.Mode?
+    @State private var managing = false
     @State private var pendingListDelete: ShoppingListsModel.Summary?
     @Environment(StoreDirectory.self) private var directory
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -60,6 +61,7 @@ struct ShoppingHomeView: View {
                 AddItemSheet(lists: lists.summaries.compactMap { lists.list(for: $0.id) },
                              preselected: request.preselected, services: services)
             }
+            .sheet(isPresented: $managing, onDismiss: reload) { ListManagerSheet(model: lists) }
             .sheet(item: $listEditor, onDismiss: reload) { mode in ListEditorSheet(mode: mode, model: lists) }
             .confirmationDialog(Text("shopping.lists.delete.confirm \(pendingListDelete?.name ?? "")"),
                                 isPresented: Binding(get: { pendingListDelete != nil },
@@ -97,6 +99,8 @@ struct ShoppingHomeView: View {
         SpaceSwitcherToolbarItem()
         ToolbarItem(placement: .primaryAction) {
             Menu {
+                Button { managing = true } label: { Label("shopping.manage", systemImage: "list.bullet") }
+                    .accessibilityIdentifier("shopping.manage")
                 Section {
                     Picker("shopping.grouping", selection: $model.grouping) {
                         Label("shopping.grouping.list", systemImage: "list.bullet").tag(ShoppingGrouping.list)

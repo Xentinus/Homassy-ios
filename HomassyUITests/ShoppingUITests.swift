@@ -252,4 +252,35 @@ final class ShoppingUITests: XCTestCase {
         app.chooseShoppingGrouping("By list")
         XCTAssertTrue(app.descendants(matching: .any)["shopping.section.list.Weekly"].waitForExistence(timeout: 3))
     }
+
+    @MainActor
+    func testManageListsRenamesAndDeletes() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.createShoppingList(named: "Weekly")
+        app.createShoppingList(named: "Party")
+
+        app.buttons["shopping.more"].firstMatch.tap()
+        app.buttons["Manage lists"].firstMatch.tap()
+        let party = app.buttons["shopping.manage.row.Party"]
+        XCTAssertTrue(party.waitForExistence(timeout: 5))
+        attachScreenshot(app, named: "shopping-manage-lists")
+        party.tap()
+        let field = app.textFields["shopping.listEditor.name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText(" 2")
+        app.buttons["shopping.listEditor.save"].tap()
+        XCTAssertTrue(app.buttons["shopping.manage.row.Party 2"].waitForExistence(timeout: 5))
+
+        app.buttons["shopping.manage.done"].tap()
+        XCTAssertTrue(app.buttons["shopping.filter.Party 2"].waitForExistence(timeout: 5))
+
+        // Long press on a chip: Delete, confirmed. One list left, so the strip goes away.
+        app.buttons["shopping.filter.Party 2"].press(forDuration: 1.0)
+        app.buttons["Delete"].firstMatch.tap()
+        let confirm = app.buttons["Delete list"].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        confirm.tap()
+        XCTAssertTrue(app.buttons["shopping.filter.all"].waitForNonExistence(timeout: 5))
+    }
 }
