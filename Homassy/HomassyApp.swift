@@ -30,6 +30,7 @@ struct HomassyApp: App {
             if phase == .background {
                 try? appModel.undoQueue.commitAll()
                 BackgroundRefresh.submit()      // N-01: the next wake-up, counted from now
+                QuickActions.update(appModel)   // N-02: the Home Screen menu shows the last list and the count
             }
         }
     }

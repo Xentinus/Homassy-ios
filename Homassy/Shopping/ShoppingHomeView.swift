@@ -22,6 +22,7 @@ struct ShoppingHomeView: View {
     @State private var listEditor: ListEditorSheet.Mode?
     @State private var managing = false
     @State private var pendingListDelete: ShoppingListsModel.Summary?
+    @State private var router = AppRouter.shared
     @Environment(StoreDirectory.self) private var directory
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -83,6 +84,7 @@ struct ShoppingHomeView: View {
                 if model.grouping == .store { await directory.refreshLocation() }
             }
             .onAppear { reload() }
+            .onChange(of: router.shoppingRequest, initial: true) { consumeShoppingRequest() }
             .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
                                                             object: services.context)) { _ in reload() }
     }
@@ -90,6 +92,18 @@ struct ShoppingHomeView: View {
     private func reload() {
         model.reload()
         lists.reload()
+    }
+
+    /// A quick action (N-02) filters to its list, or opens the add sheet preset to it. Only the home of the request's
+    /// space takes it: the home of the previous space may still be on screen while the space switches.
+    private func consumeShoppingRequest() {
+        guard let request = router.shoppingRequest, request.spaceID == model.space.publicId else { return }
+        router.shoppingRequest = nil
+        if request.adds {
+            adding = AddRequest(preselected: request.listID)
+        } else {
+            model.filter = request.listID
+        }
     }
 
     // MARK: Toolbar

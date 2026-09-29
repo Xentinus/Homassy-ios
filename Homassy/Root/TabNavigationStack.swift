@@ -21,10 +21,13 @@ struct TabNavigationStack<Root: View>: View {
     @SceneStorage private var storedPath: Data?
     @State private var path = NavigationPath()
     @State private var restored = false
+    @State private var router = AppRouter.shared
+    private let tab: AppTab
     private let root: Root
 
     init(tab: AppTab, @ViewBuilder root: () -> Root) {
         _storedPath = SceneStorage("navigationPath.\(tab.rawValue)")
+        self.tab = tab
         self.root = root()
     }
 
@@ -39,12 +42,25 @@ struct TabNavigationStack<Root: View>: View {
             guard !restored else { return }
             restored = true
             #if DEBUG
-            if UITestHooks.ignoresRestoredSceneState { return }
+            if UITestHooks.ignoresRestoredSceneState {
+                applyPathRequest()
+                return
+            }
             #endif
             path = NavigationPathCoding.decode(storedPath)
+            applyPathRequest()
         }
+        .onChange(of: router.pathRequest) { applyPathRequest() }
         .onChange(of: path) { _, newPath in
             storedPath = NavigationPathCoding.encode(newPath)
         }
+    }
+
+    /// A quick action or a notification pops this tab to its root (N-02), after the restored path is in place, so the
+    /// restore never overwrites it.
+    private func applyPathRequest() {
+        guard restored, let request = router.pathRequest, request.tab == tab else { return }
+        router.pathRequest = nil
+        path = NavigationPath()
     }
 }

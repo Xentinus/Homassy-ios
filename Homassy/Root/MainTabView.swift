@@ -10,7 +10,7 @@ struct MainTabView: View {
     @Environment(BackupReminder.self) private var backupReminder
     @Environment(UndoQueue.self) private var undoQueue
     @Environment(SpaceSelection.self) private var selection
-    @State private var tapRouter = NotificationTapRouter.shared
+    @State private var router = AppRouter.shared
 
     @ViewBuilder
     private var inventoryRoot: some View {
@@ -53,16 +53,45 @@ struct MainTabView: View {
             Text(verbatim: archiveRouter.errorMessage ?? "")
         }
         .task { backupReminder.recordFirstUseIfNeeded() }
-        .onChange(of: tapRouter.pendingTab, initial: true) { _, tab in
-            guard let tab else { return }
-            if let space = tapRouter.pendingSpaceID { selection.selectedSpaceID = space }
-            selectedTab = tab
-            tapRouter.pendingTab = nil
-            tapRouter.pendingSpaceID = nil
+        .onChange(of: router.pending, initial: true) { _, destination in
+            guard let destination else { return }
+            router.pending = nil
+            apply(services.validated(destination))
         }
         #if DEBUG
-        .task { if UITestHooks.ignoresRestoredSceneState { selectedTab = .inventory } }
+        .task {
+            if UITestHooks.ignoresRestoredSceneState { selectedTab = .inventory }
+            UITestHooks.runQuickActionIfRequested(services: services)       // after the reset, never before
+        }
         #endif
+    }
+
+    /// Selects the space and the tab, and hands the stack, filter and sheet requests to the views that own them.
+    private func apply(_ destination: AppDestination) {
+        switch destination {
+        case .inventory(let space):
+            if let space { selection.selectedSpaceID = space }
+            selectedTab = .inventory
+            router.pathRequest = AppRouter.PathRequest(tab: .inventory)
+        case .shopping(let space):
+            if let space { selection.selectedSpaceID = space }
+            selectedTab = .shopping
+            router.pathRequest = AppRouter.PathRequest(tab: .shopping)
+        case let .shoppingList(space, list):
+            selection.selectedSpaceID = space
+            selectedTab = .shopping
+            router.pathRequest = AppRouter.PathRequest(tab: .shopping)
+            router.shoppingRequest = AppRouter.ShoppingRequest(spaceID: space, listID: list, adds: false)
+        case let .addToShoppingList(space, list):
+            selection.selectedSpaceID = space
+            selectedTab = .shopping
+            router.pathRequest = AppRouter.PathRequest(tab: .shopping)
+            router.shoppingRequest = AppRouter.ShoppingRequest(spaceID: space, listID: list, adds: true)
+        case .scanBarcode:
+            selectedTab = .inventory
+            router.pathRequest = AppRouter.PathRequest(tab: .inventory)
+            router.scanRequested = true
+        }
     }
 }
 
