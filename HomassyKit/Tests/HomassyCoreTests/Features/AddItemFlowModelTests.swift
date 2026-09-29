@@ -118,4 +118,59 @@ struct AddItemFlowModelTests {
         #expect(model.add())
         #expect(try stack.service.items(in: list).first?.shoppingLocation?.name == "Spar Astoria")
     }
+
+    private func makeModel(lists: [ShoppingList], preselected: UUID? = nil,
+                           lastUsed: LastUsedShoppingList? = nil) -> AddItemFlowModel {
+        AddItemFlowModel(lists: lists, preselected: preselected, lastUsed: lastUsed, shopping: stack.service,
+                         locations: locations, locale: locale)
+    }
+
+    @Test func theListIsTheFilterThenTheLastUsedThenTheFirst() throws {
+        let heti = try stack.service.createList(name: "Heti", in: stack.space)
+        let drog = try stack.service.createList(name: "Drogéria", color: "#3a82f6", in: stack.space)
+        let defaults = try #require(UserDefaults(suiteName: "test.lastList.\(UUID().uuidString)"))
+        let lastUsed = LastUsedShoppingList(defaults: defaults)
+
+        let plain = makeModel(lists: [heti, drog])
+        #expect(plain.selectedListID == heti.publicId)
+        #expect(plain.listOptions.map(\.name) == ["Heti", "Drogéria"])
+        #expect(plain.listOptions.last?.color == "#3a82f6")
+
+        lastUsed.record(drog.publicId, for: stack.space.publicId)
+        #expect(makeModel(lists: [heti, drog], lastUsed: lastUsed).selectedListID == drog.publicId)
+        #expect(makeModel(lists: [heti, drog], preselected: heti.publicId, lastUsed: lastUsed).selectedListID
+                == heti.publicId)
+        #expect(makeModel(lists: [heti, drog], preselected: UUID(), lastUsed: lastUsed).selectedListID
+                == drog.publicId)
+    }
+
+    @Test func addingGoesToTheChosenListAndIsRemembered() throws {
+        let heti = try stack.service.createList(name: "Heti", in: stack.space)
+        let drog = try stack.service.createList(name: "Drogéria", in: stack.space)
+        let defaults = try #require(UserDefaults(suiteName: "test.lastList.\(UUID().uuidString)"))
+        let lastUsed = LastUsedShoppingList(defaults: defaults)
+        let model = makeModel(lists: [heti, drog], lastUsed: lastUsed)
+
+        model.selectedListID = drog.publicId
+        model.query = "Fogkrém"
+        model.next()
+        model.next()
+        #expect(model.step == .store)
+        #expect(model.add())
+
+        #expect(try stack.service.items(in: drog).map(ShoppingService.displayName(of:)) == ["Fogkrém"])
+        #expect(try stack.service.items(in: heti).isEmpty)
+        #expect(lastUsed.listID(for: stack.space.publicId) == drog.publicId)
+    }
+
+    @Test func aDeletedListCannotBeAddedTo() throws {
+        let heti = try stack.service.createList(name: "Heti", in: stack.space)
+        let model = makeModel(lists: [heti])
+        model.query = "Tej"
+        model.next()
+        model.next()
+        try stack.service.deleteList(heti)
+        #expect(!model.add())
+        #expect(model.errorMessage != nil)
+    }
 }
