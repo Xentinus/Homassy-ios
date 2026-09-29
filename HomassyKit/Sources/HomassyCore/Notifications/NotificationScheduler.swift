@@ -28,6 +28,7 @@ public struct SystemNotificationCenter: NotificationCentering {
         content.body = notification.body
         content.sound = .default
         content.threadIdentifier = "homassy.expiry"
+        content.categoryIdentifier = NotificationActions.expiryCategory
         if let space = notification.targetSpaceID { content.userInfo = [Self.spaceIDKey: space.uuidString] }
         let trigger = UNCalendarNotificationTrigger(dateMatching: notification.dateComponents, repeats: false)
         let request = UNNotificationRequest(identifier: notification.identifier, content: content, trigger: trigger)
@@ -49,6 +50,7 @@ public struct SystemNotificationCenter: NotificationCentering {
         content.body = reminder.body
         content.sound = .default
         content.threadIdentifier = "homassy.store"
+        content.categoryIdentifier = NotificationActions.storeCategory
         if let space = reminder.targetSpaceID { content.userInfo = [Self.spaceIDKey: space.uuidString] }
         let region = CLCircularRegion(
             center: CLLocationCoordinate2D(latitude: reminder.center.latitude, longitude: reminder.center.longitude),
