@@ -12,6 +12,7 @@ struct InventoryView: View {
     @State private var addingStock = false
     @State private var creatingProduct = false
     @State private var scanning = false
+    @State private var router = AppRouter.shared
 
     var body: some View {
         Group {
@@ -20,7 +21,11 @@ struct InventoryView: View {
         .navigationTitle("inventory.title")
         .navigationDestination(for: ProductRoute.self) { ProductDetailView(productID: $0.id) }
         .toolbar { toolbar }
-        .task(id: selection.selectedSpaceID) { rebuildModel() }
+        .task(id: selection.selectedSpaceID) {
+            rebuildModel()
+            consumeScanRequest()
+        }
+        .onChange(of: router.scanRequested, initial: true) { consumeScanRequest() }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
                                                         object: services.context)) { _ in model?.reload() }
         .barcodeFlow(isScanning: $scanning, space: model?.space)
@@ -131,6 +136,13 @@ struct InventoryView: View {
             }
             .disabled(model?.canEdit != true)
         }
+    }
+
+    /// The Scan Barcode quick action (N-02) opens the scanner once the model, and so the space, exists.
+    private func consumeScanRequest() {
+        guard router.scanRequested, model != nil else { return }
+        router.scanRequested = false
+        scanning = true
     }
 
     private func rebuildModel() {

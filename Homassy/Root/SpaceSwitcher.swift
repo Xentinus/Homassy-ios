@@ -19,7 +19,7 @@ struct SpaceSwitcher: View {
     @State private var isShowingSettings = false
     /// Imports started in the settings sheet wait here until it has closed; the shell cannot present over it.
     @State private var settingsImports = ArchiveImportRouter()
-    @State private var tapRouter = NotificationTapRouter.shared
+    @State private var router = AppRouter.shared
 
     var body: some View {
         let current = selection.resolve(in: spaces)
@@ -76,8 +76,9 @@ struct SpaceSwitcher: View {
             archiveRouter.errorMessage = nil
             isShowingSettings = false
         }
-        .onChange(of: tapRouter.tapCount) {
-            // A notification tap switches tabs behind the sheet (`MainTabView`); the sheet must not linger over it.
+        .onChange(of: router.openCount) {
+            // A notification tap or a quick action switches tabs behind the sheet (`MainTabView`); the sheet must
+            // not linger over it.
             isShowingSettings = false
         }
         .onChange(of: app.shareAcceptance.state) { _, state in
