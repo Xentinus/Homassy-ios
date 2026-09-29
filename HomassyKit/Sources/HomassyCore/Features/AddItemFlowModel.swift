@@ -12,6 +12,12 @@ public final class AddItemFlowModel {
         public let name: String
     }
 
+    public struct ListOption: Identifiable, Equatable, Sendable {
+        public let id: UUID
+        public let name: String
+        public let color: String?
+    }
+
     public private(set) var step: Step = .what
     public var query = "" {
         didSet { if query != oldValue { refreshSuggestions() } }
@@ -23,23 +29,39 @@ public final class AddItemFlowModel {
     public private(set) var errorMessage: String?
     private var selection = StoreSelection(preset: nil)
 
-    @ObservationIgnored private let list: ShoppingList
+    public let listOptions: [ListOption]
+    /// The "Lista" row (P4-03a). Preset to the filtered list, else the space's last used list, else the first.
+    public var selectedListID: UUID?
+    @ObservationIgnored private let lists: [UUID: ShoppingList]
+    @ObservationIgnored private let lastUsed: LastUsedShoppingList?
     @ObservationIgnored private let shopping: ShoppingService
     @ObservationIgnored private let locations: ShoppingLocationService
     @ObservationIgnored private let locale: Locale
     @ObservationIgnored private var product: Product?
     @ObservationIgnored private var suggestionProducts: [UUID: Product] = [:]
 
-    public init(list: ShoppingList, shopping: ShoppingService, locations: ShoppingLocationService,
-                locale: Locale = .current) {
-        self.list = list
+    public init(lists: [ShoppingList], preselected: UUID? = nil, lastUsed: LastUsedShoppingList? = nil,
+                shopping: ShoppingService, locations: ShoppingLocationService, locale: Locale = .current) {
+        let live = lists.filter { !$0.isGone }
+        self.lists = Dictionary(live.map { ($0.publicId, $0) }, uniquingKeysWith: { first, _ in first })
+        listOptions = live.map { ListOption(id: $0.publicId, name: $0.name, color: $0.color) }
+        self.lastUsed = lastUsed
         self.shopping = shopping
         self.locations = locations
         self.locale = locale
         quantityText = Quantity.formatNumber(1, locale: locale)
+        let ids = Set(listOptions.map(\.id))
+        let remembered = live.first?.space.flatMap { lastUsed?.listID(for: $0.publicId) }
+        selectedListID = [preselected, remembered].compactMap { $0 }.first(where: ids.contains) ?? listOptions.first?.id
     }
 
-    public var space: Space? { list.space }
+    public convenience init(list: ShoppingList, shopping: ShoppingService, locations: ShoppingLocationService,
+                            locale: Locale = .current) {
+        self.init(lists: [list], shopping: shopping, locations: locations, locale: locale)
+    }
+
+    private var list: ShoppingList? { selectedListID.flatMap { lists[$0] } }
+    public var space: Space? { list?.space ?? lists.values.first?.space }
     public var units: [MeasureUnit] { MeasureUnit.allCases }
     public var storeName: String? { selection.name }
     public var suggestedDistance: Double? { selection.suggestedDistance }
@@ -134,10 +156,11 @@ public final class AddItemFlowModel {
             return false
         }
         do {
-            guard let space else { throw ServiceError.notFound }
+            guard let list, !list.isGone, let space else { throw ServiceError.notFound }
             let store = try selection.resolve(locations: locations, space: space)
             try shopping.addItem(to: list, product: product, customName: product == nil ? chosenName : nil,
                                  quantity: quantity, unit: unit, shoppingLocation: store)
+            if let spaceID = list.space?.publicId { lastUsed?.record(list.publicId, for: spaceID) }
             return true
         } catch {
             errorMessage = FeatureError.message(for: error)
