@@ -5,6 +5,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = NotificationResponder.shared
+        BackgroundRefresh.register()            // before launch finishes, or iOS drops the background launch
+        BackgroundRefresh.submit()
         return true
     }
 
