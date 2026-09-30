@@ -14,7 +14,9 @@ struct ShoppingLockScreenView: View {
             HStack(alignment: .firstTextBaseline) {
                 ActivityTitle(state: state)
                 Spacer(minLength: 8)
-                ActivityRemaining(state: state)
+                if !state.isFinished {                                   // the "All done" row says it below
+                    ActivityRemaining(state: state)
+                }
             }
             if state.isFinished {
                 Label("activity.done", systemImage: "checkmark.circle.fill")
@@ -68,6 +70,7 @@ struct ActivityRemaining: View {
             .monospacedDigit()
             .contentTransition(reduceMotion ? .identity : .numericText())
             .foregroundStyle(WidgetPalette.mocha)
+            .fixedSize()                                                 // a long title truncates, not the count
     }
 }
 
@@ -87,7 +90,8 @@ struct ActivityCount: View {
             }
         }
         .foregroundStyle(WidgetPalette.mocha)
-        .accessibilityLabel(Text("activity.remaining \(state.remainingCount)"))
+        .accessibilityLabel(state.isFinished ? Text("activity.done")
+                                             : Text("activity.remaining \(state.remainingCount)"))
     }
 }
 

@@ -18,8 +18,10 @@ struct ShoppingLiveActivity: Widget {
                         .padding(.leading, 4)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    ActivityRemaining(state: context.state)
-                        .padding(.trailing, 4)
+                    if !context.state.isFinished {                       // the bottom row says "All done"
+                        ActivityRemaining(state: context.state)
+                            .padding(.trailing, 4)
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     if context.state.isFinished {
