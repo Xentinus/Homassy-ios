@@ -91,11 +91,11 @@ struct ShoppingActivityCoordinatorTests {
     @Test func anotherStoreEndsTheFirstOneAtOnce() async throws {
         try add("Tej")
         let auchan = try stack.makeStore("Auchan Budaörs")
-        auchan.latitude = 47.4700                                          // about 1.1 km north of the Spar
+        auchan.latitude = 47.4645                                          // about 500 m north of the Spar
         auchan.longitude = 18.9500
         try add("Mosópor", at: auchan)
         await arrive()
-        await arrive(Coordinate(latitude: 47.4700, longitude: 18.9500))
+        await arrive(Coordinate(latitude: 47.4645, longitude: 18.9500))
         #expect(controller.started.map(\.scope) == [.store(spar.publicId), .store(auchan.publicId)])
         #expect(controller.ended.first == .init(id: "activity-1", content: nil, dismissal: .immediate))
         #expect(controller.running().count == 1)
@@ -231,7 +231,7 @@ struct ShoppingActivityCoordinatorTests {
         let milk = try add("Tej")
         try add("Kenyér")
         let shown = ShoppingActivityContent(title: "Spar Budaörs", spaceName: stack.space.name, listCount: 1,
-                                            remainingCount: 2, doneCount: 0, nextItems: [], canTick: true)
+                                            remainingCount: 1, doneCount: 0, nextItems: [], canTick: true)
         controller.seed(RunningShoppingActivity(id: "old", spaceID: stack.space.publicId,
                                                 scope: .store(spar.publicId), content: shown))
         await coordinator.tick(itemIDs: [milk.publicId])
@@ -248,5 +248,96 @@ struct ShoppingActivityCoordinatorTests {
             debounce: .zero)
         await readOnly.evaluate(position: atSpar, branches: [], preferredSpaceID: nil)
         #expect(controller.started.first?.content.canTick == false)
+    }
+
+    func addDM(latitude: Double = 47.4602) throws -> ShoppingLocation {
+        let dm = try stack.makeStore("dm Budaörs")
+        dm.latitude = latitude                                             // 47.4602 is about 22 m from the Spar
+        dm.longitude = 18.9500
+        try stack.context.save()
+        return dm
+    }
+
+    @Test func aSwipeWhileNoProcessRanSuppressesThePlace() async throws {
+        try add("Tej")
+        memory.started = .init(activityID: "gone", spaceID: stack.space.publicId, scope: .store(spar.publicId),
+                               center: atSpar)
+        await arrive()
+        #expect(memory.suppressed?.scope == .store(spar.publicId))
+        #expect(controller.started.isEmpty)
+    }
+
+    @Test func anAdoptedActivityWithARememberedCenterEndsFarAway() async throws {
+        try add("Tej")
+        let shown = ShoppingActivityContent(title: "Spar Budaörs", spaceName: stack.space.name, listCount: 1,
+                                            remainingCount: 1, doneCount: 0, nextItems: [], canTick: true)
+        memory.started = .init(activityID: "old", spaceID: stack.space.publicId, scope: .store(spar.publicId),
+                               center: atSpar)
+        controller.seed(RunningShoppingActivity(id: "old", spaceID: stack.space.publicId,
+                                                scope: .store(spar.publicId), content: shown))
+        await arrive(farAway)
+        #expect(controller.ended.map(\.id) == ["old"])
+        #expect(controller.ended.map(\.dismissal) == [.immediate])
+    }
+
+    @Test func aFinishedChainActivityKeepsTheChainTitle() async throws {
+        try add("Tej")
+        let budakeszi = Coordinate(latitude: 47.5100, longitude: 18.9300)
+        await arrive(budakeszi, branches: [ChainBranch(chainKey: "spar", center: budakeszi)])
+        let row = try #require(controller.latest?.nextItems.first)
+        await coordinator.tick(itemIDs: row.itemIDs)
+        let end = try #require(controller.ended.last)
+        #expect(end.content?.title == "Spar")
+        #expect(end.content?.isFinished == true)
+    }
+
+    @Test func scheduledRefreshUpdatesTheActivity() async throws {
+        try add("Tej")
+        await arrive()
+        try add("Kenyér")
+        coordinator.scheduleRefresh()
+        await coordinator.pendingRefresh?.value
+        #expect(controller.latest?.remainingCount == 2)
+        #expect(controller.updates.count == 1)
+    }
+
+    @Test func aSwipedAwayActivityStaysAwayWhenANearbyStoreGetsItems() async throws {
+        try add("Tej")
+        await arrive()
+        controller.dismissByUser("activity-1")
+        let dm = try addDM()
+        try add("Fogkrém", to: party, at: dm)
+        await arrive()
+        #expect(controller.started.count == 1)
+    }
+
+    @Test func aShrinkingStoreSetKeepsTheRunningActivity() async throws {
+        try add("Tej")
+        let dm = try addDM()
+        try add("Fogkrém", to: party, at: dm)
+        await arrive()
+        if case .stores = try #require(controller.started.first).scope {} else { Issue.record("expected .stores") }
+        let dmRow = try #require(controller.latest?.nextItems.first { $0.name == "Fogkrém" })
+        await coordinator.tick(itemIDs: dmRow.itemIDs)
+        await arrive()
+        #expect(controller.started.count == 1)
+        #expect(controller.ended.isEmpty)
+        #expect(controller.latest?.title == "Spar Budaörs")
+        #expect(controller.latest?.doneCount == 1)
+    }
+
+    @Test func aGrowingStoreSetRestartsAndKeepsTheDoneCount() async throws {
+        try add("Tej")
+        try add("Kenyér")
+        await arrive()
+        let first = try #require(controller.latest?.nextItems.first)
+        await coordinator.tick(itemIDs: first.itemIDs)
+        let dm = try addDM()
+        try add("Fogkrém", to: party, at: dm)
+        await arrive()
+        #expect(controller.started.count == 2)
+        let second = try #require(controller.started.last)
+        if case .stores = second.scope {} else { Issue.record("expected a .stores scope, got \(second.scope)") }
+        #expect(second.content.doneCount == 1)
     }
 }
