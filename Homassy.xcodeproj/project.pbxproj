@@ -7,10 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		255573E7306D5E0E001B066F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 255573E6306D5E0E001B066F /* WidgetKit.framework */; };
+		255573E9306D5E0E001B066F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 255573E8306D5E0E001B066F /* SwiftUI.framework */; };
+		255573F8306D5E10001B066F /* HomassyWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 255573E4306D5E0E001B066F /* HomassyWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		255573FF306D9045001B066F /* HomassyShared in Frameworks */ = {isa = PBXBuildFile; productRef = 255573FE306D9045001B066F /* HomassyShared */; };
+		25557401306D9075001B066F /* HomassyShared in Frameworks */ = {isa = PBXBuildFile; productRef = 25557400306D9075001B066F /* HomassyShared */; };
 		25CEAF2630654A9F00B617CA /* HomassyCore in Frameworks */ = {isa = PBXBuildFile; productRef = 25CEAF2530654A9F00B617CA /* HomassyCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		255573F6306D5E10001B066F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 255573E3306D5E0E001B066F;
+			remoteInfo = HomassyWidgetsExtension;
+		};
 		25F4747F30654B7200513481 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 000000000000000000000000 /* Project object */;
@@ -20,8 +32,23 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		255573F9306D5E10001B066F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				255573F8306D5E10001B066F /* HomassyWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* Homassy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Homassy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		255573E4306D5E0E001B066F /* HomassyWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HomassyWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		255573E6306D5E0E001B066F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		255573E8306D5E0E001B066F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		25F4747B30654B7200513481 /* HomassyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HomassyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -33,6 +60,13 @@
 			);
 			target = 000000000000000100000000 /* Homassy */;
 		};
+		255573FD306D5E10001B066F /* Exceptions for "HomassyWidgets" folder in "HomassyWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 255573E3306D5E0E001B066F /* HomassyWidgetsExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -42,6 +76,14 @@
 				2518B9A330654D5100CE5B35 /* Exceptions for "Homassy" folder in "Homassy" target */,
 			);
 			path = Homassy;
+			sourceTree = "<group>";
+		};
+		255573EA306D5E0E001B066F /* HomassyWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				255573FD306D5E10001B066F /* Exceptions for "HomassyWidgets" folder in "HomassyWidgetsExtension" target */,
+			);
+			path = HomassyWidgets;
 			sourceTree = "<group>";
 		};
 		25F4747C30654B7200513481 /* HomassyUITests */ = {
@@ -55,7 +97,16 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				255573FF306D9045001B066F /* HomassyShared in Frameworks */,
 				25CEAF2630654A9F00B617CA /* HomassyCore in Frameworks */,
+			);
+		};
+		255573E1306D5E0E001B066F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				25557401306D9075001B066F /* HomassyShared in Frameworks */,
+				255573E9306D5E0E001B066F /* SwiftUI.framework in Frameworks */,
+				255573E7306D5E0E001B066F /* WidgetKit.framework in Frameworks */,
 			);
 		};
 		25F4747830654B7200513481 /* Frameworks */ = {
@@ -71,6 +122,8 @@
 			children = (
 				000000000000000000000010 /* Homassy */,
 				25F4747C30654B7200513481 /* HomassyUITests */,
+				255573EA306D5E0E001B066F /* HomassyWidgets */,
+				255573E5306D5E0E001B066F /* Frameworks */,
 				000000000000000000000020 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -80,8 +133,18 @@
 			children = (
 				000000000000000000000120 /* Homassy.app */,
 				25F4747B30654B7200513481 /* HomassyUITests.xctest */,
+				255573E4306D5E0E001B066F /* HomassyWidgetsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		255573E5306D5E0E001B066F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				255573E6306D5E0E001B066F /* WidgetKit.framework */,
+				255573E8306D5E0E001B066F /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -94,8 +157,12 @@
 				000000000000000120000000 /* Sources */,
 				000000000000000130000000 /* Frameworks */,
 				000000000000000140000000 /* Resources */,
+				255573F9306D5E10001B066F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
+			);
+			dependencies = (
+				255573F7306D5E10001B066F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				000000000000000000000010 /* Homassy */,
@@ -103,10 +170,32 @@
 			name = Homassy;
 			packageProductDependencies = (
 				25CEAF2530654A9F00B617CA /* HomassyCore */,
+				255573FE306D9045001B066F /* HomassyShared */,
 			);
 			productName = MyApp;
 			productReference = 000000000000000000000120 /* Homassy.app */;
 			productType = "com.apple.product-type.application";
+		};
+		255573E3306D5E0E001B066F /* HomassyWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 255573FC306D5E10001B066F /* Build configuration list for PBXNativeTarget "HomassyWidgetsExtension" */;
+			buildPhases = (
+				255573E0306D5E0E001B066F /* Sources */,
+				255573E1306D5E0E001B066F /* Frameworks */,
+				255573E2306D5E0E001B066F /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				255573EA306D5E0E001B066F /* HomassyWidgets */,
+			);
+			name = HomassyWidgetsExtension;
+			packageProductDependencies = (
+				25557400306D9075001B066F /* HomassyShared */,
+			);
+			productName = HomassyWidgetsExtension;
+			productReference = 255573E4306D5E0E001B066F /* HomassyWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		25F4747A30654B7200513481 /* HomassyUITests */ = {
 			isa = PBXNativeTarget;
@@ -142,6 +231,9 @@
 					000000000000000100000000 = {
 						CreatedOnToolsVersion = 26.3;
 					};
+					255573E3306D5E0E001B066F = {
+						CreatedOnToolsVersion = 27.0;
+					};
 					25F4747A30654B7200513481 = {
 						CreatedOnToolsVersion = 27.0;
 						TestTargetID = 000000000000000100000000;
@@ -169,12 +261,18 @@
 			targets = (
 				000000000000000100000000 /* Homassy */,
 				25F4747A30654B7200513481 /* HomassyUITests */,
+				255573E3306D5E0E001B066F /* HomassyWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		000000000000000140000000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		255573E2306D5E0E001B066F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -192,6 +290,11 @@
 			files = (
 			);
 		};
+		255573E0306D5E0E001B066F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
 		25F4747730654B7200513481 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
@@ -200,6 +303,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		255573F7306D5E10001B066F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 255573E3306D5E0E001B066F /* HomassyWidgetsExtension */;
+			targetProxy = 255573F6306D5E10001B066F /* PBXContainerItemProxy */;
+		};
 		25F4748030654B7200513481 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 000000000000000100000000 /* Homassy */;
@@ -262,7 +370,6 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -271,6 +378,7 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Debug;
 		};
@@ -322,13 +430,13 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PROJECT_UNIQUE_VALUE = VFOOZUVX;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
 		};
@@ -336,46 +444,51 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9PQXWT8PRR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Homassy/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Homassy;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.shopping";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Homassy uses the camera to scan barcodes and to take product and member photos.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Homassy uses your location only to find shops near you. It is not stored or shared.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.homassy.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				PRODUCT_BUNDLE_IDENTIFIER = com.homassy.app;
+				INFOPLIST_FILE = Homassy/Info.plist;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 			};
 			name = Debug;
 		};
@@ -383,46 +496,128 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9PQXWT8PRR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Homassy/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Homassy;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.shopping";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Homassy uses the camera to scan barcodes and to take product and member photos.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Homassy uses your location only to find shops near you. It is not stored or shared.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.homassy.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				PRODUCT_BUNDLE_IDENTIFIER = com.homassy.app;
+				INFOPLIST_FILE = Homassy/Info.plist;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+			};
+			name = Release;
+		};
+		255573FA306D5E10001B066F /* Debug configuration for PBXNativeTarget "HomassyWidgetsExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9PQXWT8PRR;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HomassyWidgets/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				PRODUCT_BUNDLE_IDENTIFIER = com.homassy.app.widgets;
+				INFOPLIST_KEY_CFBundleDisplayName = Homassy;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+			};
+			name = Debug;
+		};
+		255573FB306D5E10001B066F /* Release configuration for PBXNativeTarget "HomassyWidgetsExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9PQXWT8PRR;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HomassyWidgets/Info.plist;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				VALIDATE_PRODUCT = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				PRODUCT_BUNDLE_IDENTIFIER = com.homassy.app.widgets;
+				INFOPLIST_KEY_CFBundleDisplayName = Homassy;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 			};
 			name = Release;
 		};
@@ -433,23 +628,23 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9PQXWT8PRR;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.homassy.app.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				TEST_TARGET_NAME = Homassy;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = Homassy;
+				PRODUCT_BUNDLE_IDENTIFIER = com.homassy.app.uitests;
 			};
 			name = Debug;
 		};
@@ -460,24 +655,24 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9PQXWT8PRR;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.homassy.app.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				TEST_TARGET_NAME = Homassy;
+				VALIDATE_PRODUCT = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
+				SWIFT_STRICT_CONCURRENCY = complete;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = Homassy;
-				VALIDATE_PRODUCT = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.homassy.app.uitests;
 			};
 			name = Release;
 		};
@@ -500,6 +695,14 @@
 			);
 			defaultConfigurationName = Release;
 		};
+		255573FC306D5E10001B066F /* Build configuration list for PBXNativeTarget "HomassyWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				255573FA306D5E10001B066F /* Debug configuration for PBXNativeTarget "HomassyWidgetsExtension" */,
+				255573FB306D5E10001B066F /* Release configuration for PBXNativeTarget "HomassyWidgetsExtension" */,
+			);
+			defaultConfigurationName = Release;
+		};
 		25F4748330654B7200513481 /* Build configuration list for PBXNativeTarget "HomassyUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -518,6 +721,16 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		255573FE306D9045001B066F /* HomassyShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 25CEAF2430654A9F00B617CA /* XCLocalSwiftPackageReference "HomassyKit" */;
+			productName = HomassyShared;
+		};
+		25557400306D9075001B066F /* HomassyShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 25CEAF2430654A9F00B617CA /* XCLocalSwiftPackageReference "HomassyKit" */;
+			productName = HomassyShared;
+		};
 		25CEAF2530654A9F00B617CA /* HomassyCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = HomassyCore;
