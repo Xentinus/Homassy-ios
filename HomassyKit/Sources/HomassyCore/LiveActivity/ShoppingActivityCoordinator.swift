@@ -65,26 +65,11 @@ public final class ShoppingActivityCoordinator {
             await refresh()
             return
         }
-        if isCurrent(target) {
-            narrow(to: target.scope)
-            await refresh()
-            return
-        }
-        guard !isSuppressed(target), controller.areActivitiesEnabled else {
+        guard !isCurrent(target), !isSuppressed(target), controller.areActivitiesEnabled else {
             await refresh()
             return
         }
         await start(target)
-    }
-
-    /// A set of stores that only shrank keeps its activity; the title then follows the stores that are left.
-    private func narrow(to scope: ShoppingActivityScope) {
-        guard let running = current, running.scope != scope else { return }
-        current = ShoppingActivityTarget(spaceID: running.spaceID, scope: scope, center: running.center)
-        if let record = memory.started {
-            memory.started = .init(activityID: record.activityID, spaceID: record.spaceID, scope: scope,
-                                   center: record.center)
-        }
     }
 
     public func refresh() async {
