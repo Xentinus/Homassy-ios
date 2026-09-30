@@ -40,8 +40,17 @@ TARGETED_DEVICE_FAMILY|1,2
 SUPPORTED_PLATFORMS|iphoneos iphonesimulator
 TEST_TARGET_NAME|Homassy'
 
+WIDGET_EXPECT='IPHONEOS_DEPLOYMENT_TARGET|26.0
+SWIFT_VERSION|6.0
+SWIFT_STRICT_CONCURRENCY|complete
+SWIFT_DEFAULT_ACTOR_ISOLATION|MainActor
+SWIFT_APPROACHABLE_CONCURRENCY|YES
+TARGETED_DEVICE_FAMILY|1,2
+SUPPORTED_PLATFORMS|iphoneos iphonesimulator'
+
 check_target Homassy "$APP_EXPECT"
 check_target HomassyUITests "$UITEST_EXPECT"
+check_target HomassyWidgetsExtension "$WIDGET_EXPECT"
 
 setting() {  # setting <target> <config> <key>
   xcodebuild -project Homassy.xcodeproj -target "$1" -configuration "$2" -showBuildSettings 2>/dev/null \
@@ -57,6 +66,8 @@ expect_one_of "Homassy/Release PRODUCT_BUNDLE_IDENTIFIER" "$(setting Homassy Rel
 expect_one_of "Homassy/Debug PRODUCT_BUNDLE_IDENTIFIER" "$(setting Homassy Debug PRODUCT_BUNDLE_IDENTIFIER)" com.homassy.app com.homassy.app.dev
 expect_one_of "HomassyUITests/Release PRODUCT_BUNDLE_IDENTIFIER" "$(setting HomassyUITests Release PRODUCT_BUNDLE_IDENTIFIER)" com.homassy.app.uitests
 expect_one_of "HomassyUITests/Debug PRODUCT_BUNDLE_IDENTIFIER" "$(setting HomassyUITests Debug PRODUCT_BUNDLE_IDENTIFIER)" com.homassy.app.uitests com.homassy.app.dev.uitests
+expect_one_of "HomassyWidgetsExtension/Release PRODUCT_BUNDLE_IDENTIFIER" "$(setting HomassyWidgetsExtension Release PRODUCT_BUNDLE_IDENTIFIER)" com.homassy.app.widgets
+expect_one_of "HomassyWidgetsExtension/Debug PRODUCT_BUNDLE_IDENTIFIER" "$(setting HomassyWidgetsExtension Debug PRODUCT_BUNDLE_IDENTIFIER)" com.homassy.app.widgets com.homassy.app.dev.widgets
 
 # --- Local-mode checks (C-01 replaces this block) ---
 for cfg in Debug Release; do
@@ -66,6 +77,10 @@ for cfg in Debug Release; do
   case " $conditions " in *" CLOUDKIT_ENABLED "*) echo "FAIL Homassy/$cfg CLOUDKIT_ENABLED is set before C-01"; fail=1;; esac
 done
 [ ! -e Homassy/Homassy.entitlements ] || { echo "FAIL Homassy/Homassy.entitlements exists before C-01"; fail=1; }
+for cfg in Debug Release; do
+  got=$(setting HomassyWidgetsExtension "$cfg" CODE_SIGN_ENTITLEMENTS)
+  [ -z "$got" ] || { echo "FAIL HomassyWidgetsExtension/$cfg CODE_SIGN_ENTITLEMENTS must be empty before N-05, got '$got'"; fail=1; }
+done
 # --- end local-mode checks ---
 
 plist() { /usr/libexec/PlistBuddy -c "Print :$2" "$1" 2>/dev/null; }
@@ -78,6 +93,13 @@ expect_plist Homassy/Info.plist CKSharingSupported true
 # N-01: background app refresh. Plain Info.plist keys, no entitlement (works on the free Personal Team).
 expect_plist Homassy/Info.plist BGTaskSchedulerPermittedIdentifiers:0 com.homassy.app.refresh
 expect_plist Homassy/Info.plist UIBackgroundModes:0 fetch
+# N-04: shopping Live Activity (no entitlement for local updates) and homassy:// links.
+expect_plist Homassy/Info.plist NSSupportsLiveActivities true
+expect_plist Homassy/Info.plist CFBundleURLTypes:0:CFBundleURLSchemes:0 homassy
+if [ ! -f Homassy.xcodeproj/xcshareddata/xcschemes/HomassyWidgetsExtension.xcscheme ]; then
+  echo "FAIL HomassyWidgetsExtension scheme is not shared"; fail=1
+fi
+grep -q 'productName = HomassyShared' Homassy.xcodeproj/project.pbxproj || { echo "FAIL HomassyShared is not linked"; fail=1; }
 
 for path in HomassyKit/Package.swift HomassyKit/Sources/HomassyCore/HomassyCore.swift HomassyUITests/HomassyUITests.swift Scripts/check-project-settings.sh; do
   if git check-ignore -q "$path"; then echo "FAIL $path is git-ignored"; fail=1; fi

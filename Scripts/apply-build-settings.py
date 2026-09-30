@@ -58,11 +58,23 @@ text = edit(text, 'PBXNativeTarget "HomassyUITests"', {
     "PRODUCT_BUNDLE_IDENTIFIER": "com.homassy.app.uitests",
 }, drop_platforms)
 
+# Widget extension (N-04): same language and isolation settings as the app, so shared files compile the same way.
+text = edit(text, 'PBXNativeTarget "HomassyWidgetsExtension"', {
+    **common,
+    "PRODUCT_BUNDLE_IDENTIFIER": "com.homassy.app.widgets",
+    "INFOPLIST_KEY_CFBundleDisplayName": "Homassy",
+    "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
+    "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+    "SWIFT_APPROACHABLE_CONCURRENCY": "YES",
+    "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
+}, drop_platforms)
+
 # Free-team fallback (Step 15a): HOMASSY_DEV_BUNDLE_ID=1 gives Debug the `.dev` bundle IDs; Release keeps the permanent ones.
 import os
 if os.environ.get("HOMASSY_DEV_BUNDLE_ID") == "1":
     for owner, dev_id in (('PBXNativeTarget "Homassy"', "com.homassy.app.dev"),
-                          ('PBXNativeTarget "HomassyUITests"', "com.homassy.app.dev.uitests")):
+                          ('PBXNativeTarget "HomassyUITests"', "com.homassy.app.dev.uitests"),
+                          ('PBXNativeTarget "HomassyWidgetsExtension"', "com.homassy.app.dev.widgets")):
         block = re.compile(r"(/\* Debug configuration for " + re.escape(owner) + r" \*/ = \{.*?PRODUCT_BUNDLE_IDENTIFIER = )[^;]+;", re.S)
         text, n = block.subn(lambda m: m.group(1) + dev_id + ";", text, count=1)
         if n != 1:
