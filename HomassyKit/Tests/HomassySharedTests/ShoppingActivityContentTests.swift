@@ -26,10 +26,16 @@ struct ShoppingActivityContentTests {
     }
 
     @Test func scopesRoundTripThroughJSON() throws {
-        for scope in [ShoppingActivityScope.store(UUID()), .chain("tesco expressz")] {
+        for scope in [ShoppingActivityScope.store(UUID()), .stores([UUID(), UUID()]), .chain("tesco expressz")] {
             let decoded = try JSONDecoder().decode(ShoppingActivityScope.self, from: JSONEncoder().encode(scope))
             #expect(decoded == scope)
         }
+    }
+
+    @Test func onlyAChainScopeIsAChain() {
+        #expect(ShoppingActivityScope.chain("spar").isChain)
+        #expect(!ShoppingActivityScope.store(UUID()).isChain)
+        #expect(!ShoppingActivityScope.stores([UUID(), UUID()]).isChain)
     }
 
     @Test func staysWellUnderActivityKitsFourKilobytes() throws {

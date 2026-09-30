@@ -94,6 +94,33 @@ struct ShoppingActivityStateTests {
         #expect(ShoppingActivityState.title(scope: .store(id), in: stack.space, items: [], locations: locations) == nil)
     }
 
+    @Test func severalNearbyStoresShareOneScopeAndTitle() throws {
+        let spar = try stack.makeStore("Spar Budaörs")
+        let dm = try stack.makeStore("dm Budaörs")
+        let auchan = try stack.makeStore("Auchan Budaörs")
+        let weekly = try stack.service.createList(name: "Heti", in: stack.space)
+        let party = try stack.service.createList(name: "Buli", in: stack.space)
+        try stack.service.addItem(to: weekly, customName: "Tej", shoppingLocation: spar)
+        try stack.service.addItem(to: weekly, customName: "Mosópor", shoppingLocation: auchan)
+        try stack.service.addItem(to: party, customName: "Fogkrém", shoppingLocation: dm)
+        let scope = ShoppingActivityScope.stores([spar.publicId, dm.publicId].sorted { $0.uuidString < $1.uuidString })
+        let locations = ShoppingLocationService(spaceStore: stack.spaceStore, context: stack.context,
+                                                userRecordName: stack.user)
+
+        #expect(try open(scope).map(ShoppingService.displayName(of:)) == ["Tej", "Fogkrém"])
+        #expect(ShoppingActivityState.title(scope: scope, in: stack.space, items: [], locations: locations, locale: hu)
+                == "2 közeli bolt")
+        #expect(ShoppingActivityState.title(scope: scope, in: stack.space, items: [], locations: locations,
+                                            locale: Locale(identifier: "en_US")) == "2 nearby stores")
+        stack.context.delete(dm)
+        try stack.context.save()
+        #expect(ShoppingActivityState.title(scope: scope, in: stack.space, items: [], locations: locations, locale: hu)
+                == "Spar Budaörs")
+        stack.context.delete(spar)
+        try stack.context.save()
+        #expect(ShoppingActivityState.title(scope: scope, in: stack.space, items: [], locations: locations, locale: hu) == nil)
+    }
+
     @Test func contentShowsThreeNextRowsTheCountsAndTheListCount() throws {
         let spar = try stack.makeStore("Spar")
         let weekly = try stack.service.createList(name: "Heti", in: stack.space)

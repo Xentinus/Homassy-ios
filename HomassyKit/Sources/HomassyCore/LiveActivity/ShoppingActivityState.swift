@@ -34,6 +34,7 @@ public enum ShoppingActivityState {
         guard let store = item.shoppingLocation, !store.isGone else { return false }
         switch scope {
         case let .store(id): return store.publicId == id
+        case let .stores(ids): return ids.contains(store.publicId)
         case let .chain(key): return ChainKey.make(store.name) == key
         }
     }
@@ -66,14 +67,24 @@ public enum ShoppingActivityState {
         }
     }
 
-    /// The store's name; for a chain the name most of its open items' stores spell. Nil when the store is gone, or
-    /// for a chain without open items (the coordinator then keeps the last title).
+    /// The store's name; for several nearby stores "2 közeli bolt" (one left: its name); for a chain the name most of
+    /// its open items' stores spell. Nil when the store(s) are gone, or for a chain without open items (the
+    /// coordinator then keeps the last title).
     public static func title(scope: ShoppingActivityScope, in space: Space, items: [ShoppingListItem],
-                             locations: ShoppingLocationService) -> String? {
+                             locations: ShoppingLocationService, locale: Locale = .current) -> String? {
+        func name(_ id: UUID) -> String? {
+            (try? locations.location(publicId: id, in: space)).flatMap { $0.isGone ? nil : $0.name }
+        }
         switch scope {
         case let .store(id):
-            guard let store = try? locations.location(publicId: id, in: space), !store.isGone else { return nil }
-            return truncated(store.name)
+            return name(id).map(truncated)
+        case let .stores(ids):
+            let names = ids.compactMap(name)
+            switch names.count {
+            case 0: return nil
+            case 1: return truncated(names[0])
+            default: return truncated(CoreLocalization.format("shoppingActivity.nearbyStores %lld", locale: locale, names.count))
+            }
         case .chain:
             let name = ChainKey.displayName(of: items.compactMap { $0.shoppingLocation?.name })
             return name.isEmpty ? nil : truncated(name)
