@@ -1,4 +1,5 @@
 import HomassyCore
+import HomassyShared
 import UIKit
 import UserNotifications
 
@@ -9,6 +10,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         UNUserNotificationCenter.current().setNotificationCategories(NotificationActions.categories())   // N-02
         BackgroundRefresh.register()            // before launch finishes, or iOS drops the background launch
         BackgroundRefresh.submit()
+        // Runs on every launch, including the background launch for a Live Activity tick (N-04).
+        ShoppingTickBridge.register { itemIDs in await AppModel.shared.tick(itemIDs: itemIDs) }
         return true
     }
 

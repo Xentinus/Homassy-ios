@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 import HomassyCore
 import Observation
@@ -36,11 +37,22 @@ final class NotificationResponder: NSObject, UNUserNotificationCenterDelegate, @
         let destination = NotificationActions.destination(actionIdentifier: response.actionIdentifier,
                                                           requestIdentifier: request.identifier,
                                                           spaceID: NotificationActions.spaceID(in: request.content.userInfo))
+        let branch = Self.arrivalBranch(of: request)
         DispatchQueue.main.async {
             MainActor.assumeIsolated {
+                if let branch { AppRouter.shared.arrivalBranch = branch }
                 if let destination { AppRouter.shared.open(destination) }
             }
             completionHandler()
         }
+    }
+
+    /// A store reminder's chain and circle (P4-06), for the shopping Live Activity (N-04). Pure, any thread.
+    nonisolated static func arrivalBranch(of request: UNNotificationRequest) -> ChainBranch? {
+        guard let key = StoreReminderPlanner.chainKey(fromIdentifier: request.identifier),
+              let trigger = request.trigger as? UNLocationNotificationTrigger,
+              let region = trigger.region as? CLCircularRegion else { return nil }
+        return ChainBranch(chainKey: key, center: Coordinate(latitude: region.center.latitude,
+                                                             longitude: region.center.longitude))
     }
 }
