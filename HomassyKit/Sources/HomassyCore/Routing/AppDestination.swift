@@ -1,5 +1,6 @@
 import CoreData
 import Foundation
+import HomassyShared
 
 /// Where a Home Screen quick action or a notification tap takes the user (N-02). HomassyCore decides which
 /// destination an input means; the app maps it onto tabs, filters and sheets (`AppRouter`).
@@ -10,10 +11,22 @@ public enum AppDestination: Equatable, Sendable {
     case shopping(spaceID: UUID?)
     /// The Shopping home filtered to one list.
     case shoppingList(spaceID: UUID, listID: UUID)
+    /// The Shopping home grouped by store, filter "Mind" (a Live Activity tap, N-04).
+    case shoppingByStore(spaceID: UUID)
     /// The Shopping home with the add sheet open on that list.
     case addToShoppingList(spaceID: UUID, listID: UUID)
     /// The Inventory tab with the barcode scanner open.
     case scanBarcode
+}
+
+extension AppDestination {
+    /// A `homassy://` link from the Live Activity (N-04) or a widget (N-05).
+    public init(_ link: HomassyDeepLink) {
+        switch link {
+        case let .inventory(spaceID): self = .inventory(spaceID: spaceID)
+        case let .shoppingStore(spaceID, _): self = .shoppingByStore(spaceID: spaceID)
+        }
+    }
 }
 
 /// A shopping list by its space and its own public IDs, as stored for "the last used list".
@@ -55,6 +68,8 @@ extension ServiceContainer {
                 return .shoppingList(spaceID: spaceID, listID: listID)
             }
             return destination
+        case let .shoppingByStore(spaceID):
+            return space(spaceID) == nil ? .shopping(spaceID: nil) : destination
         case .inventory, .shopping, .scanBarcode:
             return destination
         }

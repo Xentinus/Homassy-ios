@@ -73,6 +73,10 @@ struct MainTabView: View {
             if let space { selection.selectedSpaceID = space }
             selectedTab = .inventory
             router.pathRequest = AppRouter.PathRequest(tab: .inventory)
+        case .shoppingByStore(let space):      // the "Mind" filter arrives with the app wiring of N-04
+            selection.selectedSpaceID = space
+            selectedTab = .shopping
+            router.pathRequest = AppRouter.PathRequest(tab: .shopping)
         case .shopping(let space):
             if let space { selection.selectedSpaceID = space }
             selectedTab = .shopping

@@ -10,7 +10,7 @@ public final class ServiceContainer {
     public let spaceStore: SpaceStore
     public let context: NSManagedObjectContext
     public let userRecordName: String
-    public let pendingDeletions = PendingDeletions()
+    public let pendingDeletions: PendingDeletions
     public let products: ProductService
     public let storageLocations: StorageLocationService
     public let inventory: InventoryService
@@ -25,6 +25,8 @@ public final class ServiceContainer {
     public let notifications: ExpiryNotificationCoordinator
     /// Store arrival reminders (P4-06); idle unless the app passes a location authorizer and the switch is on.
     public let storeReminders: StoreReminderCoordinator
+    /// The shopping Live Activity (N-04); switched off (`NoLiveActivities`) unless the app passes ActivityKit.
+    public let shoppingActivity: ShoppingActivityCoordinator
     /// Export and import. Nil only in package tests that build the container without persistence.
     public let archive: ArchiveServices?
     /// Households: create, share, leave, delete. Nil only in package tests that build the container without it.
@@ -49,7 +51,11 @@ public final class ServiceContainer {
                 locationAuthorizer: (any LocationAuthorizing)? = nil,
                 storeRemindersEnabled: @escaping @MainActor () -> Bool = { false },
                 storeAddressCacheURL: URL? = nil,
-                storeAddresses: (any StoreAddressResolving)? = nil) {
+                storeAddresses: (any StoreAddressResolving)? = nil,
+                liveActivities: (any LiveActivityControlling)? = nil,
+                shoppingActivityDefaults: UserDefaults = .standard) {
+        let pending = PendingDeletions()
+        pendingDeletions = pending
         // When sharing is given, its permission check is every service's canEdit (read-only households).
         let permission: @MainActor (Space) -> Bool
         if let sharing {
@@ -73,8 +79,12 @@ public final class ServiceContainer {
         products = ProductService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: permission)
         storageLocations = StorageLocationService(spaceStore: spaceStore, context: context,
                                                   userRecordName: userRecordName, canEdit: permission)
-        inventory = InventoryService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: permission)
-        shopping = ShoppingService(spaceStore: spaceStore, context: context, userRecordName: userRecordName, canEdit: permission)
+        let inventoryService = InventoryService(spaceStore: spaceStore, context: context, userRecordName: userRecordName,
+                                                canEdit: permission)
+        inventory = inventoryService
+        let shoppingService = ShoppingService(spaceStore: spaceStore, context: context, userRecordName: userRecordName,
+                                              canEdit: permission)
+        shopping = shoppingService
         shoppingLocations = ShoppingLocationService(spaceStore: spaceStore, context: context,
                                                     userRecordName: userRecordName, canEdit: permission)
         storeAddressCache = StoreAddressCache(fileURL: storeAddressCacheURL)
@@ -87,6 +97,11 @@ public final class ServiceContainer {
         storeReminders = StoreReminderCoordinator(
             context: context, center: notificationCenter, search: storeSearch, location: locationAuthorizer,
             isEnabled: storeRemindersEnabled,
+            locale: Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en"))
+        shoppingActivity = ShoppingActivityCoordinator(
+            shopping: shoppingService, inventory: inventoryService, pending: pending,
+            controller: liveActivities ?? NoLiveActivities(),
+            memory: ShoppingActivityMemory(defaults: shoppingActivityDefaults),
             locale: Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en"))
         archive = persistence.map { ArchiveServices(persistence: $0, spaceStore: spaceStore, userRecordName: userRecordName,
                                                           canEdit: permission) }
