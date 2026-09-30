@@ -57,7 +57,7 @@ public struct PlaceResult: Sendable, Equatable, Hashable, Identifiable {
     }
 }
 
-public struct Coordinate: Sendable, Equatable, Hashable {
+public struct Coordinate: Sendable, Equatable, Hashable, Codable {
     public var latitude: Double
     public var longitude: Double
 

@@ -119,3 +119,15 @@ public enum StoreReminderPlanner {
             .distance(toLatitude: b.latitude, longitude: b.longitude)
     }
 }
+
+extension StoreReminderPlanner {
+    /// The chain key of a reminder identifier (`store-<key, spaces as _>-<rank>`), for the shopping Live Activity
+    /// (N-04). Chain keys never contain `_` or `-` (`ChainKey` splits on everything but letters and digits).
+    public static func chainKey(fromIdentifier identifier: String) -> String? {
+        guard identifier.hasPrefix(identifierPrefix) else { return nil }
+        let rest = identifier.dropFirst(identifierPrefix.count)
+        guard let dash = rest.lastIndex(of: "-") else { return nil }
+        let slug = rest[..<dash]
+        return slug.isEmpty ? nil : slug.replacingOccurrences(of: "_", with: " ")
+    }
+}
