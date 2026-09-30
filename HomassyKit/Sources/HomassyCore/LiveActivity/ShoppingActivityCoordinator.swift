@@ -16,7 +16,7 @@ public final class ShoppingActivityCoordinator {
     public static let suppressionLifetime: TimeInterval = 4 * 60 * 60
 
     public private(set) var current: ShoppingActivityTarget?
-    public private(set) var pendingRefresh: Task<Void, Never>?
+    @ObservationIgnored public private(set) var pendingRefresh: Task<Void, Never>?
 
     @ObservationIgnored private var activityID: String?
     @ObservationIgnored private var progress: ShoppingActivityProgress?
@@ -61,12 +61,30 @@ public final class ShoppingActivityCoordinator {
         }
         let stores = (try? ShoppingActivityTrigger.waitingStores(in: shopping.context, pending: pending)) ?? []
         guard let target = ShoppingActivityTrigger.target(position: position, stores: stores, branches: branches,
-                                                          preferredSpaceID: preferredSpaceID),
-              !isCurrent(target), !isSuppressed(target), controller.areActivitiesEnabled else {
+                                                          preferredSpaceID: preferredSpaceID) else {
+            await refresh()
+            return
+        }
+        if isCurrent(target) {
+            narrow(to: target.scope)
+            await refresh()
+            return
+        }
+        guard !isSuppressed(target), controller.areActivitiesEnabled else {
             await refresh()
             return
         }
         await start(target)
+    }
+
+    /// A set of stores that only shrank keeps its activity; the title then follows the stores that are left.
+    private func narrow(to scope: ShoppingActivityScope) {
+        guard let running = current, running.scope != scope else { return }
+        current = ShoppingActivityTarget(spaceID: running.spaceID, scope: scope, center: running.center)
+        if let record = memory.started {
+            memory.started = .init(activityID: record.activityID, spaceID: record.spaceID, scope: scope,
+                                   center: record.center)
+        }
     }
 
     public func refresh() async {
@@ -120,17 +138,23 @@ public final class ShoppingActivityCoordinator {
     private func start(_ target: ShoppingActivityTarget) async {
         guard let space = space(target.spaceID), let snapshot = try? snapshot(of: target.scope, in: space),
               let title = snapshot.title, !snapshot.rows.isEmpty else { return }
+        // A set of stores that grew keeps what was already bought; another place starts from zero.
+        var carriedDone = 0
+        if let running = current, running.spaceID == target.spaceID,
+           !storeIDs(running.scope).isDisjoint(with: storeIDs(target.scope)) {
+            carriedDone = progress?.doneCount ?? 0
+        }
         if current != nil { await end(content: nil, dismissal: .immediate) }          // D5: one at a time
         let content = ShoppingActivityState.content(title: title, spaceName: space.name,
                                                     listCount: snapshot.listCount, rows: snapshot.rows,
-                                                    doneCount: 0, canTick: shopping.canEdit(space))
+                                                    doneCount: carriedDone, canTick: shopping.canEdit(space))
         do {
             let id = try controller.start(ShoppingActivityRequest(spaceID: target.spaceID, scope: target.scope,
                                                                   content: content, staleDate: staleDate(),
                                                                   relevance: Self.relevance))
             activityID = id
             current = target
-            progress = ShoppingActivityProgress(openKeys: Set(snapshot.rows.map(\.id)))
+            progress = ShoppingActivityProgress(openKeys: Set(snapshot.rows.map(\.id)), carriedDone: carriedDone)
             lastContent = content
             memory.started = .init(activityID: id, spaceID: target.spaceID, scope: target.scope, center: target.center)
         } catch {
@@ -161,12 +185,13 @@ public final class ShoppingActivityCoordinator {
             memory.suppressed = .init(spaceID: started.spaceID, scope: started.scope, center: started.center, since: now())
             memory.started = nil
         }
-        guard let first = running.first else { return }
-        for extra in running.dropFirst() {
+        let remembered = memory.started
+        guard let first = running.first(where: { $0.id == remembered?.activityID }) ?? running.first else { return }
+        for extra in running where extra.id != first.id {
             await controller.end(id: extra.id, content: nil, dismissal: .immediate)
         }
-        let remembered = memory.started?.activityID == first.id ? memory.started : nil
-        let target = ShoppingActivityTarget(spaceID: first.spaceID, scope: first.scope, center: remembered?.center)
+        let target = ShoppingActivityTarget(spaceID: first.spaceID, scope: first.scope,
+                                            center: remembered?.activityID == first.id ? remembered?.center : nil)
         let openKeys = space(first.spaceID)
             .flatMap { try? snapshot(of: first.scope, in: $0) }
             .map { Set($0.rows.map(\.id)) } ?? []
@@ -201,12 +226,33 @@ public final class ShoppingActivityCoordinator {
         if expired || left { memory.suppressed = nil }
     }
 
+    /// The running activity already covers the target: the same scope, or a set of stores that only shrank
+    /// (the rows of one store were all bought) in the same space.
     private func isCurrent(_ target: ShoppingActivityTarget) -> Bool {
-        current?.spaceID == target.spaceID && current?.scope == target.scope
+        guard let current, current.spaceID == target.spaceID else { return false }
+        if current.scope == target.scope { return true }
+        let ids = storeIDs(target.scope)
+        return !ids.isEmpty && ids.isSubset(of: storeIDs(current.scope))
     }
 
+    /// A swiped-away activity suppresses its place, not just its exact scope: the same store, the same chain, or
+    /// anything within the arrival radius of where it was swiped.
     private func isSuppressed(_ target: ShoppingActivityTarget) -> Bool {
-        memory.suppressed?.spaceID == target.spaceID && memory.suppressed?.scope == target.scope
+        guard let suppressed = memory.suppressed, suppressed.spaceID == target.spaceID else { return false }
+        if !storeIDs(suppressed.scope).isDisjoint(with: storeIDs(target.scope)) { return true }
+        if case let .chain(key) = suppressed.scope, case let .chain(other) = target.scope, key == other { return true }
+        if let a = suppressed.center, let b = target.center {
+            return ShoppingActivityTrigger.distance(a, b) <= ShoppingActivityTrigger.arrivalRadius
+        }
+        return false
+    }
+
+    private func storeIDs(_ scope: ShoppingActivityScope) -> Set<UUID> {
+        switch scope {
+        case let .store(id): [id]
+        case let .stores(ids): Set(ids)
+        case .chain: []
+        }
     }
 
     private func staleDate() -> Date { now().addingTimeInterval(Self.staleInterval) }
