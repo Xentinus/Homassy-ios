@@ -7,6 +7,8 @@ import Observation
 /// (D9 B: there is no button), switches when the user is at another store (one at a time), and ends it when the app
 /// opens more than 1 km away. `refresh` follows every change; the last row bought shows "All done" for 5 minutes
 /// (D4 A). A swiped-away activity is not started again at that place until the user left or 4 hours passed.
+/// The entry points run one after another: a notification tap fires the scene phase and the arrival branch at once,
+/// and two interleaved evaluations would both replace the running activity (one orphaned) or adopt the one ending.
 @MainActor
 @Observable
 public final class ShoppingActivityCoordinator {
@@ -19,6 +21,10 @@ public final class ShoppingActivityCoordinator {
     @ObservationIgnored public private(set) var pendingRefresh: Task<Void, Never>?
 
     @ObservationIgnored private var activityID: String?
+    /// The last entry point queued; the next one waits for it.
+    @ObservationIgnored private var tail: Task<Void, Never>?
+    /// Activities being ended: ActivityKit still lists them until `end` returns, so they are never adopted.
+    @ObservationIgnored private var endingIDs: Set<String> = []
     @ObservationIgnored private var progress: ShoppingActivityProgress?
     @ObservationIgnored private var lastContent: ShoppingActivityContent?
     @ObservationIgnored private let shopping: ShoppingService
@@ -49,9 +55,52 @@ public final class ShoppingActivityCoordinator {
     // MARK: Entry points
 
     public func evaluate(position: Coordinate?, branches: [ChainBranch], preferredSpaceID: UUID?) async {
+        await serially {
+            await $0.evaluateNow(position: position, branches: branches, preferredSpaceID: preferredSpaceID)
+        }
+    }
+
+    public func refresh() async {
+        await serially { await $0.refreshNow() }
+    }
+
+    /// `TickShoppingItemIntent` through `ShoppingTickBridge`, possibly in a process launched just for it.
+    public func tick(itemIDs: [UUID]) async {
+        await serially { await $0.tickNow(itemIDs: itemIDs) }
+    }
+
+    /// Coalesces a save storm into one refresh after `debounce`.
+    public func scheduleRefresh() {
+        pendingRefresh?.cancel()
+        let delay = debounce
+        pendingRefresh = Task { [weak self] in
+            if delay > .zero {
+                do { try await Task.sleep(for: delay) } catch { return }
+            }
+            guard !Task.isCancelled else { return }
+            await self?.refresh()
+        }
+    }
+
+    /// Queues `work` behind the entry point before it. The bodies call the `…Now` variants, never the public
+    /// methods, which would wait for themselves.
+    private func serially(_ work: @escaping @MainActor @Sendable (ShoppingActivityCoordinator) async -> Void) async {
+        let previous = tail
+        let task = Task { [self] in
+            await previous?.value
+            await work(self)
+        }
+        tail = task
+        await task.value
+    }
+
+    // MARK: Serial bodies
+
+    /// `forceUpdate` on a foreground: the update pushes the stale date forward even when nothing changed.
+    private func evaluateNow(position: Coordinate?, branches: [ChainBranch], preferredSpaceID: UUID?) async {
         await reconcile()
         guard let position else {
-            await refresh()
+            await refreshNow(forceUpdate: true)
             return
         }
         liftSuppression(at: position)
@@ -62,17 +111,17 @@ public final class ShoppingActivityCoordinator {
         let stores = (try? ShoppingActivityTrigger.waitingStores(in: shopping.context, pending: pending)) ?? []
         guard let target = ShoppingActivityTrigger.target(position: position, stores: stores, branches: branches,
                                                           preferredSpaceID: preferredSpaceID) else {
-            await refresh()
+            await refreshNow(forceUpdate: true)
             return
         }
         guard !isCurrent(target), !isSuppressed(target), controller.areActivitiesEnabled else {
-            await refresh()
+            await refreshNow(forceUpdate: true)
             return
         }
         await start(target)
     }
 
-    public func refresh() async {
+    private func refreshNow(forceUpdate: Bool = false) async {
         await reconcile()
         guard let current, let activityID, var progress else { return }
         guard let space = space(current.spaceID), let snapshot = try? snapshot(of: current.scope, in: space) else {
@@ -90,32 +139,18 @@ public final class ShoppingActivityCoordinator {
             rows: snapshot.rows, doneCount: progress.doneCount, canTick: shopping.canEdit(space))
         if content.isFinished {
             await end(content: content, dismissal: .after(now().addingTimeInterval(Self.finishedLinger)))
-        } else if content != lastContent {
+        } else if content != lastContent || forceUpdate {
             lastContent = content
             await controller.update(id: activityID, content: content, staleDate: staleDate(), relevance: Self.relevance)
         }
     }
 
-    /// Coalesces a save storm into one refresh after `debounce`.
-    public func scheduleRefresh() {
-        pendingRefresh?.cancel()
-        let delay = debounce
-        pendingRefresh = Task { [weak self] in
-            if delay > .zero {
-                do { try await Task.sleep(for: delay) } catch { return }
-            }
-            guard !Task.isCancelled else { return }
-            await self?.refresh()
-        }
-    }
-
-    /// `TickShoppingItemIntent` through `ShoppingTickBridge`, possibly in a process launched just for it.
-    public func tick(itemIDs: [UUID]) async {
+    private func tickNow(itemIDs: [UUID]) async {
         await reconcile()
         // A read-only household or a vanished item buys nothing; the refresh shows the real state either way.
         _ = try? ShoppingActivityActions.purchase(itemIDs: itemIDs, shopping: shopping, inventory: inventory,
                                                   pending: pending)
-        await refresh()
+        await refreshNow()
     }
 
     // MARK: Lifecycle
@@ -129,7 +164,10 @@ public final class ShoppingActivityCoordinator {
            !storeIDs(running.scope).isDisjoint(with: storeIDs(target.scope)) {
             carriedDone = progress?.doneCount ?? 0
         }
-        if current != nil { await end(content: nil, dismissal: .immediate) }          // D5: one at a time
+        if current != nil {                                                           // D5: one at a time
+            await end(content: nil, dismissal: .immediate)
+            if current != nil { return }                         // defensive: something took the place meanwhile
+        }
         let content = ShoppingActivityState.content(title: title, spaceName: space.name,
                                                     listCount: snapshot.listCount, rows: snapshot.rows,
                                                     doneCount: carriedDone, canTick: shopping.canEdit(space))
@@ -154,14 +192,16 @@ public final class ShoppingActivityCoordinator {
         progress = nil
         lastContent = nil
         memory.started = nil
+        endingIDs.insert(id)
         await controller.end(id: id, content: content, dismissal: dismissal)
+        endingIDs.remove(id)
     }
 
     /// Brings the in-memory state in line with what the system shows: an activity that disappeared without the app
     /// ending it was swiped away (or reached the 8-hour limit) and suppresses its place; an activity an earlier
     /// process started is adopted, extra ones end (D5).
     private func reconcile() async {
-        let running = controller.running()
+        let running = controller.running().filter { !endingIDs.contains($0.id) }
         if let activityID {
             if !running.contains(where: { $0.id == activityID }) { swipedAway() }
             return
@@ -173,7 +213,9 @@ public final class ShoppingActivityCoordinator {
         let remembered = memory.started
         guard let first = running.first(where: { $0.id == remembered?.activityID }) ?? running.first else { return }
         for extra in running where extra.id != first.id {
+            endingIDs.insert(extra.id)
             await controller.end(id: extra.id, content: nil, dismissal: .immediate)
+            endingIDs.remove(extra.id)
         }
         let target = ShoppingActivityTarget(spaceID: first.spaceID, scope: first.scope,
                                             center: remembered?.activityID == first.id ? remembered?.center : nil)

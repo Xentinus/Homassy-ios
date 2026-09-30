@@ -9,9 +9,12 @@ final class FakeLiveActivityController: LiveActivityControlling {
 
     var areActivitiesEnabled = true
     var refusesStart = false
+    /// Keeps an ending activity listed for a while, as ActivityKit does until the end call returns.
+    var endDelay: Duration?
     private(set) var activities: [RunningShoppingActivity] = []
     private(set) var started: [ShoppingActivityRequest] = []
     private(set) var updates: [ShoppingActivityContent] = []
+    private(set) var updateStaleDates: [Date?] = []
     private(set) var ended: [Ended] = []
     private var counter = 0
 
@@ -30,12 +33,14 @@ final class FakeLiveActivityController: LiveActivityControlling {
     func update(id: String, content: ShoppingActivityContent, staleDate: Date?, relevance: Double) async {
         guard let index = activities.firstIndex(where: { $0.id == id }) else { return }
         updates.append(content)
+        updateStaleDates.append(staleDate)
         let old = activities[index]
         activities[index] = RunningShoppingActivity(id: id, spaceID: old.spaceID, scope: old.scope, content: content)
     }
 
     func end(id: String, content: ShoppingActivityContent?, dismissal: ShoppingActivityDismissal) async {
         ended.append(Ended(id: id, content: content, dismissal: dismissal))
+        if let endDelay { try? await Task.sleep(for: endDelay) }
         activities.removeAll { $0.id == id }
     }
 

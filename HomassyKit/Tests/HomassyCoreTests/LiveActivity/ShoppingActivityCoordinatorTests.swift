@@ -340,4 +340,52 @@ struct ShoppingActivityCoordinatorTests {
         if case .stores = second.scope {} else { Issue.record("expected a .stores scope, got \(second.scope)") }
         #expect(second.content.doneCount == 1)
     }
+
+    /// A tap on an arrival notification fires the scene phase and the arrival branch at once: the two evaluations
+    /// must not both replace the Spar activity (one would be orphaned).
+    @Test func overlappingEvaluationsAtANewStoreStartExactlyOneActivity() async throws {
+        try add("Tej")
+        await arrive()
+        controller.endDelay = .milliseconds(50)
+        let auchan = try stack.makeStore("Auchan Budaörs")
+        auchan.latitude = 47.4645                                          // about 500 m north of the Spar
+        auchan.longitude = 18.9500
+        try add("Mosópor", at: auchan)
+        let atAuchan = Coordinate(latitude: 47.4645, longitude: 18.9500)
+        async let first: Void = arrive(atAuchan)
+        async let second: Void = arrive(atAuchan)
+        _ = await (first, second)
+        #expect(controller.running().count == 1)
+        #expect(controller.started.count == 2)
+        #expect(memory.suppressed == nil)
+    }
+
+    /// Two evaluations far away: the second must not adopt the still-listed ending activity (without a center),
+    /// which the next reconcile would turn into a false 4-hour suppression.
+    @Test func overlappingEvaluationsFarAwayEndItWithoutASuppression() async throws {
+        try add("Tej")
+        await arrive()
+        controller.endDelay = .milliseconds(50)
+        async let first: Void = arrive(farAway)
+        async let second: Void = arrive(farAway)
+        _ = await (first, second)
+        #expect(controller.running().isEmpty)
+        #expect(memory.started == nil)
+        #expect(coordinator.current == nil)
+        await coordinator.refresh()                                         // the next reconcile sees no swipe
+        #expect(memory.suppressed == nil)
+    }
+
+    /// An unchanged list after 30 minutes: opening the app still pushes the stale date forward, so the Lock Screen
+    /// never shows an outdated caption for a list that is up to date.
+    @Test func aForegroundPushesTheStaleDateForward() async throws {
+        try add("Tej")
+        await arrive()
+        stack.now.advance(seconds: 30 * 60)
+        await arrive()
+        #expect(controller.started.count == 1)
+        #expect(controller.updates.count == 1)
+        #expect(controller.updateStaleDates
+            == [stack.now.date.addingTimeInterval(ShoppingActivityCoordinator.staleInterval)])
+    }
 }
