@@ -41,4 +41,16 @@ struct UITestSeedTests {
             in: env.personal)
         #expect(services.storeDirectory.subtitle(ofStore: store.publicId) == "Fő utca 1., Budapest")
     }
+
+    @Test func storeItemsSeedTwoListsAtCornerShop() async throws {
+        let env = try ServiceTestEnvironment()
+        let services = container(env)
+        try await UITestSeed.populate(services, in: env.personal)
+        try UITestSeed.populateStoreItems(services, in: env.personal)
+        let lists = try services.shopping.lists(in: env.personal)
+        #expect(lists.map(\.name) == ["Weekly", "Party"])
+        let items = try lists.flatMap { try services.shopping.unpurchasedItems(in: $0) }
+        #expect(items.map(ShoppingService.displayName(of:)) == ["Milk", "Soap", "Milk", "Napkins"])
+        #expect(items.filter { $0.shoppingLocation?.name == "Corner Shop" }.count == 3)
+    }
 }

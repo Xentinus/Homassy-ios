@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 /// Fixture data for `-uiTestSeed` launches. Only ever runs against the in-memory store.
@@ -42,5 +43,21 @@ public enum UITestSeed {
                                price: nil, currency: nil, storageLocation: nil, shoppingLocation: nil)
         try inventory.addStock(product: eggs, quantity: 10, unit: .piece, expiresAt: day(20), purchasedAt: purchased,
                                price: nil, currency: nil, storageLocation: fridge, shoppingLocation: nil)
+    }
+
+    /// `-uiTestSeedStoreItems` (N-04): "Weekly" with Milk 2 l at Corner Shop and Soap without a store, "Party" with
+    /// Milk 1 l and Napkins at Corner Shop. The Live Activity at Corner Shop then shows Milk 3 l and Napkins.
+    public static func populateStoreItems(_ container: ServiceContainer, in space: Space) throws {
+        let shop = try container.context.fetchEntities(
+            ShoppingLocation.self, where: NSPredicate(format: "space == %@ AND mapItemIdentifier == %@", space,
+                                                      "uitest-corner-shop")).first
+        guard let shop, let milk = try container.products.products(in: space).first(where: { $0.name == "Milk" })
+        else { return }
+        let weekly = try container.shopping.createList(name: "Weekly", in: space)
+        let party = try container.shopping.createList(name: "Party", in: space)
+        try container.shopping.addItem(to: weekly, product: milk, quantity: 2, shoppingLocation: shop)
+        try container.shopping.addItem(to: weekly, customName: "Soap")
+        try container.shopping.addItem(to: party, product: milk, quantity: 1, shoppingLocation: shop)
+        try container.shopping.addItem(to: party, customName: "Napkins", shoppingLocation: shop)
     }
 }
