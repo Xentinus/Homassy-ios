@@ -207,6 +207,19 @@ final class AppModel {
         return ActivityKitShoppingController()
     }
 
+    /// The Live Activity memory (N-04): the app defaults, or under UI tests a suite wiped on every launch, so runs
+    /// never suppress each other or touch the real app's record.
+    static var shoppingActivityDefaults: UserDefaults {
+        #if DEBUG
+        if UITestHooks.isActive {
+            let suite = "uiTest.shoppingActivity"
+            UserDefaults.standard.removePersistentDomain(forName: suite)
+            return UserDefaults(suiteName: suite) ?? .standard
+        }
+        #endif
+        return appDefaults
+    }
+
     /// Builds the one `ServiceContainer` (and applies the UI-test seed) after the Personal space is bootstrapped.
     func buildServices() async {
         guard services == nil, !isBuildingServices,
@@ -231,7 +244,7 @@ final class AppModel {
                                          storeAddressCacheURL: storeAddressCacheURL,
                                          storeAddresses: storeAddresses,
                                          liveActivities: Self.liveActivityController,
-                                         shoppingActivityDefaults: Self.appDefaults)
+                                         shoppingActivityDefaults: Self.shoppingActivityDefaults)
         #if DEBUG
         if UITestHooks.isSeeded {
             try? await UITestSeed.populate(container, in: personalSpace)
