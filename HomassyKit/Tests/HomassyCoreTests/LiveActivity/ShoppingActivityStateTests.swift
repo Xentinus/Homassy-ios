@@ -112,6 +112,12 @@ struct ShoppingActivityStateTests {
                 == "2 közeli bolt")
         #expect(ShoppingActivityState.title(scope: scope, in: stack.space, items: [], locations: locations,
                                             locale: Locale(identifier: "en_US")) == "2 nearby stores")
+        let items = try open(scope)
+        #expect(ShoppingActivityState.title(scope: scope, in: stack.space, items: items, locations: locations, locale: hu)
+                == "2 közeli bolt")
+        let sparOnly = items.filter { $0.shoppingLocation?.publicId == spar.publicId }
+        #expect(ShoppingActivityState.title(scope: scope, in: stack.space, items: sparOnly, locations: locations,
+                                            locale: hu) == "Spar Budaörs")
         stack.context.delete(dm)
         try stack.context.save()
         #expect(ShoppingActivityState.title(scope: scope, in: stack.space, items: [], locations: locations, locale: hu)
