@@ -1,10 +1,20 @@
 import Foundation
 
-/// Which items a shopping Live Activity covers (N-04 D5 A, D10 A): one saved store, or every store of a chain when
-/// the user stands at a branch that is not saved. The chain is a `ChainKey` (lowercased, no diacritics).
+/// Which items a shopping Live Activity covers (N-04 D5 A, D10 A, D11): one saved store, several saved stores within
+/// 150 m of the user (one household, sorted by `uuidString`), or every store of a chain when the user stands at a
+/// branch that is not saved. The chain is a `ChainKey` (lowercased, no diacritics).
 public enum ShoppingActivityScope: Codable, Hashable, Sendable {
     case store(UUID)
+    case stores([UUID])
     case chain(String)
+
+    /// Store scopes end when their stores are gone; a chain scope keeps its last title while nothing is open.
+    public var isChain: Bool {
+        switch self {
+        case .chain: true
+        case .store, .stores: false
+        }
+    }
 }
 
 /// One row on the shopping Live Activity. The same product in the same unit from several lists is one row (D7 A),

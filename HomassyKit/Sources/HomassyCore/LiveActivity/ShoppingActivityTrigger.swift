@@ -51,32 +51,37 @@ public enum ShoppingActivityTrigger {
     public static let arrivalRadius: Double = StoreReminderPlanner.regionRadius
     /// Opening the app farther than this from the activity's store ends it, and lifts a suppression.
     public static let leaveDistance: Double = 1_000
-    /// Saved stores closer than this to each other are the same shop saved in several households.
-    public static let samePlaceDistance: Double = 50
 
     public static func distance(_ a: Coordinate, _ b: Coordinate) -> Double {
         StoreResult(mapItemIdentifier: "", name: "", latitude: a.latitude, longitude: a.longitude)
             .distance(toLatitude: b.latitude, longitude: b.longitude)
     }
 
-    /// A saved store with open items within 150 m (the nearest; for the same shop in several households the selected
-    /// household, then the one with more items). Otherwise a known branch within 150 m of a chain with open items:
-    /// that chain in the selected household when it has items there, else in the household with most of them.
+    /// The household with saved stores with open items within 150 m (the selected household first, then the one with
+    /// more open items there; ties by `spaceID`), covering every one of its stores in that circle (D11): one store →
+    /// `.store`, several → `.stores`. Otherwise a known branch within 150 m of a chain with open items: that chain in
+    /// the household ranked the same way.
     public static func target(position: Coordinate, stores: [WaitingStore], branches: [ChainBranch],
                               preferredSpaceID: UUID?) -> ShoppingActivityTarget? {
-        func rank(_ spaceID: UUID, _ waiting: Int) -> (Int, Int) { (spaceID == preferredSpaceID ? 1 : 0, waiting) }
+        func rank(_ spaceID: UUID, _ waiting: Int) -> (Int, Int, String) {
+            (spaceID == preferredSpaceID ? 1 : 0, waiting, spaceID.uuidString)
+        }
+        func best(_ bySpace: [UUID: Int]) -> UUID? {
+            bySpace.max { rank($0.key, $0.value) < rank($1.key, $1.value) }?.key
+        }
 
-        let saved: [(store: WaitingStore, center: Coordinate, distance: Double)] = stores.compactMap { store in
+        let near: [(store: WaitingStore, center: Coordinate, distance: Double)] = stores.compactMap { store in
             guard store.waiting > 0, let center = store.center else { return nil }
             let metres = distance(position, center)
             return metres <= arrivalRadius ? (store, center, metres) : nil
         }
-        if let nearest = saved.map(\.distance).min() {
-            let samePlace = saved.filter { $0.distance - nearest < samePlaceDistance }
-            if let pick = samePlace.max(by: { rank($0.store.spaceID, $0.store.waiting) < rank($1.store.spaceID, $1.store.waiting) }) {
-                return ShoppingActivityTarget(spaceID: pick.store.spaceID, scope: .store(pick.store.storeID),
-                                              center: pick.center)
-            }
+        let nearBySpace = Dictionary(grouping: near, by: \.store.spaceID)
+        if let space = best(nearBySpace.mapValues { $0.reduce(0) { $0 + $1.store.waiting } }),
+           let members = nearBySpace[space]?.sorted(by: { $0.distance < $1.distance }), let nearest = members.first {
+            let ids = members.map(\.store.storeID)
+            let scope: ShoppingActivityScope = ids.count == 1
+                ? .store(ids[0]) : .stores(ids.sorted { $0.uuidString < $1.uuidString })
+            return ShoppingActivityTarget(spaceID: space, scope: scope, center: nearest.center)
         }
 
         let chains = Dictionary(grouping: stores.filter { $0.waiting > 0 && !$0.chainKey.isEmpty }, by: \.chainKey)
@@ -86,9 +91,9 @@ public enum ShoppingActivityTrigger {
             return metres <= arrivalRadius ? (branch, metres) : nil
         }
         guard let branch = hits.min(by: { $0.distance < $1.distance })?.branch,
-              let members = chains[branch.chainKey] else { return nil }
-        let bySpace = Dictionary(grouping: members, by: \.spaceID).mapValues { $0.reduce(0) { $0 + $1.waiting } }
-        guard let space = bySpace.max(by: { rank($0.key, $0.value) < rank($1.key, $1.value) })?.key else { return nil }
+              let members = chains[branch.chainKey],
+              let space = best(Dictionary(grouping: members, by: \.spaceID).mapValues { $0.reduce(0) { $0 + $1.waiting } })
+        else { return nil }
         return ShoppingActivityTarget(spaceID: space, scope: .chain(branch.chainKey), center: branch.center)
     }
 

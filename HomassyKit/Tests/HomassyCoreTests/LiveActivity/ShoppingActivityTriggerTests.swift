@@ -42,6 +42,34 @@ struct ShoppingActivityTriggerTests {
                                                preferredSpaceID: nil)?.spaceID == family)
     }
 
+    @Test func severalStoresOfOneHouseholdNearbyShareOneActivity() {
+        let spar = store(home, chain: "spar", at: north(10), waiting: 1)
+        let dm = store(home, chain: "dm", at: north(55), waiting: 5)
+        let far = store(home, chain: "auchan", at: north(400), waiting: 9)
+        let target = ShoppingActivityTrigger.target(position: here, stores: [dm, far, spar], branches: [],
+                                                    preferredSpaceID: nil)
+        let ids = [spar.storeID, dm.storeID].sorted { $0.uuidString < $1.uuidString }
+        #expect(target == ShoppingActivityTarget(spaceID: home, scope: .stores(ids), center: north(10)))
+    }
+
+    @Test func equalHouseholdsBreakTiesTheSameWayEveryTime() {
+        let mine = store(home, at: north(20), waiting: 2)
+        let theirs = store(family, at: north(30), waiting: 2)
+        let winner = [home, family].max { $0.uuidString < $1.uuidString }
+        for _ in 0..<5 {
+            #expect(ShoppingActivityTrigger.target(position: here, stores: [mine, theirs].shuffled(), branches: [],
+                                                   preferredSpaceID: nil)?.spaceID == winner)
+        }
+    }
+
+    @Test func atABranchTheSelectedHouseholdWinsWhenItHasTheChain() {
+        let mine = store(home, at: north(3_000), waiting: 1)
+        let theirs = store(family, at: north(5_000), waiting: 7)
+        let branch = ChainBranch(chainKey: "spar", center: north(60))
+        #expect(ShoppingActivityTrigger.target(position: here, stores: [mine, theirs], branches: [branch],
+                                               preferredSpaceID: home)?.spaceID == home)
+    }
+
     @Test func atAnUnsavedBranchTheChainOfTheHouseholdWithMostItemsStarts() {
         let saved = store(home, at: north(3_000), waiting: 3)                      // Spar Budaörs, far away
         let theirs = store(family, at: north(5_000), waiting: 1)

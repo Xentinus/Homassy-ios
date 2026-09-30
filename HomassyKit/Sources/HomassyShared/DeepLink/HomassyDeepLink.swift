@@ -21,6 +21,7 @@ public enum HomassyDeepLink: Equatable, Sendable {
             var items = [URLQueryItem(name: "space", value: spaceID.uuidString)]
             switch scope {
             case let .store(id): items.append(URLQueryItem(name: "store", value: id.uuidString))
+            case let .stores(ids): items.append(URLQueryItem(name: "stores", value: ids.map(\.uuidString).joined(separator: ",")))
             case let .chain(key): items.append(URLQueryItem(name: "chain", value: key))
             }
             components.queryItems = items
@@ -42,6 +43,10 @@ public enum HomassyDeepLink: Equatable, Sendable {
             guard let space = value("space").flatMap(UUID.init(uuidString:)) else { return nil }
             if let store = value("store").flatMap(UUID.init(uuidString:)) {
                 self = .shoppingStore(spaceID: space, scope: .store(store))
+            } else if let list = value("stores") {
+                let ids = list.split(separator: ",").map { UUID(uuidString: String($0)) }
+                guard !ids.isEmpty, !ids.contains(nil) else { return nil }
+                self = .shoppingStore(spaceID: space, scope: .stores(ids.compactMap { $0 }))
             } else if let chain = value("chain") {
                 self = .shoppingStore(spaceID: space, scope: .chain(chain))
             } else {
