@@ -63,6 +63,9 @@ struct MainTabView: View {
             if UITestHooks.ignoresRestoredSceneState { selectedTab = .inventory }
             UITestHooks.runQuickActionIfRequested(services: services)       // after the reset, never before
         }
+        .overlay(alignment: .topLeading) {
+            if UITestHooks.isActive { UITestLiveActivityProbe() }
+        }
         #endif
     }
 
@@ -73,10 +76,11 @@ struct MainTabView: View {
             if let space { selection.selectedSpaceID = space }
             selectedTab = .inventory
             router.pathRequest = AppRouter.PathRequest(tab: .inventory)
-        case .shoppingByStore(let space):      // the "Mind" filter arrives with the app wiring of N-04
+        case .shoppingByStore(let space):
             selection.selectedSpaceID = space
             selectedTab = .shopping
             router.pathRequest = AppRouter.PathRequest(tab: .shopping)
+            router.shoppingRequest = AppRouter.ShoppingRequest(spaceID: space, listID: nil, adds: false, byStore: true)
         case .shopping(let space):
             if let space { selection.selectedSpaceID = space }
             selectedTab = .shopping

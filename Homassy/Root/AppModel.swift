@@ -1,6 +1,7 @@
 import CoreData
 import Foundation
 import HomassyCore
+import HomassyShared
 import Observation
 
 /// The single composition root. `AppModel.shared` is the only instance outside previews:
@@ -198,6 +199,14 @@ final class AppModel {
         return SystemNotificationCenter()
     }
 
+    /// ActivityKit on a normal launch; an in-memory recorder under UI tests (N-04).
+    static var liveActivityController: any LiveActivityControlling {
+        #if DEBUG
+        if UITestHooks.isActive { return UITestLiveActivityController.shared }
+        #endif
+        return ActivityKitShoppingController()
+    }
+
     /// Builds the one `ServiceContainer` (and applies the UI-test seed) after the Personal space is bootstrapped.
     func buildServices() async {
         guard services == nil, !isBuildingServices,
@@ -220,10 +229,13 @@ final class AppModel {
                                          locationAuthorizer: storeLocation,
                                          storeRemindersEnabled: { StoreReminderSettings.isEnabled },
                                          storeAddressCacheURL: storeAddressCacheURL,
-                                         storeAddresses: storeAddresses)
+                                         storeAddresses: storeAddresses,
+                                         liveActivities: Self.liveActivityController,
+                                         shoppingActivityDefaults: Self.appDefaults)
         #if DEBUG
         if UITestHooks.isSeeded {
             try? await UITestSeed.populate(container, in: personalSpace)
+            if UITestHooks.seedsStoreItems { try? UITestSeed.populateStoreItems(container, in: personalSpace) }
         }
         if UITestHooks.simulatesAttribution {
             let tracker = AttributionTracker(window: .seconds(120))
@@ -237,6 +249,7 @@ final class AppModel {
         services = container
         storeLocation?.onAccessChange = { container.storeReminders.scheduleRefresh(.authorization) }
         startRemoteChanges(for: container)
+        container.shoppingActivity.scheduleRefresh()     // adopts an activity that outlived the previous process, or ends it when its store is gone
     }
 
     /// The services for work without a scene (N-01 background refresh): a background launch never shows RootView,
@@ -270,6 +283,7 @@ final class AppModel {
         let attribution = container.attribution
         let notifications = container.notifications
         let storeReminders = container.storeReminders
+        let shoppingActivity = container.shoppingActivity
         let observer = RemoteChangeObserver(container: persistence.container, processor: processor) { batch in
             attribution.record(batch.foreignChanges)
             let scheduleRelevant: Set<String> = ["Space", "Product", "InventoryItem", "StorageLocation"]
@@ -279,8 +293,38 @@ final class AppModel {
             if !batch.changedEntityNames.isDisjoint(with: ["ShoppingListItem", "ShoppingLocation", "ShoppingList"]) {
                 storeReminders.scheduleRefresh(.remoteChange)
             }
+            if !batch.changedEntityNames.isDisjoint(with: ["ShoppingListItem", "ShoppingList", "ShoppingLocation", "Product", "Space"]) {
+                shoppingActivity.scheduleRefresh()
+            }
         }
         observer.start()
         remoteChanges = observer
+    }
+
+    /// On launch, every foreground and after an arrival notification tap (N-04 D9 B): where the user is, which chain
+    /// branches the store reminders know, and the selected household decide whether the shopping Live Activity starts.
+    func evaluateShoppingActivity() async {
+        guard let services else { return }
+        var branches = services.storeReminders.lastPlan.compactMap { reminder in
+            StoreReminderPlanner.chainKey(fromIdentifier: reminder.identifier).map {
+                ChainBranch(chainKey: $0, center: reminder.center)
+            }
+        }
+        if let arrival = AppRouter.shared.arrivalBranch { branches.append(arrival) }
+        await services.shoppingActivity.evaluate(position: await shoppingPosition(), branches: branches,
+                                                 preferredSpaceID: selection.selectedSpaceID)
+    }
+
+    private func shoppingPosition() async -> Coordinate? {
+        #if DEBUG
+        if let position = UITestHooks.nearStorePosition { return position }
+        #endif
+        return await storeLocation?.currentCoordinate()
+    }
+
+    /// `TickShoppingItemIntent` through `ShoppingTickBridge` (registered in AppDelegate), also in a background launch.
+    func tick(itemIDs: [UUID]) async {
+        guard let services = await prepareServices() else { return }
+        await services.shoppingActivity.tick(itemIDs: itemIDs)
     }
 }

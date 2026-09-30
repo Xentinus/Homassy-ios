@@ -16,18 +16,22 @@ final class AppRouter {
         let tab: AppTab
     }
 
-    /// Filter the Shopping home of `spaceID` to `listID`, and with `adds` open the add sheet on it.
+    /// Filter the Shopping home of `spaceID` to `listID` (with `adds`, open the add sheet on it), or with `byStore`
+    /// show every list grouped by store (a Live Activity tap, N-04).
     struct ShoppingRequest: Equatable {
         let id = UUID()
         let spaceID: UUID
-        let listID: UUID
+        let listID: UUID?
         let adds: Bool
+        var byStore = false
     }
 
     var pending: AppDestination?
     var pathRequest: PathRequest?
     var scanRequested = false
     var shoppingRequest: ShoppingRequest?
+    /// The region of the store reminder the user tapped (N-04): the shopping Live Activity starts for its chain there.
+    var arrivalBranch: ChainBranch?
     /// Bumped on every `open(_:)`, so `SpaceSwitcher` closes its settings sheet even when the tab doesn't change.
     private(set) var openCount = 0
 

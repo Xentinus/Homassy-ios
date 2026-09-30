@@ -94,12 +94,16 @@ struct ShoppingHomeView: View {
         lists.reload()
     }
 
-    /// A quick action (N-02) filters to its list, or opens the add sheet preset to it. Only the home of the request's
-    /// space takes it: the home of the previous space may still be on screen while the space switches.
+    /// A quick action (N-02) filters to its list or opens the add sheet preset to it; a Live Activity tap (N-04) shows
+    /// every list grouped by store. Only the home of the request's space takes it: the home of the previous space may
+    /// still be on screen while the space switches.
     private func consumeShoppingRequest() {
         guard let request = router.shoppingRequest, request.spaceID == model.space.publicId else { return }
         router.shoppingRequest = nil
-        if request.adds {
+        if request.byStore {
+            model.filter = nil
+            model.grouping = .store          // nearest store first: the one the activity is about is on top
+        } else if request.adds {
             adding = AddRequest(preselected: request.listID)
         } else {
             model.filter = request.listID

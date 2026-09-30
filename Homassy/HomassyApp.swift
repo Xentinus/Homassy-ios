@@ -1,4 +1,5 @@
 import HomassyCore
+import HomassyShared
 import SwiftUI
 
 @main
@@ -17,7 +18,13 @@ struct HomassyApp: App {
                 .environment(appModel)
                 .environment(archiveRouter)
                 .environment(backupReminder)
-                .onOpenURL { url in archiveRouter.open(url) }
+                .onOpenURL { url in
+                    if let link = HomassyDeepLink(url: url) {
+                        AppRouter.shared.open(AppDestination(link))      // Live Activity and widget taps (N-04, N-05)
+                    } else {
+                        archiveRouter.open(url)
+                    }
+                }
                 #if DEBUG
                 .task {
                     if let url = UITestArchiveHook.fixtureURLIfRequested() { archiveRouter.open(url) }
