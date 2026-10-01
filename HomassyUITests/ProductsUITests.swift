@@ -221,12 +221,37 @@ final class ProductsUITests: XCTestCase {
         for _ in 0..<6 where !average.exists { app.swipeUp() }
         XCTAssertTrue(average.waitForExistence(timeout: 5))
         XCTAssertTrue(average.label.contains("459"), average.label)
+        XCTAssertTrue(app.descendants(matching: .any)["price.trend.chart"].exists)
+        // The summary and the chart now sit above the store rows, which can be below the fold.
         let store = app.buttons["price.store.none"]
+        for _ in 0..<3 where !store.exists || !store.isHittable { app.swipeUp() }
         XCTAssertTrue(store.exists)
         keepScreenshot("product-price-trend", app)
         store.tap()
         XCTAssertTrue(app.descendants(matching: .any)["price.chart"].waitForExistence(timeout: 5))
         keepScreenshot("product-price-chart", app)
+    }
+
+    func testHistoryShowsTheLastThreeAndOpensTheFullPage() {
+        let app = openProducts()
+        openDetail("Eggs", in: app)
+        let showAll = app.buttons["history.showAll"]
+        XCTAssertFalse(showAll.exists, "one event so far")
+        for _ in 0..<3 {
+            openStockMenu(in: app)
+            app.buttons["stock.consume"].tap()
+            setAmount("1", in: app)
+            app.buttons["amount.confirm"].tap()
+            XCTAssertTrue(app.textFields["amount.field"].waitForNonExistence(timeout: 3))
+        }
+        for _ in 0..<6 where !showAll.exists { app.swipeUp() }
+        XCTAssertTrue(showAll.waitForExistence(timeout: 5))
+        XCTAssertTrue(showAll.label.contains("4"), showAll.label)
+        keepScreenshot("product-history-section", app)
+        showAll.tap()
+        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["history.page"].exists)
+        keepScreenshot("product-history-page", app)
     }
 
     private func keepScreenshot(_ name: String, _ app: XCUIApplication) {
