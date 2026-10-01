@@ -173,4 +173,28 @@ struct AddItemFlowModelTests {
         #expect(!model.add())
         #expect(model.errorMessage != nil)
     }
+
+    @Test func startingWithAProductOpensOnHowMuch() throws {
+        let milk = try stack.makeProduct("Tej", unit: .liter)
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let model = makeModel(list)
+        model.start(with: milk)
+        #expect(model.step == .amount)
+        #expect(model.chosenName == "Tej" && model.unit == .liter)
+
+        model.quantityText = "2"
+        model.next()
+        #expect(model.add())
+        let item = try #require(try stack.service.items(in: list).first)
+        #expect(item.product == milk)
+    }
+
+    @Test func goingBackFromAStartedProductClearsIt() throws {
+        let milk = try stack.makeProduct("Tej", unit: .liter)
+        let list = try stack.service.createList(name: "Heti", in: stack.space)
+        let model = makeModel(list)
+        model.start(with: milk)
+        model.back()
+        #expect(model.step == .what && model.chosenName == nil)
+    }
 }
