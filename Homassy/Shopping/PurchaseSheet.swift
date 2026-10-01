@@ -96,16 +96,7 @@ struct PurchaseSheet: View {
     private var purchaseSection: some View {
         Section {
             StoreMenu(model: model.store) { pickingStore = true }
-            HStack {
-                TextField("shopping.purchase.pricePaid", text: $model.priceText)
-                    .keyboardType(.decimalPad)
-                    .accessibilityIdentifier("shopping.purchase.price")
-                TextField("stock.currency", text: $model.currency)
-                    .textInputAutocapitalization(.characters)
-                    .autocorrectionDisabled()
-                    .multilineTextAlignment(.trailing)
-                    .frame(maxWidth: 72)
-            }
+            PriceFieldRow(price: $model.priceText, currency: $model.currency, priceIdentifier: "shopping.purchase.price")
         } header: {
             Text("stock.purchase")
         } footer: {

@@ -25,16 +25,7 @@ struct StockDetailsView: View {
             Section {
                 DatePicker("stock.purchase.date", selection: $form.purchasedAt, displayedComponents: .date)
                 StoreMenu(model: form.store) { pickingStore = true }
-                HStack {
-                    TextField("shopping.purchase.pricePaid", text: $form.priceText)
-                        .keyboardType(.decimalPad)
-                        .accessibilityIdentifier("stock.price")
-                    TextField("stock.currency", text: $form.currency)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                        .multilineTextAlignment(.trailing)
-                        .frame(maxWidth: 72)
-                }
+                PriceFieldRow(price: $form.priceText, currency: $form.currency, priceIdentifier: "stock.price")
                 if let error = form.priceError {
                     Text(verbatim: error).font(.footnote).foregroundStyle(.red)
                 }

@@ -15,6 +15,7 @@ struct ProductPickerView: View {
     }
 
     @Environment(ServiceContainer.self) private var services
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var newProduct: NewProduct?
     @State private var scanning = false
     @State private var pendingPick: UUID?
@@ -51,7 +52,8 @@ struct ProductPickerView: View {
                 }
             }
             .overlay(alignment: .trailing) {
-                if !model.isSearching, model.sections.count > 1 {
+                // Hidden at accessibility sizes, like the Search index (X-04).
+                if !model.isSearching, model.sections.count > 1, !dynamicTypeSize.isAccessibilitySize {
                     SectionIndexBar(letters: model.sections.map(\.id)) { letter in
                         if let first = model.sections.first(where: { $0.id == letter })?.products.first {
                             proxy.scrollTo(first.id, anchor: .top)
