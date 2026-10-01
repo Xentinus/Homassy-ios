@@ -3,9 +3,10 @@ import HomassyCore
 import SwiftUI
 
 /// The stepwise add: 0. which list (with two or more), 1. what (a product or a new custom item), 2. how much,
-/// 3. where from.
+/// 3. where from. It can also open on 2. how much with a product chosen in the product detail.
 struct AddItemSheet: View {
     let services: ServiceContainer
+    private let startsWithProduct: Bool
 
     @State private var model: AddItemFlowModel
     @State private var authorizer = CoreLocationAuthorizer()
@@ -15,12 +16,15 @@ struct AddItemSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(StoreDirectory.self) private var directory
 
-    init(lists: [ShoppingList], preselected: UUID?, services: ServiceContainer, initialQuery: String = "") {
+    init(lists: [ShoppingList], preselected: UUID?, services: ServiceContainer, initialQuery: String = "",
+         product: Product? = nil) {
         self.services = services
         let model = AddItemFlowModel(lists: lists, preselected: preselected,
                                      lastUsed: LastUsedShoppingList(defaults: ShoppingDefaults.store),
                                      shopping: services.shopping, locations: services.shoppingLocations)
         model.query = initialQuery
+        if let product { model.start(with: product) }
+        startsWithProduct = product != nil
         _model = State(initialValue: model)
     }
 
@@ -88,7 +92,8 @@ struct AddItemSheet: View {
         }
     }
 
-    @ViewBuilder private var whatPage: some View {
+    /// The "Lista" row: on the first page, or on "how much" when the sheet started with a product (P2-07a).
+    @ViewBuilder private var listPicker: some View {
         if model.listOptions.count > 1 {
             Section {
                 Picker("shopping.add.list", selection: $model.selectedListID) {
@@ -105,6 +110,10 @@ struct AddItemSheet: View {
                 .accessibilityIdentifier("shopping.add.list")
             }
         }
+    }
+
+    @ViewBuilder private var whatPage: some View {
+        listPicker
         Section {
             TextField("shopping.add.query", text: $model.query)
                 .focused($focused)
@@ -137,6 +146,7 @@ struct AddItemSheet: View {
     }
 
     @ViewBuilder private var amountPage: some View {
+        if startsWithProduct { listPicker }
         Section {
             if let name = model.chosenName {
                 Text(verbatim: name).font(.headline)

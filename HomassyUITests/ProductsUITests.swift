@@ -312,6 +312,35 @@ final class ProductsUITests: XCTestCase {
         XCTAssertTrue(waitForLabel(stockHeader(in: app), containing: "13\(nbsp)pcs"))
     }
 
+    func testListaIsDisabledWithoutAShoppingList() {
+        let app = openProducts()
+        openDetail("Milk", in: app)
+        let toList = app.buttons["product.detail.addToList"]
+        XCTAssertTrue(toList.waitForExistence(timeout: 5))
+        XCTAssertFalse(toList.isEnabled)
+    }
+
+    func testListaAddsTheProductToAShoppingList() {
+        continueAfterFailure = false
+        let app = XCUIApplication.homassy(extraArguments: ["-uiTestSeed", "-uiTestSeedStoreItems"])
+        app.launch()
+        app.openTab("Search")
+        openDetail("Eggs", in: app)
+        let toList = app.buttons["product.detail.addToList"]
+        XCTAssertTrue(toList.waitForExistence(timeout: 5))
+        XCTAssertTrue(toList.isEnabled)
+        toList.tap()
+        XCTAssertTrue(app.textFields["shopping.add.quantity"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["shopping.add.list"].exists, "two lists, so the list row shows")
+        keepScreenshot("product-add-to-list", app)
+        app.buttons["shopping.add.next"].tap()
+        let confirm = app.buttons["shopping.add.confirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
+        app.openTab("Shopping")
+        XCTAssertTrue(app.descendants(matching: .any)["shopping.item.Eggs"].waitForExistence(timeout: 10))
+    }
+
     private func waitForValue(_ element: XCUIElement, _ value: String, timeout: TimeInterval = 5) -> Bool {
         let predicate = NSPredicate(format: "value == %@", value)
         return XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: element)], timeout: timeout) == .completed

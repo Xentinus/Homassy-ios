@@ -72,6 +72,11 @@ struct ProductDetailView: View {
                 StockAddSheet.adding(productID, in: space, services: services)
             }
         }
+        .sheet(isPresented: $addingToList) {
+            if let model {
+                AddItemSheet(lists: shoppingLists, preselected: nil, services: services, product: model.product)
+            }
+        }
         .sheet(item: $amountTarget) { target in
             if let model, let form = model.amountForm(for: target.itemID) {
                 AmountSheet(purpose: target.purpose, form: form,
