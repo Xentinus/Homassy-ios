@@ -28,14 +28,6 @@ public struct StockItemCard: Identifiable, Equatable, Sendable {
     public let expiryText: String?
 }
 
-/// The stock of one storage location ("Pantry 2 pcs"). `name` is nil for items without a location.
-public struct StockGroup: Identifiable, Equatable, Sendable {
-    public let id: String
-    public let name: String?
-    public let totalText: String
-    public let items: [StockItemCard]
-}
-
 /// One open lot in the detail's single stock list (P2-07a, 2A): the card plus where it is.
 public struct StockLotRow: Identifiable, Equatable, Sendable {
     public let card: StockItemCard
@@ -78,15 +70,13 @@ public struct LocationOption: Identifiable, Equatable, Sendable {
     public let name: String?
 }
 
-/// The product detail (README "Product detail layout"): header, stock by location with consume, move and
-/// delete, price trend and history. Every action returns an `UndoableAction` for the toast.
+/// The product detail (README "Product detail layout"): header, one stock list sorted by expiry with consume, move
+/// and delete, price trend and history. Every action returns an `UndoableAction` for the toast.
 @MainActor
 @Observable
 public final class ProductDetailModel {
     public let product: Product
     public private(set) var fields: ProductFields?
-    /// Every open item by location; `stockGroups` hides the ones whose delete is in its undo window.
-    private var allGroups: [StockGroup] = []
     /// Every open lot, sorted for the stock list; `stock` hides the ones whose delete is in its undo window.
     private var allLots: [StockLotRow] = []
     public private(set) var priceTrend: PriceTrend?
@@ -121,18 +111,8 @@ public final class ProductDetailModel {
 
     public var canEdit: Bool { product.space.map(products.canEdit) ?? false }
 
-    /// The stock by storage location, without items whose delete is still in its undo window.
-    public var stockGroups: [StockGroup] {
-        allGroups.compactMap { group in
-            let items = group.items.filter { !pending.contains($0.id) }
-            guard !items.isEmpty else { return nil }
-            let total = StockSummary.text(for: items.map { ($0.quantity, $0.unit) }, locale: locale) ?? ""
-            return StockGroup(id: group.id, name: group.name, totalText: total, items: items)
-        }
-    }
-
-    /// Open stock items shown.
-    public var stockCount: Int { stockGroups.reduce(0) { $0 + $1.items.count } }
+    /// Open stock lots shown.
+    public var stockCount: Int { stock.count }
 
     /// The stock list (2A): soonest expiry first, no expiry last, then the older purchase.
     public var stock: [StockLotRow] { allLots.filter { !pending.contains($0.id) } }
@@ -177,9 +157,8 @@ public final class ProductDetailModel {
     }
 
     public func reload() {
-        guard !product.isGone, let space = product.space else {
+        guard !product.isGone, product.space != nil else {
             fields = nil
-            allGroups = []
             allLots = []
             priceTrend = nil
             priceEntries = []
@@ -194,7 +173,6 @@ public final class ProductDetailModel {
                                url: product.url.flatMap(URL.init(string:)))
         do {
             openItems = try inventory.items(for: product)
-            allGroups = try groups(in: space)
             priceEntries = PriceHistory.entries(for: product, defaultCurrency: inventory.defaultCurrency)
             priceSummary = PriceHistory.summary(of: priceEntries, preferredCurrency: inventory.defaultCurrency)
             allLots = lots()
@@ -338,29 +316,6 @@ public final class ProductDetailModel {
             .filter { $0.currency == average.currency && $0.unit == average.unit && $0.date >= start }
             .sorted { $0.date < $1.date }
         return points.isEmpty ? nil : PriceTrend(points: points, currency: average.currency, unit: average.unit)
-    }
-
-    private func groups(in space: Space) throws -> [StockGroup] {
-        let now = inventory.currentDate()
-        let calendar = inventory.calendar
-        let visible = openItems
-        let order = try storageLocations.locations(in: space)
-        let byLocation = Dictionary(grouping: visible) { $0.storageLocation }
-        var groups: [StockGroup] = []
-        func group(_ location: StorageLocation?) {
-            guard let items = byLocation[location], !items.isEmpty else { return }
-            let cards = items
-                .sorted {
-                    ExpirationStatus.sortKey(expiresAt: $0.expiresAt, now: now, calendar: calendar)
-                        < ExpirationStatus.sortKey(expiresAt: $1.expiresAt, now: now, calendar: calendar)
-                }
-                .map { card($0, now: now, calendar: calendar) }
-            groups.append(StockGroup(id: location?.publicId.uuidString ?? "none", name: location?.name,
-                                     totalText: StockSummary.text(for: items, locale: locale) ?? "", items: cards))
-        }
-        order.forEach(group)
-        group(nil)
-        return groups
     }
 
     // MARK: Price trend

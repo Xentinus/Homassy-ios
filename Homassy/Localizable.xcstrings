@@ -4,6 +4,12 @@
     "activity.intent.tick.item" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Artikel"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -15,18 +21,18 @@
             "state" : "translated",
             "value" : "Tételek"
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Artikel"
-          }
         }
       }
     },
     "activity.intent.tick.title" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Artikel gekauft"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -37,12 +43,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tétel megvéve"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Artikel gekauft"
           }
         }
       }
@@ -5614,6 +5614,50 @@
         }
       }
     },
+    "product.detail.addToList" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zur Liste"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to List"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listára"
+          }
+        }
+      }
+    },
+    "product.detail.addToList.noList" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lege zuerst eine Einkaufsliste an."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create a shopping list first."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Előbb hozz létre egy bevásárlólistát."
+          }
+        }
+      }
+    },
     "product.detail.consume" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5637,6 +5681,28 @@
         }
       }
     },
+    "product.detail.copy" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Másolás"
+          }
+        }
+      }
+    },
     "product.detail.deleteProduct" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5656,6 +5722,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Termék törlése"
+          }
+        }
+      }
+    },
+    "product.detail.facts" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angaben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adatok"
           }
         }
       }
@@ -5890,25 +5978,24 @@
         }
       }
     },
-    "product.detail.stock %lld" : {
-      "extractionState" : "manual",
+    "product.detail.stockSection" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bestand (%lld)"
+            "value" : "Bestand"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stock items (%lld)"
+            "value" : "Stock"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Készlet elemek (%lld)"
+            "value" : "Készlet"
           }
         }
       }
@@ -5932,6 +6019,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ismeretlen bolt"
+          }
+        }
+      }
+    },
+    "product.detail.website" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Website"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Website"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weboldal"
           }
         }
       }

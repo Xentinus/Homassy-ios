@@ -38,27 +38,6 @@ struct ProductDetailModelTests {
         #expect(fields.unitName == MeasureUnit.piece.name(for: 1, locale: Self.en))
     }
 
-    @Test("Stock is grouped by storage location in the space's order, no location last")
-    func stockGroups() async throws {
-        let env = try ServiceTestEnvironment()
-        let (pantry, fridge, _) = try locations(env)
-        let eggs = try await env.makeProduct("Eggs")
-        try env.stock(eggs, 10, location: fridge, expiresInDays: 20)
-        try env.stock(eggs, 4, location: fridge, expiresInDays: 2)
-        try env.stock(eggs, 2, location: pantry, expiresInDays: 9)
-        try env.stock(eggs, 1)
-        let finished = try env.stock(eggs, 3, location: pantry)
-        try env.inventoryService().markUsedUp(finished)
-
-        let model = model(env, eggs)
-        #expect(model.stockGroups.map(\.name) == ["Pantry", "Fridge", nil])
-        #expect(model.stockGroups.map(\.totalText) == ["2\u{00A0}pcs", "14\u{00A0}pcs", "1\u{00A0}pc"])
-        #expect(model.stockGroups[1].items.map(\.quantityText) == ["4\u{00A0}pcs", "10\u{00A0}pcs"])
-        #expect(model.stockGroups[1].items[0].level == .critical)
-        #expect(model.stockGroups[1].items[0].expiryText == "2 days left")
-        #expect(model.stockCount == 4)
-    }
-
     @Test("Stock is one list: soonest expiry first, no expiry last, then the older purchase")
     func stockLots() async throws {
         let env = try ServiceTestEnvironment()
@@ -75,6 +54,8 @@ struct ProductDetailModelTests {
         #expect(model.stock.map(\.locationName) == ["Fridge", "Pantry", "Fridge", "Freezer", nil])
         #expect(model.stock.map(\.isFreezer) == [false, false, false, true, false])
         #expect(model.stockTotalText == "23\u{00A0}pcs")
+        #expect(model.stockCount == 5)
+        #expect(model.stock[0].card.level == .critical && model.stock[0].card.expiryText == "2 days left")
     }
 
     @Test func sameExpiryShowsTheOlderPurchaseFirst() async throws {
@@ -214,7 +195,7 @@ struct ProductDetailModelTests {
         try env.productService().delete(milk)
         model.reload()
         #expect(model.fields == nil)
-        #expect(model.stockGroups.isEmpty && model.history.isEmpty && model.priceEntries.isEmpty)
+        #expect(model.stock.isEmpty && model.history.isEmpty && model.priceEntries.isEmpty)
     }
 
     // MARK: Actions
@@ -238,11 +219,11 @@ struct ProductDetailModelTests {
         let action = try #require(model.consume(item.publicId, amount: 2))
         #expect(action.kind == .consume)
         model.reload()
-        #expect(model.stockGroups.first?.totalText == "4\u{00A0}pcs")
+        #expect(model.stockTotalText == "4\u{00A0}pcs")
         #expect(model.history.first?.kind == .consumed)
         action.revert()
         model.reload()
-        #expect(model.stockGroups.first?.totalText == "6\u{00A0}pcs")
+        #expect(model.stockTotalText == "6\u{00A0}pcs")
         #expect(model.history.map(\.kind) == [.added])
     }
 
@@ -265,11 +246,11 @@ struct ProductDetailModelTests {
         let model = model(env, eggs)
         let action = try #require(model.move(item.publicId, amount: 10, to: fridge.publicId))
         model.reload()
-        #expect(model.stockGroups.map(\.name) == ["Pantry", "Fridge"])
-        #expect(model.stockGroups.map(\.totalText) == ["2\u{00A0}pcs", "10\u{00A0}pcs"])
+        #expect(Set(model.stock.map(\.locationName)) == ["Pantry", "Fridge"])
+        #expect(model.stockTotalText == "12\u{00A0}pcs")
         action.revert()
         model.reload()
-        #expect(model.stockGroups.map(\.totalText) == ["12\u{00A0}pcs"])
+        #expect(model.stockTotalText == "12\u{00A0}pcs" && model.stockCount == 1)
     }
 
     @Test func moveToNoLocation() async throws {
@@ -305,12 +286,12 @@ struct ProductDetailModelTests {
         let pending = PendingDeletions()
         let model = model(env, eggs, pending: pending)
         let action = try #require(model.deleteItem(item.publicId))
-        #expect(model.stockGroups.isEmpty)
+        #expect(model.stock.isEmpty)
         action.revert()
         #expect(model.stockCount == 1)
         try #require(model.deleteItem(item.publicId)).commit()
         model.reload()
-        #expect(model.stockGroups.isEmpty)
+        #expect(model.stock.isEmpty)
         #expect(model.history.map(\.kind) == [.deleted, .added])
     }
 
@@ -427,7 +408,7 @@ struct ProductDetailEditTransferTests {
         #expect(model.transferTargets.map(\.name) == ["Home"])
         #expect(model.transfer(item.publicId, to: home.publicId))
         model.reload()
-        #expect(model.stockGroups.isEmpty)
+        #expect(model.stock.isEmpty)
         #expect(try env.inventoryService().items(in: home).map(\.quantity) == [6])
     }
 

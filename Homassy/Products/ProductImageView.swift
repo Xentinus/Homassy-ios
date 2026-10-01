@@ -1,19 +1,30 @@
 import SwiftUI
 import UIKit
 
+/// `.hero` is the product detail's header (P2-07a): a photo with radius 26, or a monogram circle like Contacts.
+enum ProductImageStyle { case thumbnail, hero }
+
 /// Square product thumbnail; a Mocha-tinted icon tile when there is no image.
 struct ProductImageView: View {
     let data: Data?
     var size: CGFloat? = 44
     /// Without a photo, this name's first letter on a neutral tile (the product picker rows).
     var name: String?
+    var style: ProductImageStyle = .thumbnail
 
     var body: some View {
         ProductImageContent(data: data, iconScale: 0.45, monogramOf: name)
             .frame(width: size, height: size)
             .frame(maxWidth: size == nil ? .infinity : nil)
             .aspectRatio(1, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: size == nil ? 16 : 10, style: .continuous))
+            .clipShape(shape)
+    }
+
+    private var shape: AnyShape {
+        switch style {
+        case .thumbnail: AnyShape(RoundedRectangle(cornerRadius: size == nil ? 16 : 10, style: .continuous))
+        case .hero: data == nil ? AnyShape(Circle()) : AnyShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        }
     }
 }
 
