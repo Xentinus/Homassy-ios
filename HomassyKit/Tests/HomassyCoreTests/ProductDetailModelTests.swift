@@ -248,6 +248,7 @@ struct ProductDetailModelTests {
         model.reload()
         #expect(Set(model.stock.map(\.locationName)) == ["Pantry", "Fridge"])
         #expect(model.stockTotalText == "12\u{00A0}pcs")
+        #expect(model.stock.map(\.card.quantityText).sorted() == ["10\u{00A0}pcs", "2\u{00A0}pcs"])
         action.revert()
         model.reload()
         #expect(model.stockTotalText == "12\u{00A0}pcs" && model.stockCount == 1)
