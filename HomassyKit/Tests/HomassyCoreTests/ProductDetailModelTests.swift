@@ -59,6 +59,107 @@ struct ProductDetailModelTests {
         #expect(model.stockCount == 4)
     }
 
+    @Test("Stock is one list: soonest expiry first, no expiry last, then the older purchase")
+    func stockLots() async throws {
+        let env = try ServiceTestEnvironment()
+        let (pantry, fridge, freezer) = try locations(env)
+        let eggs = try await env.makeProduct("Eggs")
+        try env.stock(eggs, 10, location: fridge, expiresInDays: 20)
+        try env.stock(eggs, 4, location: fridge, expiresInDays: 2)
+        try env.stock(eggs, 2, location: pantry, expiresInDays: 9)
+        try env.stock(eggs, 1)
+        try env.stock(eggs, 6, location: freezer, expiresInDays: 90)
+
+        let model = model(env, eggs)
+        #expect(model.stock.map(\.card.quantityText) == ["4\u{00A0}pcs", "2\u{00A0}pcs", "10\u{00A0}pcs", "6\u{00A0}pcs", "1\u{00A0}pc"])
+        #expect(model.stock.map(\.locationName) == ["Fridge", "Pantry", "Fridge", "Freezer", nil])
+        #expect(model.stock.map(\.isFreezer) == [false, false, false, true, false])
+        #expect(model.stockTotalText == "23\u{00A0}pcs")
+    }
+
+    @Test func sameExpiryShowsTheOlderPurchaseFirst() async throws {
+        let env = try ServiceTestEnvironment()
+        let milk = try await env.makeProduct("Milk", unit: .liter)
+        let service = env.inventoryService()
+        for (quantity, purchased) in [(Decimal(1), -1), (Decimal(2), -5)] {
+            try service.addStock(product: milk, quantity: quantity, unit: .liter, expiresAt: env.day(4),
+                                 purchasedAt: env.day(purchased), price: nil, currency: nil, storageLocation: nil,
+                                 shoppingLocation: nil)
+        }
+        #expect(model(env, milk).stock.map(\.card.quantity) == [2, 1])
+    }
+
+    @Test func pendingDeleteHidesTheLot() async throws {
+        let env = try ServiceTestEnvironment()
+        let eggs = try await env.makeProduct("Eggs")
+        let item = try env.stock(eggs, 3)
+        try env.stock(eggs, 5)
+        let pending = PendingDeletions()
+        let model = model(env, eggs, pending: pending)
+        _ = model.deleteItem(item.publicId)
+        #expect(model.stock.map(\.card.quantity) == [5])
+        #expect(model.stockTotalText == "5\u{00A0}pcs")
+    }
+
+    @Test func noStockHasNoTotal() async throws {
+        let env = try ServiceTestEnvironment()
+        let eggs = try await env.makeProduct("Eggs")
+        let model = model(env, eggs)
+        #expect(model.stock.isEmpty && model.stockTotalText == nil)
+    }
+
+    @Test("Recent history is the newest three; months group the rest")
+    func historyMonths() async throws {
+        let env = try ServiceTestEnvironment()
+        let eggs = try await env.makeProduct("Eggs")
+        func service(at date: Date) -> InventoryService {
+            InventoryService(spaceStore: env.spaceStore, context: env.context, userRecordName: ServiceTestEnvironment.user,
+                             canEdit: { _ in true }, calendar: ServiceTestEnvironment.budapest, defaultCurrency: "HUF",
+                             now: { date })
+        }
+        for offset in [-40, -35, -2, -1, 0] {
+            try service(at: env.day(offset)).addStock(product: eggs, quantity: 1, unit: .piece, expiresAt: nil,
+                                                      purchasedAt: nil, price: nil, currency: nil,
+                                                      storageLocation: nil, shoppingLocation: nil)
+        }
+
+        let model = model(env, eggs)
+        #expect(model.history.count == 5)
+        #expect(model.recentHistory.map(\.id) == Array(model.history.prefix(3)).map(\.id))
+        #expect(model.historyByMonth.map(\.title) == ["September 2026", "August 2026"])
+        #expect(model.historyByMonth.map(\.id) == ["2026-09", "2026-08"])
+        #expect(model.historyByMonth.map(\.rows.count) == [3, 2])
+    }
+
+    @Test("Price trend: six months in the average's currency and unit, oldest first")
+    func priceTrendPoints() async throws {
+        let env = try ServiceTestEnvironment()
+        let milk = try await env.makeProduct("Milk", unit: .liter)
+        let service = env.inventoryService()
+        func buy(_ quantity: Decimal, _ unit: MeasureUnit, _ price: Decimal, _ currency: String, day: Int) throws {
+            try service.addStock(product: milk, quantity: quantity, unit: unit, expiresAt: nil, purchasedAt: env.day(day),
+                                 price: price, currency: currency, storageLocation: nil, shoppingLocation: nil)
+        }
+        try buy(1, .liter, 5, "EUR", day: -270)                      // older than six months
+        try buy(1, .liter, Decimal(string: "3.2")!, "EUR", day: -10)
+        try buy(2, .liter, 7, "EUR", day: -1)
+        try buy(1, .liter, 4, "USD", day: -3)                        // other currency
+
+        let model = model(env, milk)
+        let trend = try #require(model.priceTrend)
+        #expect(trend.currency == "EUR" && trend.unit == .liter)
+        #expect(trend.points.map(\.unitPrice) == [Decimal(string: "3.2")!, Decimal(string: "3.5")!])
+        #expect(model.latestPrice?.price == 7)
+    }
+
+    @Test func noPricesMeansNoTrend() async throws {
+        let env = try ServiceTestEnvironment()
+        let milk = try await env.makeProduct("Milk", unit: .liter)
+        try env.stock(milk, 1)
+        let model = model(env, milk)
+        #expect(model.priceTrend == nil && model.latestPrice == nil)
+    }
+
     @Test("Price trend: average unit price and each store's latest, including used-up stock")
     func priceTrend() async throws {
         let env = try ServiceTestEnvironment()

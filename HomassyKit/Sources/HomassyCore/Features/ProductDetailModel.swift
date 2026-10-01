@@ -36,6 +36,29 @@ public struct StockGroup: Identifiable, Equatable, Sendable {
     public let items: [StockItemCard]
 }
 
+/// One open lot in the detail's single stock list (P2-07a, 2A): the card plus where it is.
+public struct StockLotRow: Identifiable, Equatable, Sendable {
+    public let card: StockItemCard
+    public let locationName: String?
+    public let isFreezer: Bool
+    public var id: UUID { card.id }
+}
+
+/// The full history page's month section ("September 2026"). Events without a date go to "undated", with no title.
+public struct HistoryMonth: Identifiable, Equatable, Sendable {
+    public let id: String
+    public let title: String
+    public let rows: [HistoryRow]
+}
+
+/// The inline price chart (P2-07a): the last `ProductDetailModel.trendMonths` months of purchases in the average's
+/// currency and unit, oldest first.
+public struct PriceTrend: Equatable, Sendable {
+    public let points: [PriceEntry]
+    public let currency: String
+    public let unit: MeasureUnit
+}
+
 /// One `InventoryEvent`, with who did it. `actorName` is nil for the current user and for unknown members.
 public struct HistoryRow: Identifiable, Equatable, Sendable {
     public let id: UUID
@@ -64,6 +87,9 @@ public final class ProductDetailModel {
     public private(set) var fields: ProductFields?
     /// Every open item by location; `stockGroups` hides the ones whose delete is in its undo window.
     private var allGroups: [StockGroup] = []
+    /// Every open lot, sorted for the stock list; `stock` hides the ones whose delete is in its undo window.
+    private var allLots: [StockLotRow] = []
+    public private(set) var priceTrend: PriceTrend?
     /// Every priced purchase, newest first (P4-05); `priceSummary` is the average and the per-store lines.
     public private(set) var priceEntries: [PriceEntry] = []
     public private(set) var priceSummary = PriceSummary(average: nil, stores: [])
@@ -108,10 +134,54 @@ public final class ProductDetailModel {
     /// Open stock items shown.
     public var stockCount: Int { stockGroups.reduce(0) { $0 + $1.items.count } }
 
+    /// The stock list (2A): soonest expiry first, no expiry last, then the older purchase.
+    public var stock: [StockLotRow] { allLots.filter { !pending.contains($0.id) } }
+
+    /// "3 l" for the stock header, summed per unit like the Products card. Nil without stock.
+    public var stockTotalText: String? {
+        let lots = stock
+        guard !lots.isEmpty else { return nil }
+        return StockSummary.text(for: lots.map { ($0.card.quantity, $0.card.unit) }, locale: locale)
+    }
+
+    public static let recentHistoryCount = 3
+    public static let trendMonths = 6
+
+    /// The history section's rows (3A); the rest is on the history page.
+    public var recentHistory: [HistoryRow] { Array(history.prefix(Self.recentHistoryCount)) }
+
+    /// Newest purchase overall, for "Legutóbb …".
+    public var latestPrice: PriceEntry? { priceEntries.first }
+
+    /// The history page: every event newest first, in calendar-month sections.
+    public var historyByMonth: [HistoryMonth] {
+        let calendar = inventory.calendar
+        let style = Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone).year().month(.wide)
+        var order: [String] = []
+        var titles: [String: String] = [:]
+        var rows: [String: [HistoryRow]] = [:]
+        for row in history {
+            let id: String
+            if let date = row.occurredAt {
+                let parts = calendar.dateComponents([.year, .month], from: date)
+                id = String(format: "%04d-%02d", parts.year ?? 0, parts.month ?? 0)
+                if titles[id] == nil { titles[id] = date.formatted(style) }
+            } else {
+                id = "undated"
+                titles[id] = ""
+            }
+            if rows[id] == nil { order.append(id) }
+            rows[id, default: []].append(row)
+        }
+        return order.map { HistoryMonth(id: $0, title: titles[$0] ?? "", rows: rows[$0] ?? []) }
+    }
+
     public func reload() {
         guard !product.isGone, let space = product.space else {
             fields = nil
             allGroups = []
+            allLots = []
+            priceTrend = nil
             priceEntries = []
             priceSummary = PriceSummary(average: nil, stores: [])
             history = []
@@ -127,6 +197,8 @@ public final class ProductDetailModel {
             allGroups = try groups(in: space)
             priceEntries = PriceHistory.entries(for: product, defaultCurrency: inventory.defaultCurrency)
             priceSummary = PriceHistory.summary(of: priceEntries, preferredCurrency: inventory.defaultCurrency)
+            allLots = lots()
+            priceTrend = trend(priceEntries, average: priceSummary.average)
             history = try inventory.events(for: product).map(row)
         } catch {
             errorMessage = error.localizedDescription
@@ -233,6 +305,41 @@ public final class ProductDetailModel {
         do { try work() } catch { errorMessage = error.localizedDescription }
     }
 
+    private func card(_ item: InventoryItem, now: Date, calendar: Calendar) -> StockItemCard {
+        StockItemCard(id: item.publicId, quantity: item.quantity, unit: item.unit,
+                      quantityText: Quantity.format(item.quantity, unit: item.unit, locale: locale),
+                      purchasedAt: item.purchasedAt, expiresAt: item.expiresAt,
+                      level: ExpirationStatus.level(expiresAt: item.expiresAt, now: now, calendar: calendar),
+                      expiryText: ExpirationStatus.cardLabel(expiresAt: item.expiresAt, now: now, calendar: calendar,
+                                                             locale: locale))
+    }
+
+    private func lots() -> [StockLotRow] {
+        let now = inventory.currentDate()
+        let calendar = inventory.calendar
+        return openItems
+            .sorted { a, b in
+                let left = ExpirationStatus.sortKey(expiresAt: a.expiresAt, now: now, calendar: calendar)
+                let right = ExpirationStatus.sortKey(expiresAt: b.expiresAt, now: now, calendar: calendar)
+                if left != right { return left < right }
+                return (a.purchasedAt ?? .distantFuture) < (b.purchasedAt ?? .distantFuture)
+            }
+            .map { item in
+                StockLotRow(card: card(item, now: now, calendar: calendar), locationName: item.storageLocation?.name,
+                            isFreezer: item.storageLocation?.isFreezer ?? false)
+            }
+    }
+
+    private func trend(_ entries: [PriceEntry], average: PriceSummary.Average?) -> PriceTrend? {
+        guard let average,
+              let start = inventory.calendar.date(byAdding: .month, value: -Self.trendMonths, to: inventory.currentDate())
+        else { return nil }
+        let points = entries
+            .filter { $0.currency == average.currency && $0.unit == average.unit && $0.date >= start }
+            .sorted { $0.date < $1.date }
+        return points.isEmpty ? nil : PriceTrend(points: points, currency: average.currency, unit: average.unit)
+    }
+
     private func groups(in space: Space) throws -> [StockGroup] {
         let now = inventory.currentDate()
         let calendar = inventory.calendar
@@ -247,14 +354,7 @@ public final class ProductDetailModel {
                     ExpirationStatus.sortKey(expiresAt: $0.expiresAt, now: now, calendar: calendar)
                         < ExpirationStatus.sortKey(expiresAt: $1.expiresAt, now: now, calendar: calendar)
                 }
-                .map { item in
-                    StockItemCard(id: item.publicId, quantity: item.quantity, unit: item.unit,
-                                  quantityText: Quantity.format(item.quantity, unit: item.unit, locale: locale),
-                                  purchasedAt: item.purchasedAt, expiresAt: item.expiresAt,
-                                  level: ExpirationStatus.level(expiresAt: item.expiresAt, now: now, calendar: calendar),
-                                  expiryText: ExpirationStatus.cardLabel(expiresAt: item.expiresAt, now: now,
-                                                                         calendar: calendar, locale: locale))
-                }
+                .map { card($0, now: now, calendar: calendar) }
             groups.append(StockGroup(id: location?.publicId.uuidString ?? "none", name: location?.name,
                                      totalText: StockSummary.text(for: items, locale: locale) ?? "", items: cards))
         }
