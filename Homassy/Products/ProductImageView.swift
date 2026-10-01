@@ -42,12 +42,13 @@ private struct ProductImageContent: View {
             if let image {
                 Image(uiImage: image).resizable().scaledToFill()
             } else if let letter = monogramOf?.trimmingCharacters(in: .whitespacesAndNewlines).first {
-                GeometryReader { proxy in
-                    Text(String(letter).uppercased())
-                        .font(.system(size: min(proxy.size.width, proxy.size.height) * 0.42, weight: .semibold,
-                                      design: .rounded))
+                // Drawn, not a Text: the letter is decoration sized to the tile, and a Text here would be audited as
+                // fixed-size, low-contrast copy (X-04). The card's own label carries the name.
+                Canvas { context, size in
+                    let letterText = Text(String(letter).uppercased())
+                        .font(.system(size: min(size.width, size.height) * 0.42, weight: .semibold, design: .rounded))
                         .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    context.draw(letterText, at: CGPoint(x: size.width / 2, y: size.height / 2))
                 }
                 .background(Color(uiColor: .tertiarySystemFill))
             } else {

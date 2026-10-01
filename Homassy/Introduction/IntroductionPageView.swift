@@ -72,6 +72,7 @@ struct IntroductionPageView: View {
         VStack(alignment: alignment, spacing: 12) {
             Text(page.title)
                 .font(.largeTitle.bold())
+                .fixedSize(horizontal: false, vertical: true)   // full height at the largest sizes (X-04)
                 .accessibilityAddTraits(.isHeader)
             Text(page.body)
                 .font(.body)

@@ -39,6 +39,7 @@ struct StockLotsSection: View {
                         HStack(spacing: 4) {
                             TextField("stock.quantity", text: $lot.quantityText, prompt: Text(verbatim: "0"))
                                 .keyboardType(.decimalPad)
+                                .frame(minWidth: 44, minHeight: 44)     // a full-size target (X-04)
                                 .fixedSize()
                                 .focused($focusedLot, equals: lot.id)
                                 .accessibilityIdentifier("lot.\(number).quantity")
@@ -108,11 +109,9 @@ struct StockLotsSection: View {
             if let listedText {
                 Text("stock.lot.totalOf \(totalText) \(listedText)")
             } else {
-                HStack(spacing: 0) {
-                    Text("stock.lot.total \(totalText)")
-                    Text(verbatim: " · ")
-                    Text("stock.lot.count \(lots.lotCount)")
-                }
+                // One Text, so it wraps as a sentence at the largest sizes instead of in three columns (X-04).
+                Text(verbatim: String(localized: "stock.lot.total \(totalText)") + " · "
+                               + String(localized: "stock.lot.count \(lots.lotCount)"))
             }
         }
     }
@@ -133,7 +132,9 @@ private struct LotControlRow<Control: View>: View {
         let stacked = dynamicTypeSize.isAccessibilitySize
         let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout())
         layout {
-            Text(title).accessibilityHidden(true)
+            Text(title)
+                .fixedSize(horizontal: false, vertical: stacked)    // wraps instead of truncating (X-04)
+                .accessibilityHidden(true)
             if !stacked { Spacer() }
             control
         }

@@ -67,14 +67,17 @@ struct SearchView: View {
                                     .accessibilityIdentifier("product.row.\(card.name)")
                             }
                         } header: {
-                            Text(section.id)
-                                .font(.headline)
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 4)
-                                .background(Color(uiColor: .systemGroupedBackground))
-                                .accessibilityAddTraits(.isHeader)
-                                .id(section.id)
+                            // The Text keeps its own width; a row-wide Text frame made the audit misread its contrast.
+                            HStack {
+                                Text(section.id)
+                                    .font(.headline)
+                                    .accessibilityAddTraits(.isHeader)
+                                    .accessibilityIdentifier("search.section.\(section.id)")
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.vertical, 4)
+                            .background(Color(uiColor: .systemGroupedBackground))
+                            .id(section.id)
                         }
                     }
                 }
@@ -121,7 +124,10 @@ struct SearchView: View {
     }
 
     /// The letter strip appears once there is more than one letter to jump between.
-    private func showsIndex(_ model: ProductListModel) -> Bool { model.sections.count > 1 }
+    /// Hidden at accessibility sizes: the letters cannot grow in the strip and would cover the cards (X-04).
+    private func showsIndex(_ model: ProductListModel) -> Bool {
+        model.sections.count > 1 && !dynamicTypeSize.isAccessibilitySize
+    }
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {

@@ -9,6 +9,18 @@ struct AccountGateView: View {
     @Environment(\.openURL) private var openURL
 
     var body: some View {
+        // Scrolls once the largest text sizes no longer fit; otherwise centred as before (X-04).
+        GeometryReader { proxy in
+            ScrollView {
+                content.frame(minHeight: proxy.size.height)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("accountGate")
+    }
+
+    private var content: some View {
         ContentUnavailableView {
             Label(title, systemImage: symbol)
         } description: {
@@ -25,8 +37,6 @@ struct AccountGateView: View {
                 .buttonStyle(.borderedProminent)
             }
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("accountGate")
     }
 
     private var title: LocalizedStringKey {
