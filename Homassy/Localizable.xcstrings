@@ -5568,6 +5568,28 @@
         }
       }
     },
+    "price.latest %@ %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zuletzt %1$@ · %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latest %1$@ · %2$@"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legutóbb %1$@ · %2$@"
+          }
+        }
+      }
+    },
     "price.store.hint" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5748,25 +5770,46 @@
         }
       }
     },
-    "product.detail.history %lld" : {
-      "extractionState" : "manual",
+    "product.detail.historyAll" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verlauf (%lld)"
+            "value" : "Gesamter Verlauf"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "History (%lld)"
+            "value" : "Show All History"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Előzmények (%lld)"
+            "value" : "Az összes előzmény"
+          }
+        }
+      }
+    },
+    "product.detail.historySection" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verlauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Előzmények"
           }
         }
       }
@@ -5951,6 +5994,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Áralakulás"
+          }
+        }
+      }
+    },
+    "product.detail.priceWindow" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 Monate"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 months"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 hónap"
           }
         }
       }
