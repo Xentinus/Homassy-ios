@@ -337,26 +337,28 @@ private struct StockItemRow: View {
         .accessibilityIdentifier("stock.item")
     }
 
+    /// Quantity and expiry share the first line and the subtitle runs the full width under them, so the purchase
+    /// date stays on one line at the default size (a side-by-side subtitle and expiry label do not both fit in 361 pt).
     private var card: some View {
         let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
-            : AnyLayout(HStackLayout(alignment: .center, spacing: 12))
-        return layout {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: glyph)
-                    .foregroundStyle(Palette.mocha600)
-                    .frame(width: 24)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 8))
+        return HStack(alignment: .center, spacing: 12) {
+            Image(systemName: glyph)
+                .foregroundStyle(Palette.mocha600)
+                .frame(width: 24)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                layout {
                     Text(item.quantityText).font(.headline).monospacedDigit()
-                    Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
+                    if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 8) }
+                    if let expiry = item.expiryText {
+                        ExpiryLabel(expiry, level: item.level)
+                            .font(.subheadline.weight(.medium))
+                    }
                 }
-            }
-            if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 8) }
-            if let expiry = item.expiryText {
-                ExpiryLabel(expiry, level: item.level)
-                    .font(.subheadline.weight(.medium))
+                Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
             }
         }
         .padding(.vertical, 4)
