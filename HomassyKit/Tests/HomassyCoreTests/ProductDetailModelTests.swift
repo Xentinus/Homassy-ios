@@ -131,6 +131,29 @@ struct ProductDetailModelTests {
         #expect(trend.currency == "EUR" && trend.unit == .liter)
         #expect(trend.points.map(\.unitPrice) == [Decimal(string: "3.2")!, Decimal(string: "3.5")!])
         #expect(model.latestPrice?.price == 7)
+        #expect(trend.window.upperBound == ServiceTestEnvironment.fixedNow)
+        #expect(trend.window.lowerBound == ServiceTestEnvironment.budapest.date(byAdding: .month, value: -6,
+                                                                                to: ServiceTestEnvironment.fixedNow))
+        #expect(trend.window.contains(trend.points[0].date))
+    }
+
+    @Test("Price trend y domain pads the range and never reaches 0 or collapses")
+    func priceTrendYDomain() {
+        func entry(_ unitPrice: Decimal) -> PriceEntry {
+            PriceEntry(id: UUID(), date: Date(), storeID: nil, storeName: nil, quantity: 1, unit: .liter,
+                       price: unitPrice, currency: "EUR")
+        }
+        func trend(_ prices: [Decimal]) -> PriceTrend {
+            PriceTrend(points: prices.map(entry), currency: "EUR", unit: .liter, window: Date()...Date())
+        }
+        let several = trend([Decimal(string: "3.2")!, Decimal(string: "3.5")!]).yDomain
+        #expect(several.lowerBound > 0 && several.lowerBound < 3.2 && several.upperBound > 3.5)
+        let wide = trend([359, 399]).yDomain
+        #expect(wide.lowerBound > 300 && wide.lowerBound < 359 && wide.upperBound > 399 && wide.upperBound < 450)
+        let single = trend([459]).yDomain
+        #expect(single.contains(459) && single.upperBound > single.lowerBound)
+        let equal = trend([2, 2]).yDomain
+        #expect(equal.contains(2) && equal.upperBound > equal.lowerBound)
     }
 
     @Test func noPricesMeansNoTrend() async throws {

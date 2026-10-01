@@ -44,11 +44,21 @@ public struct HistoryMonth: Identifiable, Equatable, Sendable {
 }
 
 /// The inline price chart (P2-07a): the last `ProductDetailModel.trendMonths` months of purchases in the average's
-/// currency and unit, oldest first.
+/// currency and unit, oldest first. `window` is the whole six-month span (so the chart's month axis shows even for one
+/// point) and `yDomain` the price range with some air around it (so the axis hugs the data instead of reaching 0).
 public struct PriceTrend: Equatable, Sendable {
     public let points: [PriceEntry]
     public let currency: String
     public let unit: MeasureUnit
+    public let window: ClosedRange<Date>
+
+    public var yDomain: ClosedRange<Double> {
+        let values = points.map { NSDecimalNumber(decimal: $0.unitPrice).doubleValue }
+        let lo = values.min() ?? 0
+        let hi = values.max() ?? 0
+        let pad = max((hi - lo) * 0.15, hi * 0.05, 1)
+        return (lo - pad)...(hi + pad)
+    }
 }
 
 /// One `InventoryEvent`, with who did it. `actorName` is nil for the current user and for unknown members.
@@ -315,7 +325,9 @@ public final class ProductDetailModel {
         let points = entries
             .filter { $0.currency == average.currency && $0.unit == average.unit && $0.date >= start }
             .sorted { $0.date < $1.date }
-        return points.isEmpty ? nil : PriceTrend(points: points, currency: average.currency, unit: average.unit)
+        guard let last = points.last else { return nil }
+        let end = max(inventory.currentDate(), last.date)
+        return PriceTrend(points: points, currency: average.currency, unit: average.unit, window: start...end)
     }
 
     // MARK: Price trend
