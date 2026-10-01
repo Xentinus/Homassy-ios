@@ -379,6 +379,7 @@ private struct StorePickerCard: View {
                         }
                     } icon: { StoreCategoryIcon(category: details.category) }
                 }
+                .navigationRowStyle()
                 .accessibilityIdentifier("store.recent.\(store.name)")
             }
             .onDelete { offsets in
@@ -407,6 +408,7 @@ private struct StorePickerCard: View {
                 Image(systemName: "mappin.and.ellipse")
             }
         }
+        .navigationRowStyle()
         .accessibilityIdentifier("store.place.\(place.title)")
     }
 
@@ -434,6 +436,7 @@ private struct StorePickerCard: View {
             }
             .contentShape(Rectangle())
         }
+        .navigationRowStyle()
         .accessibilityIdentifier("store.result.\(result.name)")
     }
 

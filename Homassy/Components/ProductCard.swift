@@ -38,10 +38,9 @@ struct ProductCard: View {
                 }
                 AttributionCaption(ids: card.relatedIDs) {
                     if let expiry = card.expiryText {
-                        Label(expiry, systemImage: card.expiryLevel.cardGlyph)
+                        ExpiryLabel(expiry, level: card.expiryLevel)
                             .font(.caption.weight(.medium))
-                            .foregroundStyle(card.expiryLevel.cardForeground)
-                            .lineLimit(1)
+                            .lineLimit(3)
                     }
                 }
             }
