@@ -96,6 +96,13 @@ public final class AddItemFlowModel {
         step = .amount
     }
 
+    /// Opens on "how much" with a product chosen elsewhere (the product detail's Listára, P2-07a). A product from
+    /// another space than the lists' is ignored.
+    public func start(with product: Product) {
+        guard !product.isGone, product.space == space else { return }
+        choose(product)
+    }
+
     /// True when the barcode belongs to a product of the list's space, which is then chosen.
     public func chooseBarcode(_ code: String) -> Bool {
         guard let space, let barcode = code.nilIfBlank,
