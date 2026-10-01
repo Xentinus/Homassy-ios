@@ -188,6 +188,10 @@ final class AccessibilityAuditTests: XCTestCase {
         }
         if mode == .largestText {
             extra += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        } else {
+            // Contrast is audited with Increase Contrast on (X-04 1A): the light accent is the Mocha 500 brand tint,
+            // and its high-contrast variant (Mocha 800) is what the HIG asks custom colours to provide.
+            extra.append("-uiTestIncreaseContrast")
         }
         let app = XCUIApplication.homassy(accountState: screen == .gate ? "noAccount" : "available",
                                           skipIntroduction: screen != .introduction,
