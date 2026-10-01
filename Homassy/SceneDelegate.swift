@@ -10,6 +10,11 @@ final class SceneDelegate: NSObject, UIWindowSceneDelegate {
         if let shortcut = connectionOptions.shortcutItem {                // cold start from a quick action (N-02)
             _ = QuickActions.handle(shortcut)
         }
+#if DEBUG
+        if UITestHooks.increasesContrast, let windowScene = scene as? UIWindowScene {
+            windowScene.traitOverrides.accessibilityContrast = .high
+        }
+#endif
     }
 
     /// Warm start from a quick action (N-02). The completion-handler form, never the async one (see 2732862).
