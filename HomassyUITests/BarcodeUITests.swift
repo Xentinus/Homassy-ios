@@ -40,7 +40,7 @@ final class BarcodeUITests: XCTestCase {
     func testCheckStockFromInventory() {
         let app = scan("5991234567890", fromTab: "Inventory")
         app.buttons["barcode.checkStock"].tap()
-        XCTAssertTrue(app.staticTexts["Mizo"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Mizo · Dairy"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.navigationBars["Milk"].waitForExistence(timeout: 5), "the detail is pushed onto the Inventory stack")
     }
 

@@ -22,8 +22,13 @@ final class ProductsUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars[name].waitForExistence(timeout: 5))
     }
 
-    private func group(_ name: String, in app: XCUIApplication) -> XCUIElement {
-        app.descendants(matching: .any)["stock.group.\(name)"]
+    private func stockHeader(in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)["product.detail.stockHeader"]
+    }
+
+    /// A stock lot row whose label contains `text` (its quantity, storage or expiry).
+    private func lot(containing text: String, in app: XCUIApplication) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "identifier == 'stock.item' AND label CONTAINS %@", text)).firstMatch
     }
 
     private func setAmount(_ text: String, in app: XCUIApplication) {
@@ -89,7 +94,7 @@ final class ProductsUITests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         defer { XCUIDevice.shared.orientation = .portrait }
         XCTAssertTrue(app.descendants(matching: .any)["product.detail.split"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Mizo"].exists)
+        XCTAssertTrue(app.staticTexts["Mizo · Dairy"].exists)
         XCUIDevice.shared.orientation = .portrait
         XCTAssertTrue(app.descendants(matching: .any)["product.detail.stack"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.navigationBars["Milk"].exists)
@@ -113,7 +118,7 @@ final class ProductsUITests: XCTestCase {
     func testProductLinkIsEditableAndOpensFromTheDetail() {
         let app = openProducts()
         openDetail("Milk", in: app)
-        XCTAssertFalse(app.links["product.detail.link"].exists)
+        XCTAssertFalse(app.buttons["product.detail.link"].exists)
         app.buttons["product.detail.edit"].tap()
         let url = app.textFields["product.form.url"]
         XCTAssertTrue(url.waitForExistence(timeout: 5))
@@ -124,9 +129,9 @@ final class ProductsUITests: XCTestCase {
         url.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
         url.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 10) + "mizo.hu")
         app.buttons["product.form.save"].tap()
-        let link = app.links["product.detail.link"]
+        let link = app.buttons["product.detail.link"]
         XCTAssertTrue(link.waitForExistence(timeout: 5))
-        XCTAssertTrue(link.label.contains("mizo.hu"), link.label)
+        XCTAssertTrue((link.value as? String)?.contains("mizo.hu") == true, "\(String(describing: link.value))")
     }
 
     func testNoEatableFlagAnywhere() {
@@ -158,9 +163,10 @@ final class ProductsUITests: XCTestCase {
     func testConsumeFromDetailWithUndo() {
         let app = openProducts()
         openDetail("Eggs", in: app)
-        let fridge = group("Fridge", in: app)
-        XCTAssertTrue(fridge.waitForExistence(timeout: 5))
-        XCTAssertTrue(fridge.label.contains("10\(nbsp)pcs"), fridge.label)
+        let header = stockHeader(in: app)
+        XCTAssertTrue(header.waitForExistence(timeout: 5))
+        XCTAssertTrue(header.label.contains("10\(nbsp)pcs"), header.label)
+        XCTAssertTrue(lot(containing: "Fridge", in: app).exists)
         keepScreenshot("Eggs detail", app)
         openStockMenu(in: app)
         keepScreenshot("Stock menu", app)
@@ -171,9 +177,9 @@ final class ProductsUITests: XCTestCase {
         XCTAssertFalse(app.buttons["amount.confirm"].isEnabled)
         setAmount("4", in: app)
         app.buttons["amount.confirm"].tap()
-        XCTAssertTrue(fridge.label.contains("6\(nbsp)pcs") || waitForLabel(fridge, containing: "6\(nbsp)pcs"))
+        XCTAssertTrue(header.label.contains("6\(nbsp)pcs") || waitForLabel(header, containing: "6\(nbsp)pcs"))
         app.buttons["undoToast.undo"].tap()
-        XCTAssertTrue(waitForLabel(fridge, containing: "10\(nbsp)pcs"))
+        XCTAssertTrue(waitForLabel(header, containing: "10\(nbsp)pcs"))
     }
 
     func testPartialMoveSplitsTheItem() {
@@ -186,22 +192,24 @@ final class ProductsUITests: XCTestCase {
         app.buttons["move.target.Pantry"].tap()
         XCTAssertTrue(app.buttons["amount.confirm"].isEnabled)
         app.buttons["amount.confirm"].tap()
-        let pantry = group("Pantry", in: app)
+        let pantry = lot(containing: "Pantry", in: app)
         XCTAssertTrue(pantry.waitForExistence(timeout: 5))
         XCTAssertTrue(pantry.label.contains("4\(nbsp)pcs"), pantry.label)
-        XCTAssertTrue(waitForLabel(group("Fridge", in: app), containing: "6\(nbsp)pcs"))
+        XCTAssertTrue(waitForLabel(lot(containing: "Fridge", in: app), containing: "6\(nbsp)pcs"))
+        XCTAssertTrue(stockHeader(in: app).label.contains("10\(nbsp)pcs"))
     }
 
     func testSwipeDeleteStockItemAndUndo() {
         let app = openProducts()
         openDetail("Apples", in: app)
-        let loose = group("none", in: app)
-        XCTAssertTrue(loose.waitForExistence(timeout: 5))
-        app.buttons["stock.item"].firstMatch.swipeLeft()
+        let row = app.buttons["stock.item"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.swipeLeft()
         app.buttons["Delete"].tap()
-        XCTAssertTrue(loose.waitForNonExistence(timeout: 3))
+        XCTAssertTrue(row.waitForNonExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Nothing in stock"].exists)
         app.buttons["undoToast.undo"].tap()
-        XCTAssertTrue(loose.waitForExistence(timeout: 3))
+        XCTAssertTrue(row.waitForExistence(timeout: 3))
     }
 
     /// P4-05: the seeded milk was stocked for 459 HUF, so the price trend shows an average and a store line,
@@ -239,13 +247,49 @@ final class ProductsUITests: XCTestCase {
     func testStockMenuDeleteAndUndo() {
         let app = openProducts()
         openDetail("Milk", in: app)
-        let fridge = group("Fridge", in: app)
-        XCTAssertTrue(fridge.waitForExistence(timeout: 5))
+        let row = app.buttons["stock.item"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
         openStockMenu(in: app)
         app.buttons["stock.delete"].tap()
-        XCTAssertTrue(fridge.waitForNonExistence(timeout: 3))
+        XCTAssertTrue(row.waitForNonExistence(timeout: 3))
         app.buttons["undoToast.undo"].tap()
-        XCTAssertTrue(fridge.waitForExistence(timeout: 3))
+        XCTAssertTrue(row.waitForExistence(timeout: 3))
+    }
+
+    func testHeaderShowsTheBarcodeAndTheActions() {
+        let app = openProducts()
+        openDetail("Milk", in: app)
+        XCTAssertTrue(app.staticTexts["product.detail.name"].waitForExistence(timeout: 5))
+        let barcode = app.descendants(matching: .any)["product.detail.barcode"]
+        XCTAssertTrue(barcode.exists)
+        XCTAssertEqual(barcode.value as? String, "5991234567890")
+        barcode.press(forDuration: 1)
+        XCTAssertTrue(app.buttons["Copy"].waitForExistence(timeout: 3))
+        app.buttons["Copy"].tap()
+        let favorite = app.buttons["product.detail.favorite"]
+        XCTAssertEqual(favorite.value as? String, "No")
+        favorite.tap()
+        XCTAssertTrue(waitForValue(favorite, "Yes"))
+        XCTAssertFalse(app.buttons["product.detail.link"].exists, "no link on the seeded milk")
+        keepScreenshot("product-detail-header", app)
+    }
+
+    func testPlusAddsStockOfThisProduct() {
+        let app = openProducts()
+        openDetail("Eggs", in: app)
+        app.buttons["product.detail.add"].tap()
+        let quantity = app.textFields["lot.1.quantity"]
+        XCTAssertTrue(quantity.waitForExistence(timeout: 5))
+        quantity.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+        let current = quantity.value as? String ?? ""
+        quantity.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count) + "3")
+        app.buttons["stock.save"].tap()
+        XCTAssertTrue(waitForLabel(stockHeader(in: app), containing: "13\(nbsp)pcs"))
+    }
+
+    private func waitForValue(_ element: XCUIElement, _ value: String, timeout: TimeInterval = 5) -> Bool {
+        let predicate = NSPredicate(format: "value == %@", value)
+        return XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: element)], timeout: timeout) == .completed
     }
 
     private func waitForLabel(_ element: XCUIElement, containing text: String, timeout: TimeInterval = 5) -> Bool {

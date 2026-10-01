@@ -2,9 +2,9 @@ import CoreData
 import HomassyCore
 import SwiftUI
 
-/// The product detail (README "Product detail layout"): a header card, the stock by storage location with
-/// consume, move and swipe-to-delete, the price trend and the history. In compact height it splits into
-/// the header on the left and the rest on the right.
+/// The product detail (README "Product detail layout", P2-07a): a Contacts-style header with its action row, one stock
+/// list sorted by expiry with consume, move and swipe-to-delete, the price trend, the last three history events and
+/// the "Adatok" facts. In compact height it splits into the header and facts on the left and the rest on the right.
 struct ProductDetailView: View {
     let productID: UUID
 
@@ -12,6 +12,7 @@ struct ProductDetailView: View {
     @Environment(UndoQueue.self) private var undoQueue
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var model: ProductDetailModel?
     @State private var editing = false
     @State private var amountTarget: AmountTarget?
@@ -21,6 +22,10 @@ struct ProductDetailView: View {
     @State private var chartStore: PriceSummary.StoreLine?
     /// Set by the edit form's "Delete product"; the delete runs once the form has closed.
     @State private var deleteRequested = false
+    @State private var addingStock = false
+    @State private var addingToList = false
+    @State private var shoppingLists: [ShoppingList] = []
+    @State private var heroNameVisible = true
 
     /// Which stock item the amount sheet is for, and whether it consumes or moves.
     struct AmountTarget: Identifiable {
@@ -62,6 +67,11 @@ struct ProductDetailView: View {
                                  onDelete: { deleteRequested = true })
             }
         }
+        .sheet(isPresented: $addingStock) {
+            if let space = model?.product.space {
+                StockAddSheet.adding(productID, in: space, services: services)
+            }
+        }
         .sheet(item: $amountTarget) { target in
             if let model, let form = model.amountForm(for: target.itemID) {
                 AmountSheet(purpose: target.purpose, form: form,
@@ -100,7 +110,10 @@ struct ProductDetailView: View {
         .sensoryFeedback(.impact, trigger: feedback)
         .task { load() }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
-                                                        object: services.context)) { _ in model?.reload() }
+                                                        object: services.context)) { _ in
+            model?.reload()
+            refreshLists()
+        }
     }
 
     // MARK: Layout
@@ -109,8 +122,11 @@ struct ProductDetailView: View {
     private func content(_ model: ProductDetailModel, fields: ProductFields) -> some View {
         if verticalSizeClass == .compact {
             HStack(alignment: .top, spacing: 0) {
-                List { headerSection(model, fields: fields) }
-                    .frame(maxWidth: .infinity)
+                List {
+                    heroSection(model, fields: fields)
+                    ProductFactsSection(fields: fields)
+                }
+                .frame(maxWidth: .infinity)
                 List { activitySections(model) }
                     .frame(maxWidth: .infinity)
             }
@@ -119,8 +135,9 @@ struct ProductDetailView: View {
             .accessibilityIdentifier("product.detail.split")
         } else {
             List {
-                headerSection(model, fields: fields)
+                heroSection(model, fields: fields)
                 activitySections(model)
+                ProductFactsSection(fields: fields)
             }
             .listStyle(.insetGrouped)
             .accessibilityElement(children: .contain)
@@ -128,67 +145,40 @@ struct ProductDetailView: View {
         }
     }
 
+    private func heroSection(_ model: ProductDetailModel, fields: ProductFields) -> some View {
+        Section {
+            ProductHeroHeader(fields: fields, canEdit: model.canEdit, canAddToList: !shoppingLists.isEmpty,
+                              toggleFavorite: { model.toggleFavorite() }, addToList: { addingToList = true },
+                              nameVisible: { heroNameVisible = $0 })
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+        }
+    }
+
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
+        if let name = model?.fields?.name {
+            // The hero shows the name; the bar shows it only once the hero has scrolled away (Contacts).
+            ToolbarItem(placement: .principal) {
+                Text(verbatim: name)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .opacity(heroNameVisible ? 0 : 1)
+                    .accessibilityHidden(heroNameVisible)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: heroNameVisible)
+            }
+        }
         if let model, model.canEdit, model.fields != nil {
-            // Apple's pattern (HIG, user decision 2026-09-25): one Edit button; Delete sits at the bottom of the
-            // edit form, so there is no "More" menu for a single rare action.
-            ToolbarItem(placement: .primaryAction) {
+            // Apple's pattern (HIG, user decision 2026-09-25): Edit is a pencil; Delete sits at the bottom of the
+            // edit form. `+` adds stock of this product (P2-07a).
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button { addingStock = true } label: { Label("stock.title.add", systemImage: "plus") }
+                    .labelStyle(.iconOnly)
+                    .accessibilityIdentifier("product.detail.add")
                 Button { editing = true } label: { Label("common.edit", systemImage: "pencil") }
                     .labelStyle(.iconOnly)
                     .accessibilityIdentifier("product.detail.edit")
             }
-        }
-    }
-
-    // MARK: Header card
-
-    private func headerSection(_ model: ProductDetailModel, fields: ProductFields) -> some View {
-        Section {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 12) {
-                    ProductImageView(data: fields.image, size: 88)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(fields.name).font(.title2.bold())
-                        if let brand = fields.brand {
-                            Text(brand).foregroundStyle(.secondary)
-                        }
-                    }
-                    Spacer(minLength: 0)
-                    Button { model.toggleFavorite() } label: {
-                        Image(systemName: fields.isFavorite ? "heart.fill" : "heart")
-                            .font(.title2)
-                            .foregroundStyle(Palette.accent)
-                            .frame(minWidth: 44, minHeight: 44)
-                    }
-                    .buttonStyle(.borderless)
-                    .disabled(!model.canEdit)
-                    .accessibilityLabel(Text("product.field.favorite"))
-                    .accessibilityValue(Text(fields.isFavorite ? "common.yes" : "common.no"))
-                    .accessibilityIdentifier("product.detail.favorite")
-                }
-                ChipsLayout(spacing: 8) {
-                    Chip(text: Text(fields.unitName), systemImage: "scalemass")
-                    if let category = fields.category {
-                        Chip(text: Text(category), systemImage: "tag")
-                    }
-                    if let barcode = fields.barcode {
-                        Chip(text: Text(barcode).monospacedDigit(), systemImage: "barcode")
-                    }
-                }
-                if let url = fields.url {
-                    Link(destination: url) {
-                        Label(url.host() ?? url.absoluteString, systemImage: "link")
-                            .font(.callout)
-                            .lineLimit(1)
-                    }
-                    .accessibilityIdentifier("product.detail.link")
-                }
-                if let notes = fields.notes {
-                    Text(notes).font(.callout).foregroundStyle(.secondary)
-                }
-            }
-            .padding(.vertical, 4)
         }
     }
 
@@ -197,40 +187,36 @@ struct ProductDetailView: View {
     @ViewBuilder
     private func activitySections(_ model: ProductDetailModel) -> some View {
         Section {
-            if model.stockGroups.isEmpty {
+            if model.stock.isEmpty {
                 Text("product.detail.noItems").foregroundStyle(.secondary)
             }
-        } header: {
-            Text("product.detail.stock \(model.stockCount)")
-        }
-        ForEach(model.stockGroups) { group in
-            Section {
-                ForEach(group.items) { item in
-                    StockItemRow(item: item, canEdit: model.canEdit, transferTargets: model.transferTargets,
-                                 consume: { amountTarget = AmountTarget(itemID: item.id, purpose: .consume) },
-                                 move: { amountTarget = AmountTarget(itemID: item.id, purpose: .move) },
-                                 edit: { editingItem = EditTarget(id: item.id) },
-                                 transfer: { pendingTransfer = TransferRequest(itemID: item.id, target: $0) },
-                                 delete: { perform(model.deleteItem(item.id)) })
-                        .swipeActions(edge: .trailing) {
-                            if model.canEdit {
-                                Button(role: .destructive) { perform(model.deleteItem(item.id)) } label: {
-                                    Label("common.delete", systemImage: "trash")
-                                }
+            ForEach(model.stock) { lot in
+                StockItemRow(lot: lot, canEdit: model.canEdit, transferTargets: model.transferTargets,
+                             consume: { amountTarget = AmountTarget(itemID: lot.id, purpose: .consume) },
+                             move: { amountTarget = AmountTarget(itemID: lot.id, purpose: .move) },
+                             edit: { editingItem = EditTarget(id: lot.id) },
+                             transfer: { pendingTransfer = TransferRequest(itemID: lot.id, target: $0) },
+                             delete: { perform(model.deleteItem(lot.id)) })
+                    .swipeActions(edge: .trailing) {
+                        if model.canEdit {
+                            Button(role: .destructive) { perform(model.deleteItem(lot.id)) } label: {
+                                Label("common.delete", systemImage: "trash")
                             }
                         }
-                }
-            } header: {
-                HStack {
-                    Label { group.name.map { Text($0) } ?? Text("product.detail.noLocation") } icon: {
-                        Image(systemName: "archivebox")
                     }
-                    Spacer()
-                    Text(group.totalText).monospacedDigit()
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("stock.group.\(group.name ?? "none")")
             }
+        } header: {
+            HStack(spacing: 4) {
+                Text("product.detail.stockSection")
+                Spacer()
+                if let total = model.stockTotalText {
+                    // One Text, so the separator is not its own (tiny, audited) element.
+                    Text(verbatim: "\(total) · \(String(localized: "stock.lot.count \(model.stockCount)"))")
+                }
+            }
+            .monospacedDigit()
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("product.detail.stockHeader")
         }
         Section("product.detail.priceTrend") {
             if model.priceSummary.isEmpty {
@@ -276,8 +262,16 @@ struct ProductDetailView: View {
         dismiss()
     }
 
+    private func refreshLists() {
+        shoppingLists = model?.product.space.flatMap { try? services.shopping.lists(in: $0) } ?? []
+    }
+
     private func load() {
-        guard model == nil else { model?.reload(); return }
+        guard model == nil else {
+            model?.reload()
+            refreshLists()
+            return
+        }
         guard let product = try? services.products.product(publicId: productID) else { return }
         let spaceStore = services.spaceStore
         let fresh = ProductDetailModel(product: product, products: services.products, inventory: services.inventory,
@@ -286,6 +280,7 @@ struct ProductDetailView: View {
                                        spaces: { (try? spaceStore.allSpaces()) ?? [] })
         fresh.reload()
         model = fresh
+        refreshLists()
     }
 }
 
@@ -294,7 +289,7 @@ struct ProductDetailView: View {
 /// A stock item card. Tapping it opens a menu with consume, move and delete (user choice, 2026-09-24);
 /// swiping left deletes.
 private struct StockItemRow: View {
-    let item: StockItemCard
+    let lot: StockLotRow
     let canEdit: Bool
     let transferTargets: [PickerOption]
     let consume: () -> Void
@@ -302,6 +297,10 @@ private struct StockItemRow: View {
     let edit: () -> Void
     let transfer: (PickerOption) -> Void
     let delete: () -> Void
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var item: StockItemCard { lot.card }
 
     var body: some View {
         Group {
@@ -339,23 +338,44 @@ private struct StockItemRow: View {
     }
 
     private var card: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(item.quantityText).font(.headline).monospacedDigit()
-                Spacer()
-                if let expiry = item.expiryText {
-                    ExpiryLabel(expiry, level: item.level)
-                        .font(.subheadline.weight(.medium))
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+        return layout {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: glyph)
+                    .foregroundStyle(Palette.mocha600)
+                    .frame(width: 24)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.quantityText).font(.headline).monospacedDigit()
+                    Text(verbatim: subtitle).font(.caption).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
                 }
             }
-            if let purchased = item.purchasedAt {
-                Text("product.detail.purchased \(purchased.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption).foregroundStyle(.secondary)
+            if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 8) }
+            if let expiry = item.expiryText {
+                ExpiryLabel(expiry, level: item.level)
+                    .font(.subheadline.weight(.medium))
             }
         }
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
+    }
+
+    private var glyph: String {
+        guard lot.locationName != nil else { return "tray" }
+        return lot.isFreezer ? "snowflake" : "archivebox"
+    }
+
+    /// "Hűtő · Vásárolva: 2026. szept. 28."
+    private var subtitle: String {
+        var parts = [lot.locationName ?? String(localized: "product.detail.noLocation")]
+        if let purchased = item.purchasedAt {
+            parts.append(String(localized: "product.detail.purchased \(purchased.formatted(date: .abbreviated, time: .omitted))"))
+        }
+        return parts.joined(separator: " · ")
     }
 }
 
@@ -427,68 +447,6 @@ private extension InventoryEventKind {
         case .deleted: "trash"
         case .edited: "pencil"
         }
-    }
-}
-
-private struct Chip: View {
-    let text: Text
-    let systemImage: String
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: systemImage).accessibilityHidden(true)
-            text.lineLimit(1)
-        }
-            .font(.caption.weight(.medium))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(Palette.mocha500.opacity(0.15), in: Capsule())
-            .foregroundStyle(.primary)
-            .fixedSize()
-            .accessibilityElement(children: .combine)
-    }
-}
-
-/// Lays chips out left to right, wrapping onto new lines.
-struct ChipsLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let rows = arrange(width: proposal.width ?? .infinity, subviews: subviews)
-        let height = rows.last.map { $0.y + $0.height } ?? 0
-        let width = rows.map(\.width).max() ?? 0
-        return CGSize(width: proposal.width ?? width, height: height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        for row in arrange(width: bounds.width, subviews: subviews) {
-            var x = bounds.minX
-            for index in row.indices {
-                let size = subviews[index].sizeThatFits(.unspecified)
-                subviews[index].place(at: CGPoint(x: x, y: bounds.minY + row.y), proposal: .unspecified)
-                x += size.width + spacing
-            }
-        }
-    }
-
-    private struct Row { var indices: [Int] = []; var y: CGFloat = 0; var width: CGFloat = 0; var height: CGFloat = 0 }
-
-    private func arrange(width: CGFloat, subviews: Subviews) -> [Row] {
-        var rows: [Row] = []
-        var current = Row()
-        for index in subviews.indices {
-            let size = subviews[index].sizeThatFits(.unspecified)
-            let needed = current.indices.isEmpty ? size.width : current.width + spacing + size.width
-            if needed > width, !current.indices.isEmpty {
-                rows.append(current)
-                current = Row(y: current.y + current.height + spacing)
-            }
-            current.width = current.indices.isEmpty ? size.width : current.width + spacing + size.width
-            current.height = max(current.height, size.height)
-            current.indices.append(index)
-        }
-        if !current.indices.isEmpty { rows.append(current) }
-        return rows
     }
 }
 

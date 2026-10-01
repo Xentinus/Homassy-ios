@@ -81,7 +81,8 @@ final class InventoryUITests: XCTestCase {
         XCTAssertTrue(eggs.waitForExistence(timeout: 10))
         eggs.tap()
         XCTAssertTrue(app.navigationBars["Eggs"].waitForExistence(timeout: 5))
-        XCTAssertTrue(element("stock.group.Fridge", in: app).exists)
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier == 'stock.item' AND label CONTAINS 'Fridge'"))
+            .firstMatch.waitForExistence(timeout: 5))
     }
 
     func testAddStockForAnExistingProduct() {
@@ -253,7 +254,7 @@ final class InventoryUITests: XCTestCase {
         XCTAssertFalse(app.buttons["lot.add"].exists, "editing has one lot")
         replaceText(of: quantity, with: "8")
         app.buttons["stock.save"].tap()
-        XCTAssertTrue(waitForLabel(element("stock.group.Fridge", in: app), containing: "8\(nbsp)pcs"))
+        XCTAssertTrue(waitForLabel(element("product.detail.stockHeader", in: app), containing: "8\(nbsp)pcs"))
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(waitForLabel(app.buttons["inventory.row.Eggs"], containing: "8\(nbsp)pcs"))
     }
