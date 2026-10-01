@@ -13,7 +13,8 @@ struct PriceTrendChart: View {
     var body: some View {
         Chart(trend.points) { point in
             AreaMark(x: .value(Text("price.axis.date"), point.date),
-                     y: .value(Text("price.axis.unitPrice"), Self.value(point)))
+                     yStart: .value(Text("price.axis.unitPrice"), trend.yDomain.lowerBound),
+                     yEnd: .value(Text("price.axis.unitPrice"), Self.value(point)))
                 .foregroundStyle(Palette.accent.opacity(0.15))
                 .interpolationMethod(.monotone)
             LineMark(x: .value(Text("price.axis.date"), point.date),
@@ -27,7 +28,8 @@ struct PriceTrendChart: View {
                     .symbolSize(40)
             }
         }
-        .chartYScale(domain: .automatic(includesZero: false))
+        .chartXScale(domain: trend.window)
+        .chartYScale(domain: trend.yDomain)
         .chartYAxis { AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) }
         .chartXAxis {
             AxisMarks(values: .stride(by: .month)) { _ in
@@ -50,12 +52,12 @@ extension PriceTrendChart: @MainActor AXChartDescriptorRepresentable {
         let values = trend.points.map(Self.value)
         let title = String(localized: "product.detail.priceTrend")
         let xAxis = AXNumericDataAxisDescriptor(title: String(localized: "price.axis.date"),
-                                                range: (dates.min() ?? 0)...(dates.max() ?? 0),
+                                                range: trend.window.lowerBound.timeIntervalSince1970...trend.window.upperBound.timeIntervalSince1970,
                                                 gridlinePositions: []) {
             Date(timeIntervalSince1970: $0).formatted(date: .abbreviated, time: .omitted)
         }
         let yAxis = AXNumericDataAxisDescriptor(title: String(localized: "price.axis.unitPrice"),
-                                                range: (values.min() ?? 0)...(values.max() ?? 0),
+                                                range: trend.yDomain,
                                                 gridlinePositions: []) { [trend, model] in
             model.unitPriceText(Decimal($0), currency: trend.currency, unit: trend.unit)
         }
