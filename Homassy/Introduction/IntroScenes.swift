@@ -64,9 +64,8 @@ private struct SampleCard: View {
                 Text(LocalizedStringKey(nameKey)).font(.subheadline.weight(.semibold)).lineLimit(1)
                 Text(detail).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 if let days {
-                    Label { Text("intro.scene.days \(days)") } icon: { Image(systemName: level.cardGlyph) }
+                    ExpiryLabel(Text("intro.scene.days \(days)"), level: level)
                         .font(.caption2.weight(.medium))
-                        .foregroundStyle(level.cardForeground)
                         .lineLimit(1)
                 }
             }

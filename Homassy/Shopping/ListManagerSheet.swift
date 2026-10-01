@@ -17,6 +17,7 @@ struct ListManagerSheet: View {
                 Section {
                     ForEach(model.summaries) { summary in
                         Button { editor = .edit(summary.id) } label: { row(summary) }
+                            .navigationRowStyle()
                             .accessibilityIdentifier("shopping.manage.row.\(summary.name)")
                     }
                     .onMove { model.move(fromOffsets: $0, toOffset: $1) }

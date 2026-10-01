@@ -39,23 +39,19 @@ struct ShoppingItemCard: View {
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
                 } else if let store = row.storeName {
                     Label { Text(verbatim: directory.compactName(ofStore: row.storeID) ?? store) }
                         icon: { Image(systemName: "storefront") }
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
                 if let deadline = row.deadline {
-                    Label {
-                        Text("shopping.item.deadline \(deadline.formatted(.dateTime.month(.abbreviated).day()))")
-                    } icon: {
-                        Image(systemName: row.deadlineLevel.cardGlyph)
-                    }
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(row.deadlineLevel.cardForeground)
-                    .lineLimit(1)
+                    ExpiryLabel(Text("shopping.item.deadline \(deadline.formatted(.dateTime.month(.abbreviated).day()))"),
+                                level: row.deadlineLevel)
+                        .font(.caption.weight(.medium))
+                        .lineLimit(3)
                 }
                 AttributionCaption(ids: [row.id]) {
                     if let note = row.note {

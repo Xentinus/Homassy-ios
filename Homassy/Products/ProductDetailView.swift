@@ -344,9 +344,8 @@ private struct StockItemRow: View {
                 Text(item.quantityText).font(.headline).monospacedDigit()
                 Spacer()
                 if let expiry = item.expiryText {
-                    Label(expiry, systemImage: item.level.cardGlyph)
+                    ExpiryLabel(expiry, level: item.level)
                         .font(.subheadline.weight(.medium))
-                        .foregroundStyle(item.level.cardForeground)
                 }
             }
             if let purchased = item.purchasedAt {
