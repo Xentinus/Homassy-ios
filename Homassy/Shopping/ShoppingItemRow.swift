@@ -1,9 +1,9 @@
 import HomassyCore
 import SwiftUI
 
-/// One item on the Shopping card grid (README "Card layout"): picture, name, quantity, store (or its list, when
-/// grouped by store), deadline and note.
-/// A deadline within 14 days draws the card yellow, a passed one red, exactly like stock expiry.
+/// One item on the Shopping tab (P2-08d, user pick 2A): thumbnail, name and store (or its list, when grouped by
+/// store), then the quantity and the deadline on the trailing side. A note shows as a glyph; its text is read by
+/// VoiceOver and shown on the purchase sheet. A deadline within 14 days is yellow, a passed one red, like expiry.
 /// A tap opens the purchase sheet.
 struct ShoppingItemCard: View {
     let row: ShoppingOverviewModel.Row
@@ -12,6 +12,7 @@ struct ShoppingItemCard: View {
     let open: () -> Void
 
     @Environment(StoreDirectory.self) private var directory
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Button(action: open) { content }
@@ -21,50 +22,49 @@ struct ShoppingItemCard: View {
     }
 
     private var content: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ProductImageTile(data: row.image, name: row.name)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(verbatim: row.name)
-                    .font(.headline)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                Text(verbatim: row.quantityText)
-                    .font(.subheadline.weight(.semibold))
-                    .monospacedDigit()
-                if showsList {
-                    Label {
-                        Text(verbatim: row.listName)
-                    } icon: {
-                        Image(systemName: "circle.fill").foregroundStyle(ListColor.color(row.listColor))
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                } else if let store = row.storeName {
-                    Label { Text(verbatim: directory.compactName(ofStore: row.storeID) ?? store) }
-                        icon: { Image(systemName: "storefront") }
+        WideCardLayout(image: row.image, name: row.name, level: row.deadlineLevel) {
+            Text(verbatim: row.name)
+                .font(.headline)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                .multilineTextAlignment(.leading)
+            AttributionCaption(ids: [row.id]) { place }
+        } trailing: {
+            HStack(spacing: 4) {
+                if let note = row.note {
+                    Image(systemName: "text.bubble")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .accessibilityLabel(Text("shopping.item.note \(note)"))
                 }
-                if let deadline = row.deadline {
-                    ExpiryLabel(Text("shopping.item.deadline \(deadline.formatted(.dateTime.month(.abbreviated).day()))"),
-                                level: row.deadlineLevel)
-                        .font(.caption.weight(.medium))
-                        .lineLimit(3)
-                }
-                AttributionCaption(ids: [row.id]) {
-                    if let note = row.note {
-                        Text(verbatim: note).font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                    }
-                }
+                Text(verbatim: row.quantityText).font(.headline).monospacedDigit()
             }
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            if let deadline = row.deadline {
+                let day = deadline.formatted(.dateTime.month(.abbreviated).day())
+                ExpiryLabel(Text(verbatim: day), level: row.deadlineLevel)
+                    .font(.caption.weight(.medium))
+                    .accessibilityLabel(Text("shopping.item.deadline \(day)"))
+            }
         }
-        .cardChrome(level: row.deadlineLevel)
         .attributionRing([row.id])
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder private var place: some View {
+        if showsList {
+            Label {
+                Text(verbatim: row.listName)
+            } icon: {
+                Image(systemName: "circle.fill").foregroundStyle(ListColor.color(row.listColor))
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        } else if let store = row.storeName {
+            Label { Text(verbatim: directory.compactName(ofStore: row.storeID) ?? store) }
+                icon: { Image(systemName: "storefront") }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
     }
 }

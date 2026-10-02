@@ -66,13 +66,26 @@ struct ExpiryLabel: View {
 }
 
 extension View {
-    /// The shared card chrome: neutral grouped background, hairline and rounded corners, plus the expiry
-    /// badge in the top-right corner for soon (yellow) and expired (red) cards.
+    /// The shared card chrome: neutral grouped background and rounded corners. The hairline shows only with
+    /// Increase Contrast, as on iOS 26's own cards (P2-08d). A level draws the corner badge; the wide cards pass
+    /// none and put the badge on their thumbnail instead.
     func cardChrome(level: ExpirationLevel = .none, cornerRadius: CGFloat = 16) -> some View {
+        modifier(CardChrome(level: level, cornerRadius: cornerRadius))
+    }
+}
+
+private struct CardChrome: ViewModifier {
+    let level: ExpirationLevel
+    let cornerRadius: CGFloat
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-        return self
+        content
             .background(Color(uiColor: .secondarySystemGroupedBackground), in: shape)
-            .overlay { shape.strokeBorder(Color(uiColor: .separator).opacity(0.6), lineWidth: 0.5) }
+            .overlay {
+                if contrast == .increased { shape.strokeBorder(Color(uiColor: .separator), lineWidth: 1) }
+            }
             .clipShape(shape)
             .overlay(alignment: .topTrailing) {
                 if let badge = level.cardBadge {
