@@ -2,9 +2,9 @@ import HomassyCore
 import SwiftUI
 
 /// One item on the Shopping tab (P2-08d, user pick 2A): thumbnail, name and store (or its list, when grouped by
-/// store), then the quantity and the deadline on the trailing side. A note shows as a glyph; its text is read by
-/// VoiceOver and shown on the purchase sheet. A deadline within 14 days is yellow, a passed one red, like expiry.
-/// A tap opens the purchase sheet.
+/// store), then the quantity and the deadline on the trailing side. A note shows as a glyph; its text is the card's
+/// accessibility value, read last by VoiceOver and shown on the purchase sheet. A deadline within 14 days is yellow,
+/// a passed one red, like expiry. A tap opens the purchase sheet.
 struct ShoppingItemCard: View {
     let row: ShoppingOverviewModel.Row
     /// Store grouping (P4-03a): the store is the section title, so the card names the list instead.
@@ -30,11 +30,11 @@ struct ShoppingItemCard: View {
             AttributionCaption(ids: [row.id]) { place }
         } trailing: {
             HStack(spacing: 4) {
-                if let note = row.note {
+                if row.note != nil {
                     Image(systemName: "text.bubble")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .accessibilityLabel(Text("shopping.item.note \(note)"))
+                        .accessibilityHidden(true)
                 }
                 Text(verbatim: row.quantityText).font(.headline).monospacedDigit()
             }
@@ -47,6 +47,7 @@ struct ShoppingItemCard: View {
         }
         .attributionRing([row.id])
         .accessibilityElement(children: .combine)
+        .accessibilityValue(row.note.map { Text("shopping.item.note \($0)") } ?? Text(verbatim: ""))
     }
 
     @ViewBuilder private var place: some View {

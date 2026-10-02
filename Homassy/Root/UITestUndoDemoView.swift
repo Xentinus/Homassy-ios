@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Shown instead of the Inventory tab root under `-uiTestAccountState … -uiTestUndoDemo`, so UI tests can exercise
 /// the undo toast before any real feature enqueues actions. Compiled out of release builds.
-/// Uses the card grid from README "Card layout", so it previews the style P2-08 builds for real.
+/// A preview of the card style the real screens use.
 struct UITestUndoDemoView: View {
     @Environment(UndoQueue.self) private var undoQueue
     @State private var items = DemoItem.samples

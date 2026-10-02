@@ -302,14 +302,10 @@ struct ShoppingHomeView: View {
 
     /// A tap opens the purchase sheet. Swipe left deletes (a full swipe at once, undoable), swipe right edits, long
     /// press offers both (user pick 4B, the Reminders / Mail pattern). Dragging reorders within a list, in list
-    /// grouping only.
+    /// grouping only. The swipe actions already reach VoiceOver as custom actions, so there is no separate set.
     @ViewBuilder private func card(_ row: ShoppingOverviewModel.Row) -> some View {
         ShoppingItemCard(row: row, showsList: model.grouping == .store) { purchasing = Target(id: row.id) }
             .contextMenu {
-                editButton(row)
-                deleteButton(row)
-            }
-            .accessibilityActions {
                 editButton(row)
                 deleteButton(row)
             }
