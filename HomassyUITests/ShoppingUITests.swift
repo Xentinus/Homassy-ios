@@ -184,12 +184,12 @@ final class ShoppingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["shopping.item.Napkins"].waitForExistence(timeout: 3))
     }
 
-    // Drag to reorder is not UI-tested: XCUITest drag and drop on the card grid is unreliable on the device
-    // (2026-09-25). `ShoppingOverviewModelTests.dragOntoAnotherCardReordersWithinTheList` covers the reordering, and the manual
+    // Drag to reorder is not UI-tested: XCUITest drag and drop on the list is unreliable on the device
+    // (2026-09-25). `ShoppingOverviewModelTests.listMoveOffsetsReorderWithinTheSection` covers the reordering, and the manual
     // checklist covers the gesture.
 
     @MainActor
-    func testRotationKeepsTheFilterAndTheGrid() {
+    func testRotationKeepsTheFilterAndOneCentredColumn() {
         let app = XCUIApplication.launchedOnShoppingTab()
         defer { XCUIDevice.shared.orientation = .portrait }
         app.createShoppingList(named: "Weekly")
@@ -203,9 +203,39 @@ final class ShoppingUITests: XCTestCase {
         let candles = app.buttons["shopping.item.Candles"]
         XCTAssertTrue(napkins.waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["shopping.filter.Weekly"].isSelected)
-        XCTAssertEqual(napkins.frame.minY, candles.frame.minY, accuracy: 2, "landscape shows the cards side by side")
+        XCTAssertEqual(napkins.frame.minX, candles.frame.minX, accuracy: 1, "one column in landscape too")
+        XCTAssertLessThanOrEqual(napkins.frame.width, 681, "the column stops at 680 pt")
+        attachScreenshot(app, named: "shopping-cards-landscape")
         XCUIDevice.shared.orientation = .portrait
         XCTAssertTrue(napkins.waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testSwipeLeftDeletesThenUndo() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.createShoppingList(named: "Weekly")
+        app.addShoppingItem("Napkins")
+        app.addShoppingItem("Candles")
+
+        let napkins = app.buttons["shopping.item.Napkins"]
+        napkins.swipeLeft()
+        let delete = app.buttons["Delete"]
+        if delete.waitForExistence(timeout: 2) { delete.tap() }   // a short swipe reveals it, a full swipe deletes
+        XCTAssertTrue(napkins.waitForNonExistence(timeout: 3))
+        app.buttons["Undo"].tap()
+        XCTAssertTrue(napkins.waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testSwipeRightOpensTheEditSheet() {
+        let app = XCUIApplication.launchedOnShoppingTab()
+        app.createShoppingList(named: "Weekly")
+        app.addShoppingItem("Napkins")
+
+        app.buttons["shopping.item.Napkins"].swipeRight()
+        let edit = app.buttons["Edit"]
+        if edit.waitForExistence(timeout: 2) { edit.tap() }
+        XCTAssertTrue(app.switches["shopping.form.hasDeadline"].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -230,6 +260,7 @@ final class ShoppingUITests: XCTestCase {
         app.addShoppingItem("Balloons")                           // preset to the filtered list
         app.selectShoppingFilter(nil)
         XCTAssertEqual(app.buttons["shopping.filter.Party"].value as? String, "2 to buy")
+        attachScreenshot(app, named: "shopping-cards-portrait")
     }
 
     @MainActor

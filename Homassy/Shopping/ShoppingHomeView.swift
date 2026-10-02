@@ -2,10 +2,10 @@ import CoreData
 import HomassyCore
 import SwiftUI
 
-/// The Shopping tab (P4-03a, the Reminders "All" pattern): every item still to buy as cards, one section per list
-/// or per store, and a list filter strip under the title. A tap on a card opens the purchase sheet, long press
-/// offers Edit and Delete (undoable), dragging reorders within a list. The "•••" menu manages lists and switches
-/// the grouping; `+` adds an item or a list.
+/// The Shopping tab (P4-03a, the Reminders "All" pattern): every item still to buy as wide cards in one column
+/// (P2-08d), one section per list or per store, and a list filter strip under the title. A tap on a card opens the
+/// purchase sheet; swipe left deletes and swipe right edits, long press offers both (undoable); dragging reorders
+/// within a list. The "•••" menu manages lists and switches the grouping; `+` adds an item or a list.
 struct ShoppingHomeView: View {
     struct Target: Identifiable { let id: UUID }
     struct AddRequest: Identifiable {
@@ -23,6 +23,7 @@ struct ShoppingHomeView: View {
     @State private var managing = false
     @State private var pendingListDelete: ShoppingListsModel.Summary?
     @State private var router = AppRouter.shared
+    @State private var listWidth: CGFloat = 0
     @Environment(StoreDirectory.self) private var directory
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -160,19 +161,25 @@ struct ShoppingHomeView: View {
                     .buttonStyle(.borderedProminent)
             }
         } else {
-            ScrollView {
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
-                    ForEach(model.sections) { section in
-                        SwiftUI.Section {
-                            ForEach(section.rows) { card($0) }
-                        } header: {
-                            if showsHeader(section) { header(section) }
-                        }
+            List {
+                ForEach(model.sections) { section in
+                    SwiftUI.Section {
+                        ForEach(section.rows) { card($0) }
+                            .onMove(perform: model.canReorder ? { source, destination in
+                                withAnimation(reduceMotion ? nil : .snappy) {
+                                    _ = model.move(fromOffsets: source, toOffset: destination, in: section)
+                                }
+                            } : nil)
+                    } header: {
+                        if showsHeader(section) { header(section) }
                     }
                 }
-                .padding()
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .background(Color(uiColor: .systemGroupedBackground))
+            .onGeometryChange(for: CGFloat.self) { $0.size.width + $0.safeAreaInsets.leading + $0.safeAreaInsets.trailing } action: { listWidth = $0 }
+            .contentMargins(.horizontal, columnInset, for: .scrollContent)
             .overlay {
                 if model.sections.isEmpty { emptyItems }
             }
@@ -201,11 +208,9 @@ struct ShoppingHomeView: View {
         }
     }
 
-    private var columns: [GridItem] {
-        dynamicTypeSize.isAccessibilitySize
-            ? [GridItem(.flexible())]
-            : [GridItem(.adaptive(minimum: 160), spacing: 12, alignment: .top)]
-    }
+    /// The space left and right of the card column: 16 pt, or more once the screen is wider than the column. The
+    /// scroll content margins count from the screen edge, so the width includes the safe area.
+    private var columnInset: CGFloat { max(16, (listWidth - CardColumn.maxWidth) / 2) }
 
     private func showsHeader(_ section: ShoppingOverviewModel.Section) -> Bool {
         if case .list = section.kind { return model.showsListHeaders }
@@ -230,7 +235,12 @@ struct ShoppingHomeView: View {
             }
         }
         .font(.headline)
+        .foregroundStyle(.primary)          // a plain-list header would otherwise dim the title and the count
         .padding(.top, 8)
+        .padding(.horizontal, columnInset)
+        .listRowInsets(EdgeInsets())
+        .textCase(nil)
+        .background(Color(uiColor: .systemGroupedBackground))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(verbatim: headerSpokenText(section)))
         .accessibilityAddTraits(.isHeader)
@@ -290,10 +300,11 @@ struct ShoppingHomeView: View {
 
     // MARK: Cards
 
-    /// Long press opens Edit and Delete. Dragging a card onto another card of the same list reorders it, in list
+    /// A tap opens the purchase sheet. Swipe left deletes (a full swipe at once, undoable), swipe right edits, long
+    /// press offers both (user pick 4B, the Reminders / Mail pattern). Dragging reorders within a list, in list
     /// grouping only.
     @ViewBuilder private func card(_ row: ShoppingOverviewModel.Row) -> some View {
-        let base = ShoppingItemCard(row: row, showsList: model.grouping == .store) { purchasing = Target(id: row.id) }
+        ShoppingItemCard(row: row, showsList: model.grouping == .store) { purchasing = Target(id: row.id) }
             .contextMenu {
                 editButton(row)
                 deleteButton(row)
@@ -302,16 +313,11 @@ struct ShoppingHomeView: View {
                 editButton(row)
                 deleteButton(row)
             }
-        if model.canReorder {
-            base
-                .draggable(row.id.uuidString)
-                .dropDestination(for: String.self) { ids, _ in
-                    guard let dragged = ids.first.flatMap(UUID.init(uuidString:)) else { return false }
-                    return withAnimation(reduceMotion ? nil : .snappy) { model.moveItem(dragged, onto: row.id) }
-                }
-        } else {
-            base
-        }
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) { deleteButton(row) }
+            .swipeActions(edge: .leading) { editButton(row).tint(.gray) }
+            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
     }
 
     private func deleteButton(_ row: ShoppingOverviewModel.Row) -> some View {
