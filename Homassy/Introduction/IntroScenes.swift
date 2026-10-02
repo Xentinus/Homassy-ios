@@ -59,6 +59,7 @@ private struct SampleCard: View {
                     .lineLimit(1)
             }
         }
+        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
     }
 }
 

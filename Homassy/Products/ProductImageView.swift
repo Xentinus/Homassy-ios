@@ -30,7 +30,7 @@ struct ProductImageView: View {
 
 private struct ProductImageContent: View {
     let data: Data?
-    let iconScale: CGFloat?
+    let iconScale: CGFloat
     var monogramOf: String?
     @State private var image: UIImage?
 
@@ -51,7 +51,7 @@ private struct ProductImageContent: View {
             } else {
                 GeometryReader { proxy in
                     Image(systemName: "shippingbox")
-                        .font(.system(size: min(proxy.size.width, proxy.size.height) * (iconScale ?? 0.36)))
+                        .font(.system(size: min(proxy.size.width, proxy.size.height) * iconScale))
                         .foregroundStyle(Palette.mocha600)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
