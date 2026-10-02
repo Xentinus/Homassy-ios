@@ -183,11 +183,14 @@ final class InventoryUITests: XCTestCase {
         attachScreenshot(app, named: "stock-two-lots")
         app.buttons["stock.save"].tap()
 
-        // Expiring soon (the seeded, expired Bread), Fridge and Pantry each show a Bread card.
+        // Expiring soon (the seeded, expired Bread), Fridge and Pantry each show a Bread card. The cards are one
+        // column now (P2-08d), so the lazy stack builds the Pantry card only once it is scrolled near.
         let cards = app.buttons.matching(identifier: "inventory.row.Bread")
-        let three = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 3"), object: cards)
-        XCTAssertEqual(XCTWaiter().wait(for: [three], timeout: 5), .completed)
-        XCTAssertTrue(element("inventory.section.Pantry", in: app).exists)
+        let pantry = element("inventory.section.Pantry", in: app)
+        for _ in 0..<6 where !pantry.exists || !pantry.isHittable { app.swipeUp() }
+        XCTAssertTrue(pantry.waitForExistence(timeout: 5))
+        let pantryBread = cards.allElementsBoundByIndex.filter { $0.frame.minY > pantry.frame.minY }
+        XCTAssertEqual(pantryBread.count, 1, "the Pantry section holds the new Bread card")
         attachScreenshot(app, named: "stock-two-lots-inventory")
     }
 
@@ -263,5 +266,49 @@ final class InventoryUITests: XCTestCase {
         let app = openInventory(seeded: false)
         XCTAssertTrue(app.staticTexts["Nothing in stock yet"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["Add to inventory"].exists)
+    }
+
+    func testCardsStackInOneCentredColumn() {
+        let app = openInventory()
+        let milk = app.buttons["inventory.row.Milk"]
+        let apples = app.buttons["inventory.row.Apples"]
+        XCTAssertTrue(milk.waitForExistence(timeout: 10))
+        XCTAssertEqual(milk.frame.minX, apples.frame.minX, accuracy: 1, "one column")
+        XCTAssertNotEqual(milk.frame.minY, apples.frame.minY, accuracy: 1)
+        attachScreenshot(app, named: "inventory-cards-portrait")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        defer { XCUIDevice.shared.orientation = .portrait }
+        XCTAssertTrue(milk.waitForExistence(timeout: 5))
+        XCTAssertLessThanOrEqual(milk.frame.width, 681, "the column stops at 680 pt")
+        XCTAssertEqual(milk.frame.midX, app.windows.firstMatch.frame.midX, accuracy: 40, "centred")
+        attachScreenshot(app, named: "inventory-cards-landscape")
+    }
+
+    func testLongPressOffersAddStockListAndFavorite() {
+        let app = openInventory()
+        let eggs = app.buttons["inventory.row.Eggs"]
+        XCTAssertTrue(eggs.waitForExistence(timeout: 10))
+        eggs.press(forDuration: 1.0)
+        XCTAssertTrue(app.buttons["Add to inventory"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["Add to List"].isEnabled, "the seed has no shopping list")
+        XCTAssertFalse(app.buttons["Delete"].exists, "no delete on inventory cards")
+        app.buttons["Favorite"].tap()
+        XCTAssertTrue(waitForLabel(eggs, containing: "Favorite"))
+        eggs.press(forDuration: 1.0)
+        XCTAssertTrue(app.buttons["Remove from Favorites"].waitForExistence(timeout: 3))
+        app.buttons["Add to inventory"].tap()
+        XCTAssertTrue(app.buttons["stock.save"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.searchFields.firstMatch.exists, "Eggs is chosen: no product list")
+    }
+
+    func testCardsAtAccessibilitySizes() {
+        continueAfterFailure = false
+        let app = XCUIApplication.homassy(extraArguments: [
+            "-uiTestSeed", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL",
+        ])
+        app.launch()
+        app.openTab("Inventory")
+        XCTAssertTrue(app.buttons["inventory.row.Milk"].waitForExistence(timeout: 10))
+        attachScreenshot(app, named: "inventory-cards-ax")
     }
 }

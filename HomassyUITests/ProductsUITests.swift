@@ -55,6 +55,8 @@ final class ProductsUITests: XCTestCase {
         category.typeText("Spices")
         save.tap()
         XCTAssertTrue(app.buttons["product.row.Paprika"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["product.row.Paprika"].label.contains("Nothing in stock"),
+                      app.buttons["product.row.Paprika"].label)
     }
 
     func testSearch() {

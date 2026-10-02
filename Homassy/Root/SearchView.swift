@@ -4,7 +4,7 @@ import SwiftUI
 
 /// The Search tab and the product catalogue in one (P1-07a, user decision 2026-09-26; search itself is a user
 /// request of 2026-09-24). An empty field shows every product of the active space in letter sections; typing, a
-/// category or a scanned barcode narrows them. Cards have no delete (user rule); a tap opens the product detail.
+/// category or a scanned barcode narrows them. Cards have no delete (user rule); a tap opens the product detail, and long press offers add stock, add to a list and favourite (P2-08d).
 /// An unknown scanned code offers a new product.
 struct SearchView: View {
     @Environment(ServiceContainer.self) private var services
@@ -14,6 +14,7 @@ struct SearchView: View {
     @State private var showingForm = false
     @State private var scanning = false
     @State private var creatingProduct: String?
+    @State private var cardActions = ProductCardActions()
 
     var body: some View {
         Group {
@@ -29,6 +30,7 @@ struct SearchView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
                                                         object: services.context)) { _ in model?.reload() }
         .barcodeFlow(isScanning: $scanning, space: model?.space)
+        .productCardActionSheets(cardActions, space: model?.space)
         .sheet(isPresented: $showingForm) {
             if let space = model?.space {
                 ProductFormSheet(model: ProductFormModel(mode: .create(space, barcode: nil), service: services.products))
@@ -48,23 +50,20 @@ struct SearchView: View {
         var id: String { code }
     }
 
-    private var columns: [GridItem] {
-        dynamicTypeSize.isAccessibilitySize
-            ? [GridItem(.flexible())]
-            : [GridItem(.adaptive(minimum: 160), spacing: 12, alignment: .top)]
-    }
-
     @ViewBuilder
     private func content(_ model: ProductListModel) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 12, pinnedViews: [.sectionHeaders]) {
+                LazyVStack(alignment: .leading, spacing: 8, pinnedViews: [.sectionHeaders]) {
                     ForEach(model.sections) { section in
                         Section {
                             ForEach(section.cards) { card in
-                                NavigationLink(value: ProductRoute(id: card.id)) { ProductCard(card: card) }
-                                    .buttonStyle(.plain)
-                                    .accessibilityIdentifier("product.row.\(card.name)")
+                                NavigationLink(value: ProductRoute(id: card.id)) {
+                                    ProductCard(card: card, showsOutOfStock: true)
+                                }
+                                .buttonStyle(.plain)
+                                .productCardMenu(card, actions: cardActions, canEdit: model.canEdit)
+                                .accessibilityIdentifier("product.row.\(card.name)")
                             }
                         } header: {
                             // The Text keeps its own width; a row-wide Text frame made the audit misread its contrast.
@@ -81,6 +80,8 @@ struct SearchView: View {
                         }
                     }
                 }
+                .frame(maxWidth: CardColumn.maxWidth)
+                .frame(maxWidth: .infinity)
                 .padding(.leading)
                 .padding(.trailing, showsIndex(model) ? 28 : 16)
                 .padding(.bottom, 24)
