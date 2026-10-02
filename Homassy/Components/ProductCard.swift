@@ -1,55 +1,45 @@
 import HomassyCore
 import SwiftUI
 
-/// A product card (README "Card layout"): picture, name, brand, barcode, stock and expiry line.
-/// Used by the Products grid (P2-07) and the Inventory grid (P2-08).
+/// A product card (P2-08d, user pick 2A): thumbnail, name and brand, then the stock and the nearest expiry on the
+/// trailing side. Used by the Inventory tab and the Search catalogue. A tap opens the product detail.
 struct ProductCard: View {
     let card: ProductCardData
+    /// Search shows "Nincs készleten" for a product without stock; Inventory never has an empty card.
+    var showsOutOfStock = false
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ProductImageTile(data: card.image, name: card.name)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(card.name)
-                        .font(.headline)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                    Spacer(minLength: 0)
-                    if card.isFavorite {
-                        Image(systemName: "heart.fill")
-                            .font(.caption)
-                            .foregroundStyle(Palette.accent)
-                            .accessibilityLabel(Text("product.field.favorite"))
-                    }
+        WideCardLayout(image: card.image, name: card.name, level: card.expiryLevel) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(card.name)
+                    .font(.headline)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                    .multilineTextAlignment(.leading)
+                if card.isFavorite {
+                    Image(systemName: "heart.fill")
+                        .font(.caption)
+                        .foregroundStyle(Palette.accent)
+                        .accessibilityLabel(Text("product.field.favorite"))
                 }
+            }
+            AttributionCaption(ids: card.relatedIDs) {
                 if let brand = card.brand {
                     Text(brand).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                 }
-                if let barcode = card.barcode {
-                    Label(barcode, systemImage: "barcode")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .accessibilityLabel(Text("product.card.barcode \(barcode)"))
-                }
-                if let stock = card.stockText {
-                    Text(stock).font(.subheadline.weight(.semibold)).monospacedDigit()
-                }
-                AttributionCaption(ids: card.relatedIDs) {
-                    if let expiry = card.expiryText {
-                        ExpiryLabel(expiry, level: card.expiryLevel)
-                            .font(.caption.weight(.medium))
-                            .lineLimit(3)
-                    }
-                }
             }
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        } trailing: {
+            if let stock = card.stockText {
+                Text(stock).font(.headline).monospacedDigit()
+                if let expiry = card.expiryText {
+                    ExpiryLabel(expiry, level: card.expiryLevel).font(.caption.weight(.medium))
+                }
+            } else if showsOutOfStock {
+                Text("product.detail.noItems").font(.subheadline).foregroundStyle(.secondary)
+            }
         }
-        .cardChrome(level: card.expiryLevel)
         .attributionRing(card.relatedIDs)
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 }

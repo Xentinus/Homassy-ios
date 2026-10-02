@@ -5614,25 +5614,25 @@
         }
       }
     },
-    "product.card.barcode %@" : {
+    "product.card.unfavorite" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Barcode %@"
+            "value" : "Aus Favoriten entfernen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Barcode %@"
+            "value" : "Remove from Favorites"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vonalkód: %@"
+            "value" : "Eltávolítás a kedvencek közül"
           }
         }
       }
@@ -7519,6 +7519,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Határidő: %@"
+          }
+        }
+      }
+    },
+    "shopping.item.note %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notiz: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note: %@"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Megjegyzés: %@"
           }
         }
       }
