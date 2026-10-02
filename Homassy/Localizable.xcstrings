@@ -5569,6 +5569,7 @@
       }
     },
     "price.latest %@ %@" : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5637,6 +5638,7 @@
       }
     },
     "product.detail.addToList" : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5659,6 +5661,7 @@
       }
     },
     "product.detail.addToList.noList" : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5704,6 +5707,7 @@
       }
     },
     "product.detail.copy" : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5749,6 +5753,7 @@
       }
     },
     "product.detail.facts" : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5771,6 +5776,7 @@
       }
     },
     "product.detail.historyAll" : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5793,6 +5799,7 @@
       }
     },
     "product.detail.historySection" : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5999,6 +6006,7 @@
       }
     },
     "product.detail.priceWindow" : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -6044,6 +6052,7 @@
       }
     },
     "product.detail.stockSection" : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -6089,6 +6098,7 @@
       }
     },
     "product.detail.website" : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {

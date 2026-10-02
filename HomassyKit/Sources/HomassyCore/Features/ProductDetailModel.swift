@@ -56,8 +56,9 @@ public struct PriceTrend: Equatable, Sendable {
         let values = points.map { NSDecimalNumber(decimal: $0.unitPrice).doubleValue }
         let lo = values.min() ?? 0
         let hi = values.max() ?? 0
-        let pad = max((hi - lo) * 0.15, hi * 0.05, 1)
-        return (lo - pad)...(hi + pad)
+        // Relative air, so a unit price under 1 (gram or ml products) keeps a readable axis that never dips below 0.
+        let pad = hi > lo ? (hi - lo) * 0.15 : max(hi * 0.1, 0.01)
+        return max(0, lo - pad)...(hi + pad)
     }
 }
 

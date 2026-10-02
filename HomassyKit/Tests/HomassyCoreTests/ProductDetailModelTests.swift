@@ -154,6 +154,14 @@ struct ProductDetailModelTests {
         #expect(single.contains(459) && single.upperBound > single.lowerBound)
         let equal = trend([2, 2]).yDomain
         #expect(equal.contains(2) && equal.upperBound > equal.lowerBound)
+        // Unit prices under 1 (gram or ml products, eggs in EUR) must not push the axis below zero.
+        let tinySingle = trend([Decimal(string: "0.4")!]).yDomain
+        #expect(tinySingle.lowerBound >= 0 && tinySingle.contains(0.4) && tinySingle.upperBound > tinySingle.lowerBound)
+        let tinyPair = trend([Decimal(string: "0.25")!, Decimal(string: "0.3")!]).yDomain
+        #expect(tinyPair.lowerBound >= 0 && tinyPair.contains(0.25) && tinyPair.contains(0.3)
+                && tinyPair.upperBound - tinyPair.lowerBound > 0.05 && tinyPair.upperBound < 0.4)
+        let nearZero = trend([Decimal(string: "0.01")!, Decimal(string: "0.02")!]).yDomain
+        #expect(nearZero.lowerBound >= 0 && nearZero.contains(0.01) && nearZero.contains(0.02))
     }
 
     @Test func noPricesMeansNoTrend() async throws {

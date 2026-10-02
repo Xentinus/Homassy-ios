@@ -63,7 +63,8 @@ struct AddItemSheet: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            if model.step == .what {
+            // With a product chosen up front, "how much" is the first page, so it offers Cancel rather than a Back to nowhere.
+            if model.step == .what || (startsWithProduct && model.step == .amount) {
                 Button("common.cancel") { dismiss() }
             } else {
                 Button("shopping.add.back") { model.back() }

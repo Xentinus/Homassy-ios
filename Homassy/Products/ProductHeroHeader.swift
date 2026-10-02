@@ -14,6 +14,7 @@ struct ProductHeroHeader: View {
     let nameVisible: (Bool) -> Void
 
     @Environment(\.openURL) private var openURL
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(spacing: 4) {
@@ -31,7 +32,13 @@ struct ProductHeroHeader: View {
                     .multilineTextAlignment(.center)
             }
             if let barcode = fields.barcode, !barcode.isEmpty {
-                Label { Text(verbatim: barcode).monospacedDigit() } icon: { Image(systemName: "barcode") }
+                // At accessibility sizes the glyph sits above the digits, so the number keeps the full width and
+                // shrinks on one line instead of breaking mid-number.
+                let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 2)) : AnyLayout(HStackLayout(spacing: 6))
+                layout {
+                    Image(systemName: "barcode")
+                    Text(verbatim: barcode).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
+                }
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .frame(minHeight: 44)
@@ -78,6 +85,7 @@ struct ProductHeroHeader: View {
                 .accessibilityIdentifier("product.detail.link")
             }
         }
+        .fixedSize(horizontal: false, vertical: true)
         .buttonStyle(HeroActionButtonStyle())
     }
 }
@@ -91,7 +99,7 @@ private struct HeroActionLabel: View {
             Image(systemName: systemImage).font(.title3).accessibilityHidden(true)
             Text(title).font(.caption.weight(.medium)).multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, minHeight: 44)
+        .frame(maxWidth: .infinity, minHeight: 44, maxHeight: .infinity)
     }
 }
 
