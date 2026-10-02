@@ -81,4 +81,16 @@ final class SearchUITests: XCTestCase {
         for _ in 0..<4 where !delete.exists { app.swipeUp() }
         XCTAssertTrue(delete.exists)
     }
+
+    func testLongPressOnACatalogueCardTogglesTheFavorite() {
+        let app = launch()
+        let milk = app.buttons["product.row.Milk"]
+        XCTAssertTrue(milk.waitForExistence(timeout: 10))
+        milk.press(forDuration: 1.0)
+        XCTAssertTrue(app.buttons["Favorite"].waitForExistence(timeout: 3))
+        app.buttons["Favorite"].tap()
+        let predicate = NSPredicate(format: "label CONTAINS %@", "Favorite")
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: milk)], timeout: 5),
+                       .completed)
+    }
 }

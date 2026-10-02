@@ -3,16 +3,16 @@ import HomassyCore
 import SwiftUI
 
 /// The Inventory tab root: "Expiring soon", then the storage locations, then "No location", as product cards.
-/// Cards have no actions of their own (user rule); a tap opens the product detail.
+/// A tap opens the product detail; long press offers add stock, add to a list and favourite, never delete (P2-08d).
 struct InventoryView: View {
     @Environment(ServiceContainer.self) private var services
     @Environment(SpaceSelection.self) private var selection
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var model: InventoryModel?
     @State private var addingStock = false
     @State private var creatingProduct = false
     @State private var scanning = false
     @State private var router = AppRouter.shared
+    @State private var cardActions = ProductCardActions()
 
     var body: some View {
         Group {
@@ -29,6 +29,7 @@ struct InventoryView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
                                                         object: services.context)) { _ in model?.reload() }
         .barcodeFlow(isScanning: $scanning, space: model?.space)
+        .productCardActionSheets(cardActions, space: model?.space)
         .sheet(isPresented: $addingStock) {
             if let space = model?.space { StockAddSheet.picking(in: space, services: services) }
         }
@@ -39,22 +40,17 @@ struct InventoryView: View {
         }
     }
 
-    private var columns: [GridItem] {
-        dynamicTypeSize.isAccessibilitySize
-            ? [GridItem(.flexible())]
-            : [GridItem(.adaptive(minimum: 160), spacing: 12, alignment: .top)]
-    }
-
     @ViewBuilder
     private func content(_ model: InventoryModel) -> some View {
         ScrollView {
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 12, pinnedViews: [.sectionHeaders]) {
+            LazyVStack(alignment: .leading, spacing: 8, pinnedViews: [.sectionHeaders]) {
                 ForEach(model.sections) { section in
                     Section {
                         ForEach(section.cards.map { SectionCard(section: section.id, card: $0) }) { entry in
                             let card = entry.card
                             NavigationLink(value: ProductRoute(id: card.id)) { ProductCard(card: card) }
                                 .buttonStyle(.plain)
+                                .productCardMenu(card, actions: cardActions, canEdit: model.canEdit)
                                 .accessibilityIdentifier("inventory.row.\(card.name)")
                         }
                     } header: {
@@ -62,6 +58,8 @@ struct InventoryView: View {
                     }
                 }
             }
+            .frame(maxWidth: CardColumn.maxWidth)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal)
             .padding(.bottom, 24)
         }
@@ -155,7 +153,7 @@ struct InventoryView: View {
     }
 }
 
-/// A product can have a card in several sections (lots in different places). The lazy grid needs ids that are
+/// A product can have a card in several sections (lots in different places). The lazy stack needs ids that are
 /// unique across all sections, or it draws only one of the cards.
 private struct SectionCard: Identifiable {
     struct ID: Hashable {
