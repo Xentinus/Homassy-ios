@@ -41,7 +41,9 @@ struct WideCardLayout<Middle: View, Trailing: View>: View {
     }
 
     private var thumbnail: some View {
-        ProductImageView(data: image, size: thumbnailSize, name: name)
+        // Capped: at accessibility sizes the scaled badge grew to the size of the 44 pt thumbnail and hid the monogram.
+        let badgeSize = min(self.badgeSize, 22)
+        return ProductImageView(data: image, size: thumbnailSize, name: name)
             .overlay(alignment: .topTrailing) {
                 if let badge = level.cardBadge {
                     Image(systemName: badge.symbol)
