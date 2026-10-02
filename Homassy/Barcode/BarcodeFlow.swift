@@ -6,13 +6,14 @@ import SwiftUI
 typealias ScannedSymbology = BarcodeSymbology
 
 /// The whole scan flow in one sheet that steps in place: scanner → action sheet (known) or product form (unknown)
-/// → stock form. Chaining separate sheets (presenting the next one from the previous one's `onDismiss`) left the
-/// action sheet stuck on screen, so the steps are views inside a single presentation.
+/// → stock form or shopping list add. Chaining separate sheets (presenting the next one from the previous one's
+/// `onDismiss`) left the action sheet stuck on screen, so the steps are views inside a single presentation.
 private struct BarcodeFlowSheet: View {
     enum Step: Equatable {
         case scanning
         case actions(UUID, String)
         case addStock(UUID)
+        case addToList(UUID)
         case createProduct(String)
     }
 
@@ -22,6 +23,7 @@ private struct BarcodeFlowSheet: View {
     @Environment(ServiceContainer.self) private var services
     @State private var step: Step = .scanning
     @State private var scanModel: BarcodeScanModel?
+    @State private var shoppingLists: [ShoppingList] = []
 
     var body: some View {
         switch step {
@@ -29,10 +31,16 @@ private struct BarcodeFlowSheet: View {
             BarcodeScannerSheet { code, symbology in handle(code, symbology) }
         case .actions(let id, let name):
             BarcodeActionSheet(productName: name, canEdit: space.map(services.products.canEdit) ?? false,
+                               hasShoppingLists: !shoppingLists.isEmpty,
                                onAddToInventory: { step = .addStock(id) },
+                               onAddToList: { step = .addToList(id) },
                                onCheckStock: { onCheckStock(id) })
         case .addStock(let id):
             if let space { StockAddSheet.adding(id, in: space, services: services) }
+        case .addToList(let id):
+            if let product = try? services.products.product(publicId: id) {
+                AddItemSheet(lists: shoppingLists, preselected: nil, services: services, product: product)
+            }
         case .createProduct(let code):
             if let space {
                 ProductFormSheet(model: ProductFormModel(mode: .create(space, barcode: code), service: services.products))
@@ -46,7 +54,9 @@ private struct BarcodeFlowSheet: View {
             scanModel = BarcodeScanModel(router: BarcodeRouter(products: services.products), space: space)
         }
         switch scanModel?.handle(code, symbology: symbology) {
-        case .known(let id, let name): step = .actions(id, name)
+        case .known(let id, let name):
+            shoppingLists = space.flatMap { try? services.shopping.lists(in: $0) } ?? []
+            step = .actions(id, name)
         case .unknown(let barcode): step = .createProduct(barcode)
         case nil: break
         }

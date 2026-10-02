@@ -2,10 +2,12 @@ import XCTest
 
 @MainActor
 final class BarcodeUITests: XCTestCase {
-    private func scan(_ code: String, fromTab tab: String = "Search") -> XCUIApplication {
+    private func scan(_ code: String, fromTab tab: String = "Search", extra: [String] = [],
+                      before: (XCUIApplication) -> Void = { _ in }) -> XCUIApplication {
         continueAfterFailure = false
-        let app = XCUIApplication.homassy(extraArguments: ["-uiTestSeed", "-uiTestScannedBarcode", code])
+        let app = XCUIApplication.homassy(extraArguments: ["-uiTestSeed", "-uiTestScannedBarcode", code] + extra)
         app.launch()
+        before(app)
         app.openTab(tab)
         let menu = app.navigationBars[tab].buttons["addMenu"]         // P1-07's shared "+" menu, scoped to the tab
         XCTAssertTrue(menu.waitForExistence(timeout: 10))
@@ -14,13 +16,51 @@ final class BarcodeUITests: XCTestCase {
         return app
     }
 
+    private func attachScreenshot(_ app: XCUIApplication, named name: String) {
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = name
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
     func testKnownBarcodeShowsActions() {
         let app = scan("5991234567890")
         let add = app.buttons["barcode.addToInventory"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Milk"].exists)
         XCTAssertTrue(app.buttons["barcode.checkStock"].isEnabled)
-        XCTAssertFalse(app.buttons["barcode.addToList"].isEnabled)
+        XCTAssertFalse(app.buttons["barcode.addToList"].isEnabled, "the seed has no shopping list")
+        XCTAssertTrue(app.staticTexts["This household has no shopping list yet. You can create one on the Shopping tab."]
+            .exists)
+    }
+
+    func testKnownBarcodeAddsToShoppingList() {
+        // The store item seed puts Milk on both "Weekly" and "Party"; the add makes a third Milk item.
+        var milkBefore = 0
+        let app = scan("5991234567890", extra: ["-uiTestSeedStoreItems"]) { app in
+            app.openTab("Shopping")
+            let milk = app.descendants(matching: .any).matching(identifier: "shopping.item.Milk")
+            XCTAssertTrue(milk.firstMatch.waitForExistence(timeout: 10))
+            milkBefore = milk.count
+        }
+        let toList = app.buttons["barcode.addToList"]
+        XCTAssertTrue(toList.waitForExistence(timeout: 5))
+        XCTAssertTrue(toList.isEnabled)
+        XCTAssertFalse(app.staticTexts["This household has no shopping list yet. You can create one on the Shopping tab."]
+            .exists)
+        toList.tap()
+        XCTAssertTrue(app.textFields["shopping.add.quantity"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Milk"].exists, "the scanned product is already chosen")
+        XCTAssertTrue(app.buttons["Cancel"].exists, "started with a product, so the first page offers Cancel")
+        attachScreenshot(app, named: "barcode-add-to-list")
+        app.buttons["shopping.add.next"].tap()
+        let confirm = app.buttons["shopping.add.confirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
+        XCTAssertTrue(confirm.waitForNonExistence(timeout: 5), "the add closes the whole scan flow")
+        app.openTab("Shopping")
+        let milk = app.descendants(matching: .any).matching(identifier: "shopping.item.Milk")
+        wait(for: [expectation(for: NSPredicate(format: "count > %d", milkBefore), evaluatedWith: milk)], timeout: 10)
     }
 
     func testKnownBarcodeAddsToInventory() {
