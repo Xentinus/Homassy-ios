@@ -93,4 +93,25 @@ final class IntroductionUITests: XCTestCase {
         }
         XCTAssertTrue(app.buttons["Get started"].exists)
     }
+
+    /// Device review aid (P2-08d): the three card pages in landscape, where the scene is only 260 pt high.
+    @MainActor
+    func testCardPagesInLandscape() throws {
+        let app = launch()
+        defer { XCUIDevice.shared.orientation = .portrait }
+        XCTAssertTrue(app.staticTexts["Welcome to Homassy"].waitForExistence(timeout: 10))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        for (index, name) in ["welcome", "free", "inventory", "shopping"].enumerated() {
+            if index > 0 {
+                app.buttons["Next"].tap()
+                XCTAssertTrue(app.staticTexts[laterTitles[index - 1]].waitForExistence(timeout: 3))
+            }
+            guard name != "free" else { continue }
+            sleep(4)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "intro-landscape-\(name)"
+            shot.lifetime = .keepAlways
+            add(shot)
+        }
+    }
 }

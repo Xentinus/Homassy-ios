@@ -3635,6 +3635,29 @@
         }
       }
     },
+    "intro.scene.anyShop" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beliebiges Geschäft"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Any store"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bármelyik üzlet"
+          }
+        }
+      }
+    },
     "intro.scene.apples" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3658,25 +3681,25 @@
         }
       }
     },
-    "intro.scene.apples.detail" : {
+    "intro.scene.apples.amount" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "6 Stk. · Vorratskammer"
+            "value" : "6 Stk."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "6 pcs · Pantry"
+            "value" : "6 pcs"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "6 db · Kamra"
+            "value" : "6 db"
           }
         }
       }
@@ -3727,25 +3750,25 @@
         }
       }
     },
-    "intro.scene.bread.detail" : {
+    "intro.scene.bread.amount" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "1 Stk. · Vorratskammer"
+            "value" : "1 Stk."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "1 pc · Pantry"
+            "value" : "1 pc"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "1 db · Kamra"
+            "value" : "1 db"
           }
         }
       }
@@ -3866,25 +3889,25 @@
         }
       }
     },
-    "intro.scene.eggs.buy" : {
+    "intro.scene.eggs.buyAmount" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10 Stk. · Beliebiges Geschäft"
+            "value" : "10 Stk."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10 pcs · Any store"
+            "value" : "10 pcs"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10 db · Bármelyik üzlet"
+            "value" : "10 db"
           }
         }
       }
@@ -3954,6 +3977,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ingyenes"
+          }
+        }
+      }
+    },
+    "intro.scene.fridge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kühlschrank"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fridge"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hűtő"
           }
         }
       }
@@ -4050,48 +4096,48 @@
         }
       }
     },
-    "intro.scene.milk.buy" : {
+    "intro.scene.milk.amount" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "2 l · Eckladen"
+            "value" : "1 l"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "2 l · Corner shop"
+            "value" : "1 l"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "2 l · Sarki bolt"
+            "value" : "1 l"
           }
         }
       }
     },
-    "intro.scene.milk.detail" : {
+    "intro.scene.milk.buyAmount" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "1 l · Kühlschrank"
+            "value" : "2 l"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "1 l · Fridge"
+            "value" : "2 l"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "1 l · Hűtő"
+            "value" : "2 l"
           }
         }
       }
@@ -4161,6 +4207,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "2 tétel ma lejár, 3 a héten."
+          }
+        }
+      }
+    },
+    "intro.scene.pantry" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorratskammer"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pantry"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kamra"
           }
         }
       }
@@ -4303,25 +4372,25 @@
         }
       }
     },
-    "intro.scene.yogurt.detail" : {
+    "intro.scene.yogurt.amount" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "4 Stk. · Kühlschrank"
+            "value" : "4 Stk."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "4 pcs · Fridge"
+            "value" : "4 pcs"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "4 db · Hűtő"
+            "value" : "4 db"
           }
         }
       }

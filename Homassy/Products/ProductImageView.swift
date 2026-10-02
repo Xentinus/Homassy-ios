@@ -28,20 +28,6 @@ struct ProductImageView: View {
     }
 }
 
-/// The picture area at the top of a card: the product photo, or a monogram tile (the icon tile without a name).
-struct ProductImageTile: View {
-    let data: Data?
-    /// Without a photo the tile shows this name's first letter on a neutral tile, like Contacts (user choice).
-    var name: String?
-
-    var body: some View {
-        Color.clear
-            .aspectRatio(4 / 3, contentMode: .fit)
-            .overlay { ProductImageContent(data: data, iconScale: nil, monogramOf: name) }
-            .clipped()
-    }
-}
-
 private struct ProductImageContent: View {
     let data: Data?
     let iconScale: CGFloat?
