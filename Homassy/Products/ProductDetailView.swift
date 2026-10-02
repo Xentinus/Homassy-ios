@@ -231,11 +231,11 @@ struct ProductDetailView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("price.average").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                     Text(verbatim: model.unitPriceText(average.unitPrice, currency: average.currency, unit: average.unit))
-                        .font(.title.weight(.bold))
+                        .font(.largeTitle.weight(.bold))
                         .fontDesign(.rounded)
                         .monospacedDigit()
                     if let latest = model.latestPrice {
-                        Text("price.latest \(model.unitPriceText(latest)) \(latest.date.formatted(.dateTime.month(.abbreviated).day()))")
+                        Text("price.latest \(model.unitPriceText(latest)) \(latestDateText(latest.date))")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -277,6 +277,13 @@ struct ProductDetailView: View {
     }
 
     // MARK: Actions
+
+    /// "Legutóbb" date: the year joins the date once it is not this year, so an old purchase is not misread as recent.
+    private func latestDateText(_ date: Date) -> String {
+        let sameYear = Calendar.current.isDate(date, equalTo: Date(), toGranularity: .year)
+        return sameYear ? date.formatted(.dateTime.month(.abbreviated).day())
+                        : date.formatted(.dateTime.year().month(.abbreviated).day())
+    }
 
     private func perform(_ action: UndoableAction?) {
         guard let action else { return }

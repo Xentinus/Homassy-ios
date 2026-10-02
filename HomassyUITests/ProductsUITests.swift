@@ -332,6 +332,9 @@ final class ProductsUITests: XCTestCase {
         toList.tap()
         XCTAssertTrue(app.textFields["shopping.add.quantity"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.descendants(matching: .any)["shopping.add.list"].exists, "two lists, so the list row shows")
+        XCTAssertTrue(app.staticTexts["Eggs"].exists, "the chosen product is named on the amount page")
+        XCTAssertTrue(app.buttons["Cancel"].exists, "started with a product, so the first page offers Cancel")
+        XCTAssertFalse(app.buttons["shopping.add.back"].exists, "and no Back to a page that does not exist")
         keepScreenshot("product-add-to-list", app)
         app.buttons["shopping.add.next"].tap()
         let confirm = app.buttons["shopping.add.confirm"]
