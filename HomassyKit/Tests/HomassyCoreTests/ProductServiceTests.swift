@@ -199,4 +199,19 @@ struct ProductServiceTests {
         }
         #expect(try env.count(Product.self) == 0)
     }
+
+    @Test func toggleFavoriteFlipsTheHeartById() async throws {
+        let env = try ServiceTestEnvironment()
+        let milk = try await env.makeProduct("Milk")
+        let service = env.productService()
+        try service.toggleFavorite(publicId: milk.publicId)
+        #expect(milk.isFavorite)
+        #expect(!env.context.hasChanges)
+        try service.toggleFavorite(publicId: milk.publicId)
+        #expect(!milk.isFavorite)
+        #expect(throws: ServiceError.notFound) { try service.toggleFavorite(publicId: UUID()) }
+        #expect(throws: ServiceError.readOnlySpace) {
+            try env.productService(canEdit: { _ in false }).toggleFavorite(publicId: milk.publicId)
+        }
+    }
 }

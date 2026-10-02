@@ -302,4 +302,26 @@ struct ShoppingOverviewModelTests {
         model.grouping = .list
         #expect(model.sections.map(names) == [["A", "B"], ["D"]])
     }
+
+    @Test func listMoveOffsetsReorderWithinTheSection() throws {
+        let heti = try stack.service.createList(name: "Heti", in: stack.space)
+        try stack.service.addItem(to: heti, customName: "A")
+        try stack.service.addItem(to: heti, customName: "B")
+        try stack.service.addItem(to: heti, customName: "C")
+        let model = makeModel()
+
+        #expect(model.move(fromOffsets: [2], toOffset: 0, in: try #require(model.sections.first)))
+        #expect(model.sections.map(names) == [["C", "A", "B"]])
+        #expect(model.move(fromOffsets: [0], toOffset: 3, in: try #require(model.sections.first)))
+        #expect(model.sections.map(names) == [["A", "B", "C"]])
+        #expect(model.move(fromOffsets: [0], toOffset: 2, in: try #require(model.sections.first)))
+        #expect(model.sections.map(names) == [["B", "A", "C"]])
+        // Dropping a row where it already is changes nothing.
+        #expect(!model.move(fromOffsets: [1], toOffset: 1, in: try #require(model.sections.first)))
+        #expect(!model.move(fromOffsets: [1], toOffset: 2, in: try #require(model.sections.first)))
+        #expect(makeModel().sections.map(names) == [["B", "A", "C"]])
+
+        model.grouping = .store
+        #expect(!model.move(fromOffsets: [0], toOffset: 2, in: try #require(model.sections.first)))
+    }
 }

@@ -219,6 +219,16 @@ public final class ShoppingOverviewModel {
         return persisted
     }
 
+    /// `List.onMove` within one section (P2-08d): maps the offsets onto `moveItem(_:onto:)`, which puts the row
+    /// where the target row is. Only one row moves at a time.
+    @discardableResult
+    public func move(fromOffsets source: IndexSet, toOffset destination: Int, in section: Section) -> Bool {
+        guard source.count == 1, let from = source.first, section.rows.indices.contains(from) else { return false }
+        let to = destination > from ? destination - 1 : destination
+        guard to != from, section.rows.indices.contains(to) else { return false }
+        return moveItem(section.rows[from].id, onto: section.rows[to].id)
+    }
+
     public func dismissError() { errorMessage = nil }
 
     private func row(for item: ShoppingListItem, in list: ShoppingList) -> Row {
