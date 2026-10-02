@@ -41,18 +41,25 @@ private struct ProductCardMenu: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .contextMenu { if canEdit { items } }
-            .accessibilityActions { if canEdit { items } }
+            .contextMenu { if canEdit { items(forAccessibility: false) } }
+            .accessibilityActions { if canEdit { items(forAccessibility: true) } }
     }
 
-    @ViewBuilder private var items: some View {
+    /// `.disabled` is not reliably honoured for VoiceOver custom actions, so the accessibility copy leaves Listára
+    /// out when there is no list to add to; the context menu shows it disabled.
+    @ViewBuilder private func items(forAccessibility: Bool) -> some View {
         Button { actions.stockTarget = .init(id: card.id) } label: {
             Label("stock.title.add", systemImage: "plus")
         }
-        Button { actions.listTarget = .init(id: card.id) } label: {
-            Label("product.detail.addToList", systemImage: "cart.badge.plus")
+        if !(forAccessibility && actions.shoppingLists.isEmpty) {
+            Button {
+                guard !actions.shoppingLists.isEmpty else { return }
+                actions.listTarget = .init(id: card.id)
+            } label: {
+                Label("product.detail.addToList", systemImage: "cart.badge.plus")
+            }
+            .disabled(actions.shoppingLists.isEmpty)
         }
-        .disabled(actions.shoppingLists.isEmpty)
         Button {
             do { try services.products.toggleFavorite(publicId: card.id) } catch {
                 actions.errorMessage = error.localizedDescription

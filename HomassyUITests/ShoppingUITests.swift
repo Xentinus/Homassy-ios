@@ -204,7 +204,8 @@ final class ShoppingUITests: XCTestCase {
         XCTAssertTrue(napkins.waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["shopping.filter.Weekly"].isSelected)
         XCTAssertEqual(napkins.frame.minX, candles.frame.minX, accuracy: 1, "one column in landscape too")
-        XCTAssertLessThanOrEqual(napkins.frame.width, 681, "the column stops at 680 pt")
+        XCTAssertEqual(napkins.frame.width, 680, accuracy: 1, "the column is 680 pt in landscape")
+        XCTAssertEqual(napkins.frame.midX, app.windows.firstMatch.frame.midX, accuracy: 40, "centred")
         attachScreenshot(app, named: "shopping-cards-landscape")
         XCUIDevice.shared.orientation = .portrait
         XCTAssertTrue(napkins.waitForExistence(timeout: 3))

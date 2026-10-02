@@ -13,7 +13,7 @@ extension ExpirationLevel {
     }
 
     /// The expiry line's text colour. Soon is secondary, like a Reminders due date (X-04 3B): yellow text is only
-    /// 1.9:1 on white, so the yellow stays on the glyph and the corner badge.
+    /// 1.9:1 on white, so the yellow stays on the glyph and the badge on the thumbnail.
     var cardForeground: Color {
         switch self {
         case .none, .ok, .soon, .critical: .secondary
@@ -30,7 +30,7 @@ extension ExpirationLevel {
         }
     }
 
-    /// The corner badge's colour and symbol (Apple-native direction, user choice 2026-09-25); nil when neutral.
+    /// The thumbnail badge's colour and symbol (Apple-native direction, user choice 2026-09-25); nil when neutral.
     /// The card itself is never tinted: the badge and the expiry line carry the state, with a glyph and text,
     /// so colour is never the only signal.
     var cardBadge: (color: Color, symbol: String)? {

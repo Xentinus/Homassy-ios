@@ -4,8 +4,9 @@ import SwiftUI
 
 /// The Search tab and the product catalogue in one (P1-07a, user decision 2026-09-26; search itself is a user
 /// request of 2026-09-24). An empty field shows every product of the active space in letter sections; typing, a
-/// category or a scanned barcode narrows them. Cards have no delete (user rule); a tap opens the product detail, and long press offers add stock, add to a list and favourite (P2-08d).
-/// An unknown scanned code offers a new product.
+/// category or a scanned barcode narrows them. Cards have no delete (user rule); a tap opens the product detail,
+/// and long press offers add stock, add to a list and favourite (P2-08d). An unknown scanned code offers a new
+/// product.
 struct SearchView: View {
     @Environment(ServiceContainer.self) private var services
     @Environment(SpaceSelection.self) private var selection

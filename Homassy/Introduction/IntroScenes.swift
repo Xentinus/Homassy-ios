@@ -137,7 +137,6 @@ private struct WelcomeScene: View {
                         let shown = beat >= 1 + index
                         SampleCard(nameKey: card.key, place: card.place, amount: card.amount)
                             .frame(maxWidth: 280)
-                            .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
                             .scaleEffect(0.88 + Double(index) * 0.04, anchor: .top)
                             .offset(y: shown ? CGFloat(index) * 30 : CGFloat(index) * 30 + 40)
                             .opacity(shown ? 1 : 0)
