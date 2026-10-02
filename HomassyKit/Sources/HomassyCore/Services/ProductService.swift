@@ -63,6 +63,12 @@ public final class ProductService {
         try context.save()
     }
 
+    /// The card menu's Kedvenc (P2-08d): flips the heart of the product with this id. Saves at once; no undo.
+    public func toggleFavorite(publicId: UUID) throws {
+        guard let product = try product(publicId: publicId) else { throw ServiceError.notFound }
+        try setFavorite(product, !product.isFavorite)
+    }
+
     public func delete(_ product: Product) throws {
         guard !product.isGone, let space = product.space else { throw ServiceError.notFound }
         try ensureEditable(space)
