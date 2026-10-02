@@ -39,40 +39,26 @@ private struct IntroLogoImage: View {
     }
 }
 
-/// A small card in the product-card style: monogram tile, name, detail line and an optional expiry line.
+/// A small wide card (P2-08d): monogram, name and place, then the amount and an optional "n nap" line.
 private struct SampleCard: View {
     let nameKey: String
-    let detail: LocalizedStringKey
+    let place: LocalizedStringKey
+    let amount: LocalizedStringKey
     var days: Int?
     var level: ExpirationLevel = .ok
-    /// A shorter monogram strip instead of the 4:3 tile, where four cards must fit the scene's height.
-    var tileHeight: CGFloat?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let tileHeight {
-                Text(verbatim: initial(nameKey))
-                    .font(.system(size: tileHeight * 0.5, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: tileHeight)
-                    .background(Color(uiColor: .tertiarySystemFill))
-            } else {
-                ProductImageTile(data: nil, name: initial(nameKey))
+        WideCardLayout(image: nil, name: initial(nameKey), level: level, thumbnailSize: 34, cornerRadius: 14) {
+            Text(LocalizedStringKey(nameKey)).font(.subheadline.weight(.semibold)).lineLimit(1)
+            Text(place).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+        } trailing: {
+            Text(amount).font(.subheadline.weight(.semibold)).monospacedDigit()
+            if let days {
+                ExpiryLabel(Text("intro.scene.days \(days)"), level: level)
+                    .font(.caption2.weight(.medium))
+                    .lineLimit(1)
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(LocalizedStringKey(nameKey)).font(.subheadline.weight(.semibold)).lineLimit(1)
-                Text(detail).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                if let days {
-                    ExpiryLabel(Text("intro.scene.days \(days)"), level: level)
-                        .font(.caption2.weight(.medium))
-                        .lineLimit(1)
-                }
-            }
-            .padding(8)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .cardChrome(level: level, cornerRadius: 14)
     }
 }
 
@@ -128,33 +114,37 @@ private struct SampleBanner: View {
     }
 }
 
-// MARK: - 1I Welcome: the card fan
+// MARK: - 1I Welcome: the card stack
 
 private struct WelcomeScene: View {
     let isActive: Bool
 
-    private let cards: [(key: String, detail: LocalizedStringKey, angle: Double)] = [
-        ("intro.scene.milk", "intro.scene.milk.detail", -24),
-        ("intro.scene.yogurt", "intro.scene.yogurt.detail", -8),
-        ("intro.scene.bread", "intro.scene.bread.detail", 8),
-        ("intro.scene.apples", "intro.scene.apples.detail", 24),
+    private let cards: [(key: String, place: LocalizedStringKey, amount: LocalizedStringKey)] = [
+        ("intro.scene.milk", "intro.scene.fridge", "intro.scene.milk.amount"),
+        ("intro.scene.yogurt", "intro.scene.fridge", "intro.scene.yogurt.amount"),
+        ("intro.scene.bread", "intro.scene.pantry", "intro.scene.bread.amount"),
+        ("intro.scene.apples", "intro.scene.pantry", "intro.scene.apples.amount"),
     ]
 
+    /// Wallet-style stack (user pick 6A): each card lands 30 pt below the previous one and a little larger, so the
+    /// last one is fully visible on top.
     var body: some View {
         IntroTimeline(isActive: isActive, delays: .seconds(0.25, 0.08, 0.08, 0.08, 0.45)) { beat in
             VStack(spacing: 8) {
-                ZStack {
+                ZStack(alignment: .top) {
                     ForEach(Array(cards.enumerated()), id: \.offset) { index, card in
-                        let open = beat >= 1 + index
-                        SampleCard(nameKey: card.key, detail: card.detail)
-                            .frame(width: 112)
+                        let shown = beat >= 1 + index
+                        SampleCard(nameKey: card.key, place: card.place, amount: card.amount)
+                            .frame(maxWidth: 280)
                             .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
-                            .rotationEffect(.degrees(open ? card.angle : 0), anchor: UnitPoint(x: 0.5, y: 1.3))
-                            .offset(x: open ? card.angle * 2.2 : 0, y: open ? -6 : 18)
-                            .animation(Motion.pop, value: open)
+                            .scaleEffect(0.88 + Double(index) * 0.04, anchor: .top)
+                            .offset(y: shown ? CGFloat(index) * 30 : CGFloat(index) * 30 + 40)
+                            .opacity(shown ? 1 : 0)
+                            .animation(Motion.pop, value: shown)
                     }
                 }
-                .frame(maxHeight: .infinity)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, 8)
                 IntroLogoImage(size: 64)
                     .scaleEffect(beat >= 5 ? 1 : 0.4)
                     .opacity(beat >= 5 ? 1 : 0)
@@ -219,27 +209,26 @@ private struct FreeScene: View {
 private struct InventoryScene: View {
     let isActive: Bool
 
-    private let cards: [(key: String, detail: LocalizedStringKey, days: Int)] = [
-        ("intro.scene.milk", "intro.scene.milk.detail", 5),
-        ("intro.scene.yogurt", "intro.scene.yogurt.detail", 2),
-        ("intro.scene.bread", "intro.scene.bread.detail", 6),
-        ("intro.scene.apples", "intro.scene.apples.detail", 9),
+    private let cards: [(key: String, place: LocalizedStringKey, amount: LocalizedStringKey, days: Int)] = [
+        ("intro.scene.milk", "intro.scene.fridge", "intro.scene.milk.amount", 5),
+        ("intro.scene.yogurt", "intro.scene.fridge", "intro.scene.yogurt.amount", 2),
+        ("intro.scene.bread", "intro.scene.pantry", "intro.scene.bread.amount", 6),
+        ("intro.scene.apples", "intro.scene.pantry", "intro.scene.apples.amount", 9),
     ]
 
     var body: some View {
         IntroTimeline(isActive: isActive, delays: .seconds(0.1, 0.15, 0.12, 0.12, 0.12, 0.5)) { beat in
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 Label("inventory.section.expiring", systemImage: "clock")
                     .font(.headline)
                     .opacity(beat >= 1 ? 1 : 0)
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
-                          spacing: 10) {
+                VStack(spacing: 6) {
                     ForEach(Array(cards.enumerated()), id: \.offset) { index, card in
                         let shown = beat >= 2 + index
                         let soon = index == 1 && beat >= 6
-                        SampleCard(nameKey: card.key, detail: card.detail, days: card.days,
-                                   level: soon ? .soon : .ok, tileHeight: 56)
-                            .scaleEffect(shown ? (soon ? 1.04 : 1) : 0.6)
+                        SampleCard(nameKey: card.key, place: card.place, amount: card.amount, days: card.days,
+                                   level: soon ? .soon : .ok)
+                            .scaleEffect(shown ? (soon ? 1.03 : 1) : 0.6)
                             .opacity(shown ? 1 : 0)
                             .animation(Motion.pop, value: shown)
                             .animation(Motion.pop, value: soon)
@@ -260,8 +249,9 @@ private struct ShoppingScene: View {
             ZStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("intro.scene.list").font(.headline)
-                    HStack(spacing: 10) {
-                        SampleCard(nameKey: "intro.scene.milk", detail: "intro.scene.milk.buy")
+                    VStack(spacing: 6) {
+                        SampleCard(nameKey: "intro.scene.milk", place: "intro.scene.cornerShop",
+                                   amount: "intro.scene.milk.buyAmount")
                             .overlay(alignment: .topLeading) {
                                 if beat >= 4 {
                                     Image(systemName: "checkmark.circle.fill")
@@ -274,7 +264,8 @@ private struct ShoppingScene: View {
                             }
                             .opacity(beat >= 4 ? 0.5 : 1)
                             .overlay { TapMark(trigger: beat >= 2) }
-                        SampleCard(nameKey: "intro.scene.eggs", detail: "intro.scene.eggs.buy")
+                        SampleCard(nameKey: "intro.scene.eggs", place: "intro.scene.anyShop",
+                                   amount: "intro.scene.eggs.buyAmount")
                     }
                     Spacer(minLength: 0)
                 }
