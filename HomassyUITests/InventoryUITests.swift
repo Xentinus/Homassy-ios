@@ -183,14 +183,26 @@ final class InventoryUITests: XCTestCase {
         attachScreenshot(app, named: "stock-two-lots")
         app.buttons["stock.save"].tap()
 
-        // Expiring soon (the seeded, expired Bread), Fridge and Pantry each show a Bread card. The cards are one
-        // column now (P2-08d), so the lazy stack builds the Pantry card only once it is scrolled near.
+        // The seed has Bread in the Pantry, so before the save there are two Bread cards (Expiring soon, Pantry).
+        // The new Fridge lot makes it three: that is the save signal. The cards are one column now (P2-08d), so the
+        // lazy stack builds a card only once it is scrolled near.
         let cards = app.buttons.matching(identifier: "inventory.row.Bread")
+        let three = XCTNSPredicateExpectation(predicate: NSPredicate(format: "count >= 3"), object: cards)
+        XCTAssertEqual(XCTWaiter().wait(for: [three], timeout: 10), .completed,
+                       cards.allElementsBoundByIndex.map(\.label).joined(separator: " | "))
+        // Then the Pantry card: scroll until a Bread card exists below the Pantry header.
         let pantry = element("inventory.section.Pantry", in: app)
-        for _ in 0..<6 where !pantry.exists || !pantry.isHittable { app.swipeUp() }
+        for _ in 0..<6 where !pantry.exists { app.swipeUp() }
         XCTAssertTrue(pantry.waitForExistence(timeout: 5))
-        let pantryBread = cards.allElementsBoundByIndex.filter { $0.frame.minY > pantry.frame.minY }
-        XCTAssertEqual(pantryBread.count, 1, "the Pantry section holds the new Bread card")
+        func pantryBread() -> [XCUIElement] {
+            cards.allElementsBoundByIndex.filter { $0.frame.minY > pantry.frame.minY }
+        }
+        let deadline = Date().addingTimeInterval(5)
+        while pantryBread().isEmpty, Date() < deadline { RunLoop.current.run(until: Date().addingTimeInterval(0.2)) }
+        XCTAssertEqual(pantryBread().count, 1, "the Pantry section holds a Bread card")
+        // Lot 2 copies lot 1 (1 pc): the Pantry card shows the new lot's amount, not the seeded, expired one.
+        XCTAssertTrue(pantryBread().first?.label.contains("1\(nbsp)pc") == true,
+                      cards.allElementsBoundByIndex.map(\.label).joined(separator: " | "))
         attachScreenshot(app, named: "stock-two-lots-inventory")
     }
 
