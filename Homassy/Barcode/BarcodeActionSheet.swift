@@ -3,7 +3,10 @@ import SwiftUI
 struct BarcodeActionSheet: View {
     let productName: String
     let canEdit: Bool
+    /// False when the household has no shopping list yet; the button then stays off and the footer says why.
+    let hasShoppingLists: Bool
     let onAddToInventory: () -> Void
+    let onAddToList: () -> Void
     let onCheckStock: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -22,17 +25,19 @@ struct BarcodeActionSheet: View {
                     }
                     .disabled(!canEdit)
                     .accessibilityIdentifier("barcode.addToInventory")
-                    Button {} label: {
+                    Button { onAddToList() } label: {
                         Label("barcode.addToList", systemImage: "cart.badge.plus")
                     }
-                    .disabled(true)
+                    .disabled(!canEdit || !hasShoppingLists)
                     .accessibilityIdentifier("barcode.addToList")
                     Button { onCheckStock() } label: {
                         Label("barcode.checkStock", systemImage: "shippingbox")
                     }
                     .accessibilityIdentifier("barcode.checkStock")
                 } footer: {
-                    Text("barcode.addToList.later")
+                    if canEdit && !hasShoppingLists {
+                        Text("barcode.addToList.noLists")
+                    }
                 }
             }
             .navigationBarTitleDisplayMode(.inline)

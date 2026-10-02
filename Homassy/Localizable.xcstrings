@@ -1795,25 +1795,25 @@
         }
       }
     },
-    "barcode.addToList.later" : {
+    "barcode.addToList.noLists" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Einkaufslisten kommen mit einem späteren Update."
+            "value" : "In diesem Haushalt gibt es noch keine Einkaufsliste. Du kannst eine im Tab Einkaufen anlegen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shopping lists arrive in a later update."
+            "value" : "This household has no shopping list yet. You can create one on the Shopping tab."
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A bevásárlólisták egy későbbi frissítéssel érkeznek."
+            "value" : "Ebben a háztartásban még nincs bevásárlólista. A Bevásárlás lapon hozhatsz létre egyet."
           }
         }
       }
