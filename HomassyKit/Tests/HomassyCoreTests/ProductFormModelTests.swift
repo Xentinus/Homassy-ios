@@ -48,15 +48,57 @@ struct ProductFormModelTests {
         let form = ProductFormModel(mode: .edit(milk), service: env.productService())
         #expect(form.isEditing && form.draft.name == "Milk" && form.draft.category == "Dairy")
         #expect(form.categorySuggestions == ["Bakery", "Dairy"])
-        form.draft.category = "ba"
-        #expect(form.suggestions() == ["Bakery"])
-        form.draft.category = "Bakery"
-        #expect(form.suggestions().isEmpty)
-        form.draft.category = ""
-        #expect(form.suggestions() == ["Bakery", "Dairy"])
+        #expect(form.categoryText == "Dairy")
         form.draft.name = "Oat milk"
         #expect(await form.save() == milk)
         #expect(milk.name == "Oat milk")
+    }
+
+    @Test("Changes: any edit to the draft counts, undoing it does not")
+    func hasChanges() async throws {
+        let env = try ServiceTestEnvironment()
+        let milk = try await env.makeProduct("Milk", category: "Dairy")
+        let form = ProductFormModel(mode: .edit(milk), service: env.productService())
+        #expect(!form.hasChanges)
+        form.draft.name = "Milk 2"
+        #expect(form.hasChanges)
+        form.draft.name = "Milk"
+        #expect(!form.hasChanges)
+        form.setImage(Data([1, 2, 3]))
+        #expect(form.hasChanges)
+
+        let scanned = ProductFormModel(mode: .create(env.personal, barcode: "4000000000009", name: "Paprika"),
+                                       service: env.productService())
+        #expect(!scanned.hasChanges, "the seeded barcode and name are the starting point, not a change")
+    }
+
+    @Test("Category list: all, filtered by case and accents, the current one even before it is saved")
+    func categoryList() async throws {
+        let env = try ServiceTestEnvironment()
+        try await env.makeProduct("Milk", category: "Tejtermék")
+        try await env.makeProduct("Bread", category: "Pékáru")
+        let form = ProductFormModel(mode: .create(env.personal, barcode: nil), service: env.productService())
+        #expect(form.categories(matching: "") == ["Pékáru", "Tejtermék"])
+        #expect(form.categories(matching: "TEJ") == ["Tejtermék"])
+        #expect(form.categories(matching: "pekaru") == ["Pékáru"])
+        #expect(form.categories(matching: "  ") == ["Pékáru", "Tejtermék"])
+        form.draft.category = "Italok"
+        #expect(form.categories(matching: "") == ["Italok", "Pékáru", "Tejtermék"])
+        #expect(form.categoryText == "Italok")
+        form.draft.category = "   "
+        #expect(form.categoryText == nil)
+    }
+
+    @Test("New category: only for text that names no existing category")
+    func newCategory() async throws {
+        let env = try ServiceTestEnvironment()
+        try await env.makeProduct("Milk", category: "Tejtermék")
+        let form = ProductFormModel(mode: .create(env.personal, barcode: nil), service: env.productService())
+        #expect(form.newCategory(from: "") == nil)
+        #expect(form.newCategory(from: "   ") == nil)
+        #expect(form.newCategory(from: "tejtermek") == nil, "same name, different case and accents")
+        #expect(form.newCategory(from: "  Tejes ital ") == "Tejes ital")
+        #expect(form.newCategory(from: "Tej") == "Tej", "a prefix of an existing name is still new")
     }
 
     @Test func readOnlyShowsError() async throws {

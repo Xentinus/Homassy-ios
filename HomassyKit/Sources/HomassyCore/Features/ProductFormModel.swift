@@ -18,19 +18,23 @@ public final class ProductFormModel {
 
     private let mode: Mode
     private let service: ProductService
+    private let initialDraft: ProductDraft
 
     public init(mode: Mode, service: ProductService) {
         self.mode = mode
         self.service = service
         let space: Space?
+        let start: ProductDraft
         switch mode {
         case .create(let target, let barcode, let name):
-            draft = ProductDraft(name: name ?? "", barcode: barcode ?? "")
+            start = ProductDraft(name: name ?? "", barcode: barcode ?? "")
             space = target
         case .edit(let product):
-            draft = ProductDraft(product: product)
+            start = ProductDraft(product: product)
             space = product.space
         }
+        draft = start
+        initialDraft = start
         categorySuggestions = space.flatMap { try? service.categories(in: $0) } ?? []
     }
 
@@ -43,13 +47,34 @@ public final class ProductFormModel {
 
     public func setImage(_ data: Data?) { draft.imageData = data }
 
-    /// Existing categories that start with or contain the typed text; all of them while the field is empty.
-    public func suggestions() -> [String] {
-        guard let typed = draft.category.nilIfBlank else { return categorySuggestions }
-        return categorySuggestions.filter {
-            $0.range(of: typed, options: [.caseInsensitive, .diacriticInsensitive]) != nil
-                && $0.caseInsensitiveCompare(typed) != .orderedSame
-        }
+    /// Whether closing the form would lose anything (the discard confirmation, P2-07b).
+    public var hasChanges: Bool { draft != initialDraft }
+
+    /// The trimmed category, or nil when the field is blank ("Nincs" on the form row).
+    public var categoryText: String? { draft.category.nilIfBlank }
+
+    /// The category picker's rows (2A): the space's categories plus the draft's own, filtered by `query`
+    /// ignoring case and accents. A blank query lists them all.
+    public func categories(matching query: String) -> [String] {
+        let all = knownCategories
+        guard let typed = query.nilIfBlank else { return all }
+        return all.filter { $0.range(of: typed, options: Self.matching) != nil }
+    }
+
+    /// The search text as a new category ("„x” új kategóriaként"), unless it is blank or already a category.
+    public func newCategory(from query: String) -> String? {
+        guard let typed = query.nilIfBlank else { return nil }
+        return knownCategories.contains { $0.compare(typed, options: Self.matching) == .orderedSame } ? nil : typed
+    }
+
+    private static let matching: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
+
+    /// A category picked as new is listed (and ticked) before the product is saved.
+    private var knownCategories: [String] {
+        guard let current = categoryText,
+              !categorySuggestions.contains(where: { $0.compare(current, options: Self.matching) == .orderedSame })
+        else { return categorySuggestions }
+        return [current] + categorySuggestions
     }
 
     public func save() async -> Product? {
