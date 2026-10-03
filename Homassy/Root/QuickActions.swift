@@ -14,7 +14,7 @@ enum QuickActions {
         #endif
         guard let services = app.services else { return }
         let items = QuickActionPlanner.items(services: services,
-                                             lastUsed: LastUsedShoppingList(defaults: ShoppingDefaults.store),
+                                             lastUsed: LastUsedShoppingList(defaults: TabDefaults.store),
                                              now: .now, calendar: .current, locale: appLocale)
         UIApplication.shared.shortcutItems = items.map { item in
             UIApplicationShortcutItem(type: item.type, localizedTitle: item.title, localizedSubtitle: item.subtitle,

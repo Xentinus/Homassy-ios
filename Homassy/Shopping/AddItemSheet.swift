@@ -20,7 +20,7 @@ struct AddItemSheet: View {
          product: Product? = nil) {
         self.services = services
         let model = AddItemFlowModel(lists: lists, preselected: preselected,
-                                     lastUsed: LastUsedShoppingList(defaults: ShoppingDefaults.store),
+                                     lastUsed: LastUsedShoppingList(defaults: TabDefaults.store),
                                      shopping: services.shopping, locations: services.shoppingLocations)
         model.query = initialQuery
         if let product { model.start(with: product) }

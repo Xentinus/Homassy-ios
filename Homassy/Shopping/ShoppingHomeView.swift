@@ -32,7 +32,7 @@ struct ShoppingHomeView: View {
         self.services = services
         _model = State(initialValue: ShoppingOverviewModel(
             service: services.shopping, space: space, undoQueue: undoQueue, pending: services.pendingDeletions,
-            preferences: ShoppingHomePreferences(defaults: ShoppingDefaults.store),
+            preferences: ShoppingHomePreferences(defaults: TabDefaults.store),
             distance: { directory.distance(ofStore: $0) },
             storeTitle: { directory.compactName(ofStore: $0) }))
         _lists = State(initialValue: ShoppingListsModel(service: services.shopping, space: space))

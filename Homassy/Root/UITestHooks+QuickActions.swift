@@ -17,7 +17,7 @@ extension UITestHooks {
     /// `QuickActionPlanner` would put on the Home Screen now, and routes it; without such an item nothing opens.
     static func runQuickActionIfRequested(services: ServiceContainer) {
         guard let type = quickActionType else { return }
-        let lastUsed = LastUsedShoppingList(defaults: ShoppingDefaults.store)
+        let lastUsed = LastUsedShoppingList(defaults: TabDefaults.store)
         if contains("-uiTestSeedShoppingList"),
            let personal = (try? services.spaceStore.allSpaces())?.first(where: { $0.kind == .personal }),
            let weekly = try? services.shopping.createList(name: "Weekly", in: personal),

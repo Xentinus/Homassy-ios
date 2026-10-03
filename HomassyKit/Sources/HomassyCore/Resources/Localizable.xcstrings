@@ -580,6 +580,29 @@
         }
       }
     },
+    "inventory.places.noLocation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Lagerort"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No location"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nincs tároló"
+          }
+        }
+      }
+    },
     "member.newMember" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -864,6 +887,12 @@
     "quickAction.addToList" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zur Liste hinzufügen"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -875,18 +904,18 @@
             "state" : "translated",
             "value" : "Hozzáadás a listához"
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zur Liste hinzufügen"
-          }
         }
       }
     },
     "quickAction.expiring" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Läuft bald ab"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -898,18 +927,30 @@
             "state" : "translated",
             "value" : "Hamarosan lejár"
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Läuft bald ab"
-          }
         }
       }
     },
     "quickAction.expiring.count %lld" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Artikel"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Artikel"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -933,30 +974,18 @@
             "state" : "translated",
             "value" : "%lld tétel"
           }
-        },
-        "de" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Artikel"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Artikel"
-                }
-              }
-            }
-          }
         }
       }
     },
     "quickAction.openList.subtitle" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einkaufsliste"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -968,18 +997,18 @@
             "state" : "translated",
             "value" : "Bevásárlólista"
           }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einkaufsliste"
-          }
         }
       }
     },
     "quickAction.scan" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barcode scannen"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -990,12 +1019,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vonalkód beolvasása"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Barcode scannen"
           }
         }
       }
@@ -1279,6 +1302,12 @@
     "shoppingActivity.nearbyStores %lld" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Geschäfte in der Nähe"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1289,12 +1318,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld közeli bolt"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Geschäfte in der Nähe"
           }
         }
       }
@@ -1601,6 +1624,24 @@
     "store.reminder.count %lld" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Artikel wartet auf deiner Liste"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Artikel warten auf deiner Liste"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -1636,30 +1677,18 @@
               }
             }
           }
-        },
-        "de" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Artikel wartet auf deiner Liste"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Artikel warten auf deiner Liste"
-                }
-              }
-            }
-          }
         }
       }
     },
     "store.reminder.title %@" : {
       "extractionState" : "manual",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ in der Nähe"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1670,12 +1699,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ a közelben"
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ in der Nähe"
           }
         }
       }

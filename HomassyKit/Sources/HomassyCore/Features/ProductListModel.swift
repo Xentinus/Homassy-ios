@@ -17,6 +17,9 @@ public struct ProductCardData: Identifiable, Equatable, Sendable {
     public let expiryText: String?
     /// The product and its stock items: a change by someone else to any of them flashes the card (P5-04).
     public var relatedIDs: Set<UUID> = []
+    /// The storage locations of the product's stock, "Fridge, Pantry". Only the Inventory name and expiry groupings
+    /// set it (P2-08e, user pick 6C); the card then reads "places · brand".
+    public var placesText: String? = nil
 }
 
 public struct ProductSection: Identifiable, Equatable, Sendable {

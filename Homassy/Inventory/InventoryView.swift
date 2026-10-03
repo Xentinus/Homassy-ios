@@ -2,8 +2,9 @@ import CoreData
 import HomassyCore
 import SwiftUI
 
-/// The Inventory tab root: "Expiring soon", then the storage locations, then "No location", as product cards.
-/// A tap opens the product detail; long press offers add stock, add to a list and favourite, never delete (P2-08d).
+/// The Inventory tab root: product cards grouped by location ("Expiring soon", then the storage locations, then
+/// "No location"), by name or by expiry (P2-08e). A tap opens the product detail; long press offers add stock, add to
+/// a list and favourite, never delete (P2-08d).
 struct InventoryView: View {
     @Environment(ServiceContainer.self) private var services
     @Environment(SpaceSelection.self) private var selection
@@ -100,6 +101,11 @@ struct InventoryView: View {
             case .noLocation:
                 Image(systemName: "tray")
                 Text("inventory.noLocation")
+            case .letter(let key):
+                Text(verbatim: key)
+            case .expiry(let bucket):
+                Image(systemName: bucket.symbol).foregroundStyle(bucket.tint)
+                Text(bucket.titleKey)
             }
         }
         .font(.headline)
@@ -117,6 +123,8 @@ struct InventoryView: View {
         case .expiring: "inventory.section.expiring"
         case .location: "inventory.section.\(section.title ?? "")"
         case .noLocation: "inventory.section.none"
+        case .letter(let key): "inventory.section.letter.\(key)"
+        case .expiry(let bucket): "inventory.section.expiry.\(bucket.identifier)"
         }
     }
 
@@ -147,7 +155,8 @@ struct InventoryView: View {
         guard let space = services.activeSpace(selectedID: selection.selectedSpaceID) else { return }
         if model?.space == space { model?.reload(); return }
         let fresh = InventoryModel(inventory: services.inventory, storage: services.storageLocations, space: space,
-                                   pending: services.pendingDeletions)
+                                   pending: services.pendingDeletions,
+                                   preferences: InventoryPreferences(defaults: TabDefaults.store))
         fresh.reload()
         model = fresh
     }
@@ -164,6 +173,46 @@ private struct SectionCard: Identifiable {
     let section: InventorySection.Kind
     let card: ProductCardData
     var id: ID { ID(section: section, product: card.id) }
+}
+
+/// The expiry band headers (P2-08e, 3A): the words carry the meaning, the glyph and colour repeat the card's.
+private extension ExpiryBucket {
+    var titleKey: LocalizedStringKey {
+        switch self {
+        case .expired: "inventory.section.expired"
+        case .today: "inventory.section.today"
+        case .soon: "inventory.section.soon"
+        case .later: "inventory.section.later"
+        case .undated: "inventory.section.noExpiry"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .expired: "alarm"
+        case .today, .soon: "clock"
+        case .later: "calendar"
+        case .undated: "calendar.badge.minus"
+        }
+    }
+
+    var tint: Color {
+        switch self {
+        case .expired: Palette.expiryCritical
+        case .today, .soon: Palette.expirySoon
+        case .later, .undated: .secondary
+        }
+    }
+
+    var identifier: String {
+        switch self {
+        case .expired: "expired"
+        case .today: "today"
+        case .soon: "soon"
+        case .later: "later"
+        case .undated: "undated"
+        }
+    }
 }
 
 #if DEBUG
