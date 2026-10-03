@@ -95,4 +95,23 @@ final class BarcodeUITests: XCTestCase {
         app.buttons["product.form.save"].tap()
         XCTAssertTrue(app.buttons["product.row.Test Bar"].waitForExistence(timeout: 5))
     }
+
+    func testScanButtonFillsTheBarcodeField() {
+        continueAfterFailure = false
+        let app = XCUIApplication.homassy(extraArguments: ["-uiTestSeed", "-uiTestScannedBarcode", "4000000000009"])
+        app.launch()
+        app.openTab("Search")
+        let menu = app.navigationBars["Search"].buttons["addMenu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 10))
+        menu.tap()
+        app.buttons["addMenu.product"].tap()
+        let scan = app.buttons["product.form.scan"]
+        XCTAssertTrue(scan.waitForExistence(timeout: 5))
+        XCTAssertEqual(scan.label, "Scan barcode")
+        scan.tap()
+        let barcode = app.textFields["product.form.barcode"]
+        XCTAssertTrue(barcode.waitForExistence(timeout: 5))
+        let filled = NSPredicate(format: "value == %@", "4000000000009")
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: filled, object: barcode)], timeout: 5), .completed)
+    }
 }

@@ -47,12 +47,19 @@ final class ProductsUITests: XCTestCase {
         let save = app.buttons["product.form.save"]
         XCTAssertTrue(save.waitForExistence(timeout: 5))
         XCTAssertFalse(save.isEnabled)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 3), "a new product opens on the name field")
         let name = app.textFields["product.form.name"]
         name.tap()
         name.typeText("Paprika")
-        let category = app.textFields["product.form.category"]
-        category.tap()
-        category.typeText("Spices")
+        app.buttons["product.form.category"].tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        search.typeText("Spices")
+        app.buttons["category.create"].tap()
+        let categoryRow = app.buttons["product.form.category"]
+        XCTAssertTrue(categoryRow.waitForExistence(timeout: 5))
+        XCTAssertTrue(categoryRow.label.contains("Spices"), categoryRow.label)
         save.tap()
         XCTAssertTrue(app.buttons["product.row.Paprika"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["product.row.Paprika"].label.contains("Nothing in stock"),
@@ -144,6 +151,7 @@ final class ProductsUITests: XCTestCase {
         app.buttons["product.detail.edit"].tap()
         XCTAssertTrue(app.textFields["product.form.name"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.switches["Eatable"].exists)
+        XCTAssertFalse(app.switches["Favorite"].exists, "Favourite lives on the detail, not in the form (4A)")
     }
 
     func testDeleteProductFromDetailAndUndo() {
@@ -344,6 +352,58 @@ final class ProductsUITests: XCTestCase {
         confirm.tap()
         app.openTab("Shopping")
         XCTAssertTrue(app.descendants(matching: .any)["shopping.item.Eggs"].waitForExistence(timeout: 10))
+    }
+
+    func testCategoryPickerPicksAnExistingCategory() {
+        let app = openProducts()
+        openDetail("Milk", in: app)
+        app.buttons["product.detail.edit"].tap()
+        let row = app.buttons["product.form.category"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertTrue(row.label.contains("Dairy"), row.label)
+        row.tap()
+        XCTAssertTrue(app.buttons["category.row.Dairy"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["category.row.Dairy"].isSelected)
+        attachScreenshot(app, named: "category-picker")
+        app.buttons["category.row.Bakery"].tap()
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertTrue(row.label.contains("Bakery"), row.label)
+        app.buttons["product.form.save"].tap()
+        XCTAssertTrue(app.staticTexts["Mizo · Bakery"].waitForExistence(timeout: 5))
+    }
+
+    func testCancelAsksBeforeDroppingChanges() {
+        let app = openProducts()
+        openDetail("Milk", in: app)
+        let edit = app.buttons["product.detail.edit"]
+        edit.tap()
+        let cancel = app.buttons["product.form.cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+        attachScreenshot(app, named: "product-form-edit")
+        cancel.tap()                                                   // nothing changed: closes at once
+        XCTAssertTrue(app.navigationBars["Milk"].waitForExistence(timeout: 5))
+
+        edit.tap()
+        let name = app.textFields["product.form.name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText(" 2")
+        cancel.tap()
+        let discard = app.buttons["Discard Changes"]
+        XCTAssertTrue(discard.waitForExistence(timeout: 3))
+        attachScreenshot(app, named: "product-form-discard")
+        // Anchored to ✕, iOS 26 may show the dialog as a popover without its cancel button; a tap outside keeps editing.
+        let keep = app.buttons["Keep Editing"]
+        if keep.exists { keep.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6)).tap() }
+        XCTAssertTrue(discard.waitForNonExistence(timeout: 3))
+        XCTAssertEqual(name.value as? String, "Milk 2")
+        cancel.tap()
+        app.buttons["Discard Changes"].tap()
+        XCTAssertTrue(app.navigationBars["Milk"].waitForExistence(timeout: 5))
+    }
+
+    private func attachScreenshot(_ app: XCUIApplication, named name: String) {
+        keepScreenshot(name, app)
     }
 
     private func waitForValue(_ element: XCUIElement, _ value: String, timeout: TimeInterval = 5) -> Bool {

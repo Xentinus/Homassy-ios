@@ -2,6 +2,7 @@ import HomassyCore
 import PhotosUI
 import SwiftUI
 
+/// New product and Edit product (P2-07b, mockup 1A · 2A · 3A · 4A · 5A): the Contacts "New Contact" pattern.
 struct ProductFormSheet: View {
     @State private var model: ProductFormModel
     @State private var pickerItem: PhotosPickerItem?
@@ -9,6 +10,11 @@ struct ProductFormSheet: View {
     @State private var choosingPhoto = false
     /// A photo waiting in the editor (crop to a square, rotate); only the edited result reaches the draft.
     @State private var editing: EditablePhoto?
+    @State private var scanning = false
+    @State private var confirmingDiscard = false
+    @FocusState private var focus: Field?
+
+    private enum Field: Hashable { case name, brand, barcode, website, notes }
 
     struct EditablePhoto: Identifiable {
         let id = UUID()
@@ -30,57 +36,81 @@ struct ProductFormSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    photoMenu
+                    ProductFormPhotoHeader(
+                        imageData: model.draft.imageData, name: model.draft.name,
+                        takePhoto: CameraPicker.isAvailable ? { takingPhoto = true } : nil,
+                        choosePhoto: choosePhoto,
+                        editPhoto: { if let data = model.draft.imageData { editing = EditablePhoto(data: data) } },
+                        removePhoto: { model.setImage(nil) })
                         .frame(maxWidth: .infinity)
                         .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
                 }
                 Section {
                     TextField("product.field.name", text: $model.draft.name)
+                        .focused($focus, equals: .name)
+                        .submitLabel(.next)
+                        .onSubmit { focus = .brand }
                         .accessibilityIdentifier("product.form.name")
                     if let error = model.nameError {
                         Text(error).font(.footnote).foregroundStyle(.red)
                     }
                     TextField("product.field.brand", text: $model.draft.brand)
+                        .focused($focus, equals: .brand)
+                        .submitLabel(.next)
+                        .onSubmit { focus = .barcode }
                         .accessibilityIdentifier("product.form.brand")
-                    TextField("product.field.category", text: $model.draft.category)
-                        .accessibilityIdentifier("product.form.category")
-                    let suggestions = model.categories(matching: model.draft.category).filter { $0 != model.draft.category }
-                    if !suggestions.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack {
-                                ForEach(suggestions, id: \.self) { suggestion in
-                                    Button(suggestion) { model.draft.category = suggestion }
-                                        .buttonStyle(.bordered)
-                                        .controlSize(.small)
-                                }
+                }
+                Section {
+                    NavigationLink {
+                        ProductCategoryPicker(model: model)
+                    } label: {
+                        LabeledContent("product.field.category") {
+                            if let category = model.categoryText { Text(verbatim: category) } else { Text("product.category.noneShort") }
+                        }
+                    }
+                    .accessibilityIdentifier("product.form.category")
+                    Picker("product.field.unit", selection: $model.draft.defaultUnit) {
+                        ForEach(MeasureUnitGroup.allCases) { group in
+                            Section(group.title) {
+                                ForEach(group.units, id: \.self) { unit in Text(unit.name(for: 1)).tag(unit) }
                             }
                         }
-                        .accessibilityLabel(Text("product.form.suggestions"))
                     }
-                    TextField("product.field.barcode", text: $model.draft.barcode)
-                        .keyboardType(.numberPad)
-                        .accessibilityIdentifier("product.form.barcode")
-                    TextField("product.field.url", text: $model.draft.url)
-                        .keyboardType(.URL)
-                        .textContentType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .accessibilityIdentifier("product.form.url")
+                    .accessibilityIdentifier("product.form.unit")
+                }
+                Section {
+                    HStack {
+                        Image(systemName: "barcode").foregroundStyle(.secondary).accessibilityHidden(true)
+                        TextField("product.field.barcode", text: $model.draft.barcode)
+                            .keyboardType(.numberPad)
+                            .focused($focus, equals: .barcode)
+                            .accessibilityIdentifier("product.form.barcode")
+                        Button { scanning = true } label: {
+                            Label("barcode.scan", systemImage: "barcode.viewfinder").labelStyle(.iconOnly)
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityIdentifier("product.form.scan")
+                    }
+                    HStack {
+                        Image(systemName: "link").foregroundStyle(.secondary).accessibilityHidden(true)
+                        TextField("product.field.website", text: $model.draft.url)
+                            .keyboardType(.URL)
+                            .textContentType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .focused($focus, equals: .website)
+                            .accessibilityIdentifier("product.form.url")
+                    }
                     if let error = model.urlError {
                         Text(error).font(.footnote).foregroundStyle(.red)
                     }
                 }
                 Section {
-                    Picker("product.field.unit", selection: $model.draft.defaultUnit) {
-                        ForEach(MeasureUnit.allCases, id: \.self) { unit in
-                            Text(unit.name(for: 1)).tag(unit)
-                        }
-                    }
-                    Toggle("product.field.favorite", isOn: $model.draft.isFavorite)
-                }
-                Section("product.field.notes") {
                     TextField("product.field.notes", text: $model.draft.notes, axis: .vertical)
                         .lineLimit(2...6)
+                        .focused($focus, equals: .notes)
+                        .accessibilityIdentifier("product.form.notes")
                 }
                 if let error = model.errorMessage {
                     Section { Text(error).foregroundStyle(.red) }
@@ -100,9 +130,17 @@ struct ProductFormSheet: View {
             .navigationTitle(model.isEditing ? "product.form.edit" : "product.form.new")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("common.cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    SheetCancelButton(action: close)
+                        .accessibilityIdentifier("product.form.cancel")
+                        .confirmationDialog("product.form.discard.title", isPresented: $confirmingDiscard,
+                                            titleVisibility: .visible) {
+                            Button("product.form.discard.confirm", role: .destructive) { dismiss() }
+                            Button("product.form.discard.keep", role: .cancel) {}
+                        }
+                }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("common.save") {
+                    SheetConfirmButton {
                         Task {
                             if let product = await model.save() {
                                 onSaved(product)
@@ -112,6 +150,12 @@ struct ProductFormSheet: View {
                     }
                     .disabled(!model.canSave)
                     .accessibilityIdentifier("product.form.save")
+                }
+            }
+            .sheet(isPresented: $scanning) {
+                BarcodeScannerSheet { code, _ in
+                    model.draft.barcode = code
+                    scanning = false
                 }
             }
             .fullScreenCover(isPresented: $takingPhoto) {
@@ -129,40 +173,21 @@ struct ProductFormSheet: View {
                     pickerItem = nil
                 }
             }
+            .task {
+                // A new product starts typing its name; the sheet must finish presenting before the field takes focus.
+                guard !model.isEditing, model.draft.name.isEmpty else { return }
+                try? await Task.sleep(for: .milliseconds(450))
+                focus = .name
+            }
         }
         .presentationDetents([.large])
-        .interactiveDismissDisabled(model.isSaving)
+        // A changed form cannot be swiped away; ✕ asks first (Contacts, Calendar).
+        .interactiveDismissDisabled(model.isSaving || model.hasChanges)
     }
 
-    /// The photo, with every photo action in one menu behind it (user request, 2026-09-24).
-    private var photoMenu: some View {
-        Menu {
-            if CameraPicker.isAvailable {
-                Button { takingPhoto = true } label: { Label("product.form.takePhoto", systemImage: "camera") }
-                    .accessibilityIdentifier("product.form.takePhoto")
-            }
-            Button { choosePhoto() } label: { Label("product.form.choosePhoto", systemImage: "photo.on.rectangle") }
-                .accessibilityIdentifier("product.form.choosePhoto")
-            if let data = model.draft.imageData {
-                Button { editing = EditablePhoto(data: data) } label: { Label("product.form.editPhoto", systemImage: "crop.rotate") }
-                    .accessibilityIdentifier("product.form.editPhoto")
-                Divider()
-                Button(role: .destructive) { model.setImage(nil) } label: { Label("product.form.removePhoto", systemImage: "trash") }
-                    .accessibilityIdentifier("product.form.removePhoto")
-            }
-        } label: {
-            ProductImageView(data: model.draft.imageData, size: 120)
-                .overlay(alignment: .bottomTrailing) {
-                    Image(systemName: model.draft.imageData == nil ? "camera.circle.fill" : "pencil.circle.fill")
-                        .font(.title)
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(Palette.mochaButtonForeground, Palette.mochaButtonBackground)
-                        .offset(x: 8, y: 8)
-                }
-                .padding(8)
-        }
-        .accessibilityLabel(Text(model.draft.imageData == nil ? "product.form.addPhoto" : "product.form.photo"))
-        .accessibilityIdentifier("product.form.photo")
+    /// ✕: closes at once when nothing changed, otherwise asks before dropping the edits.
+    private func close() {
+        if model.hasChanges { confirmingDiscard = true } else { dismiss() }
     }
 
     /// The system photo picker, or under `-uiTestSamplePhoto` a generated picture (UI tests cannot drive the picker).
@@ -174,6 +199,18 @@ struct ProductFormSheet: View {
         }
         #endif
         choosingPhoto = true
+    }
+}
+
+private extension MeasureUnitGroup {
+    var title: LocalizedStringKey {
+        switch self {
+        case .count: "unit.group.count"
+        case .weight: "unit.group.weight"
+        case .volume: "unit.group.volume"
+        case .kitchen: "unit.group.kitchen"
+        case .size: "unit.group.size"
+        }
     }
 }
 
