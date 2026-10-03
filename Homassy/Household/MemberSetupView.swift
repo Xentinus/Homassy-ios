@@ -63,11 +63,11 @@ struct MemberSetupView: View {
                         Button("member.setup.later") { onSkip(); dismiss() }
                             .accessibilityIdentifier("member.setup.later")
                     } else {
-                        Button("common.cancel") { dismiss() }
+                        SheetCancelButton { dismiss() }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("common.save", action: save)
+                    SheetConfirmButton(action: save)
                         .disabled(!model.canSave)
                         .accessibilityIdentifier("member.setup.save")
                 }

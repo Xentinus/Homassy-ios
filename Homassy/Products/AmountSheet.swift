@@ -76,7 +76,7 @@ struct AmountSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .modifier(MoveTargetSearch(isEnabled: purpose == .move, query: $query))
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("common.cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancelButton { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(purpose == .consume ? "product.detail.consume" : "product.detail.move") {
                         guard let amount = form.value else { return }

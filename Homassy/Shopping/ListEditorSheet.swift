@@ -68,9 +68,9 @@ struct ListEditorSheet: View {
                                                   : LocalizedStringKey("shopping.listEditor.editTitle")))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("common.cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancelButton { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("common.save", action: save)
+                    SheetConfirmButton(action: save)
                         .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .accessibilityIdentifier("shopping.listEditor.save")
                 }

@@ -47,7 +47,7 @@ struct SpaceSettingsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("common.done") { dismiss() }
+                    SheetConfirmButton(title: "common.done") { dismiss() }
                         .accessibilityIdentifier("space.settings.done")
                 }
             }

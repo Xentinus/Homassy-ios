@@ -79,7 +79,7 @@ struct ProductPickerView: View {
         .navigationTitle("stock.title.add")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) { Button("common.cancel", action: onCancel) }
+            ToolbarItem(placement: .cancellationAction) { SheetCancelButton(action: onCancel) }
             ToolbarItemGroup(placement: .primaryAction) {
                 Button { scanning = true } label: { Label("search.byBarcode", systemImage: "barcode.viewfinder") }
                     .accessibilityIdentifier("picker.barcode")

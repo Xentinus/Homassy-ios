@@ -36,9 +36,9 @@ struct StorageLocationFormSheet: View {
             .navigationTitle(model.isEditing ? "storageLocations.edit" : "storageLocations.new")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("common.cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancelButton { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("common.save") { if model.save() { dismiss() } }
+                    SheetConfirmButton { if model.save() { dismiss() } }
                         .disabled(!model.canSave)
                         .accessibilityIdentifier("storageLocation.save")
                 }

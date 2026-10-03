@@ -42,7 +42,7 @@ struct BarcodeActionSheet: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("common.close") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancelButton(title: "common.close", role: .close) { dismiss() } }
             }
         }
         .presentationDetents([.medium, .large])

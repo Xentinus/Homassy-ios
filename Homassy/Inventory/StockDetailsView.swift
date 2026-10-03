@@ -42,10 +42,10 @@ struct StockDetailsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if showsCancel {
-                ToolbarItem(placement: .cancellationAction) { Button("common.cancel", action: onDone) }
+                ToolbarItem(placement: .cancellationAction) { SheetCancelButton(action: onDone) }
             }
             ToolbarItem(placement: .confirmationAction) {
-                Button("common.save") { if form.save() != nil { onDone() } }
+                SheetConfirmButton { if form.save() != nil { onDone() } }
                     .disabled(!form.canSave)
                     .accessibilityIdentifier("stock.save")
             }
