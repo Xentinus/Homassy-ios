@@ -159,8 +159,8 @@ struct ProductFormSheet: View {
                 }
             }
             .sheet(isPresented: $scanning) {
-                BarcodeScannerSheet { code, _ in
-                    model.draft.barcode = code
+                BarcodeScannerSheet { code, symbology in
+                    model.draft.barcode = BarcodeRouter.normalize(code, symbology: symbology)
                     scanning = false
                 }
             }
@@ -183,7 +183,7 @@ struct ProductFormSheet: View {
                 // Once per sheet: popping back from the category list must not pull the keyboard up again.
                 guard !didAutoFocus, !model.isEditing, model.draft.name.isEmpty else { return }
                 didAutoFocus = true
-                try? await Task.sleep(for: Self.autoFocusDelay)
+                guard (try? await Task.sleep(for: Self.autoFocusDelay)) != nil else { return }   // cancelled: leave focus alone
                 focus = .name
             }
         }
