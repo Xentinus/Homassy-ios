@@ -364,7 +364,7 @@ final class ProductsUITests: XCTestCase {
         row.tap()
         XCTAssertTrue(app.buttons["category.row.Dairy"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["category.row.Dairy"].isSelected)
-        attachScreenshot(app, named: "category-picker")
+        keepScreenshot("category-picker", app)
         app.buttons["category.row.Bakery"].tap()
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         XCTAssertTrue(row.label.contains("Bakery"), row.label)
@@ -379,7 +379,7 @@ final class ProductsUITests: XCTestCase {
         edit.tap()
         let cancel = app.buttons["product.form.cancel"]
         XCTAssertTrue(cancel.waitForExistence(timeout: 5))
-        attachScreenshot(app, named: "product-form-edit")
+        keepScreenshot("product-form-edit", app)
         cancel.tap()                                                   // nothing changed: closes at once
         XCTAssertTrue(app.navigationBars["Milk"].waitForExistence(timeout: 5))
 
@@ -391,19 +391,15 @@ final class ProductsUITests: XCTestCase {
         cancel.tap()
         let discard = app.buttons["Discard Changes"]
         XCTAssertTrue(discard.waitForExistence(timeout: 3))
-        attachScreenshot(app, named: "product-form-discard")
-        // Anchored to ✕, iOS 26 may show the dialog as a popover without its cancel button; a tap outside keeps editing.
-        let keep = app.buttons["Keep Editing"]
-        if keep.exists { keep.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6)).tap() }
+        keepScreenshot("product-form-discard", app)
+        // The chosen behaviour: iOS 26 shows the dialog as a popover at the ✕ with only "Discard Changes"; a tap
+        // outside it keeps editing.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6)).tap()
         XCTAssertTrue(discard.waitForNonExistence(timeout: 3))
         XCTAssertEqual(name.value as? String, "Milk 2")
         cancel.tap()
         app.buttons["Discard Changes"].tap()
         XCTAssertTrue(app.navigationBars["Milk"].waitForExistence(timeout: 5))
-    }
-
-    private func attachScreenshot(_ app: XCUIApplication, named name: String) {
-        keepScreenshot(name, app)
     }
 
     private func waitForValue(_ element: XCUIElement, _ value: String, timeout: TimeInterval = 5) -> Bool {

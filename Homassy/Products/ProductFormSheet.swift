@@ -12,7 +12,11 @@ struct ProductFormSheet: View {
     @State private var editing: EditablePhoto?
     @State private var scanning = false
     @State private var confirmingDiscard = false
+    @State private var didAutoFocus = false
     @FocusState private var focus: Field?
+
+    /// A new product starts typing its name; the sheet must finish presenting before the field takes focus.
+    private static let autoFocusDelay: Duration = .milliseconds(450)
 
     private enum Field: Hashable { case name, brand, barcode, website, notes }
 
@@ -174,9 +178,10 @@ struct ProductFormSheet: View {
                 }
             }
             .task {
-                // A new product starts typing its name; the sheet must finish presenting before the field takes focus.
-                guard !model.isEditing, model.draft.name.isEmpty else { return }
-                try? await Task.sleep(for: .milliseconds(450))
+                // Once per sheet: popping back from the category list must not pull the keyboard up again.
+                guard !didAutoFocus, !model.isEditing, model.draft.name.isEmpty else { return }
+                didAutoFocus = true
+                try? await Task.sleep(for: Self.autoFocusDelay)
                 focus = .name
             }
         }
