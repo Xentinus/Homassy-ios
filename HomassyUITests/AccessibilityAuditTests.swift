@@ -4,7 +4,7 @@ import XCTest
 /// accessibility text size. One test per screen, so a single screen can be re-run on its own.
 final class AccessibilityAuditTests: XCTestCase {
     enum Screen: String {
-        case inventory, stockSheet, storePicker, search, productDetail, shopping, listManager, addItem, purchase,
+        case inventory, stockSheet, storePicker, search, productDetail, productForm, shopping, listManager, addItem, purchase,
              spaceSettings, introduction, gate
     }
 
@@ -116,6 +116,7 @@ final class AccessibilityAuditTests: XCTestCase {
     @MainActor func testStorePicker() { audit(.storePicker) }
     @MainActor func testSearch() { audit(.search) }
     @MainActor func testProductDetail() { audit(.productDetail) }
+    @MainActor func testProductForm() { audit(.productForm) }
     @MainActor func testShopping() { audit(.shopping) }
     @MainActor func testListManager() { audit(.listManager) }
     @MainActor func testAddItem() { audit(.addItem) }
@@ -281,6 +282,14 @@ final class AccessibilityAuditTests: XCTestCase {
             guard tapTab("Search", in: app), reveal(milk, in: app) else { return false }
             milk.tap()
             return app.navigationBars["Milk"].waitForExistence(timeout: 5)
+        case .productForm:
+            let milk = app.buttons["product.row.Milk"]
+            guard tapTab("Search", in: app), reveal(milk, in: app) else { return false }
+            milk.tap()
+            let edit = app.buttons["product.detail.edit"]
+            guard edit.waitForExistence(timeout: 5) else { return false }
+            edit.tap()
+            return app.textFields["product.form.name"].waitForExistence(timeout: 5)
         case .shopping:
             return tapTab("Shopping", in: app) && app.buttons["shopping.filter.all"].waitForExistence(timeout: 10)
         case .listManager:
