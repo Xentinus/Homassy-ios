@@ -31,7 +31,11 @@ struct ProductCategoryPicker: View {
     }
 
     private func row(_ category: String?) -> some View {
-        let selected = category == model.categoryText
+        let selected = switch (category, model.categoryText) {
+        case (nil, nil): true
+        case let (a?, b?): a.compare(b, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        default: false
+        }
         return Button { pick(category ?? "") } label: {
             HStack {
                 if let category { Text(verbatim: category) } else { Text("product.category.none") }

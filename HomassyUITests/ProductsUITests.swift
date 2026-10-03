@@ -52,7 +52,7 @@ final class ProductsUITests: XCTestCase {
         name.tap()
         name.typeText("Paprika")
         app.buttons["product.form.category"].tap()
-        let search = app.searchFields.firstMatch
+        let search = app.navigationBars["Category"].searchFields.firstMatch
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         search.tap()
         search.typeText("Spices")
@@ -394,7 +394,7 @@ final class ProductsUITests: XCTestCase {
         keepScreenshot("product-form-discard", app)
         // The chosen behaviour: iOS 26 shows the dialog as a popover at the ✕ with only "Discard Changes"; a tap
         // outside it keeps editing.
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6)).tap()
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.3)).tap()   // right of the centred photo header: clear of the keyboard, the popover and any control
         XCTAssertTrue(discard.waitForNonExistence(timeout: 3))
         XCTAssertEqual(name.value as? String, "Milk 2")
         cancel.tap()
