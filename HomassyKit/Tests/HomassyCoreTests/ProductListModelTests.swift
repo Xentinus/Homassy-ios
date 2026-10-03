@@ -17,13 +17,6 @@ struct ProductListModelTests {
         return model
     }
 
-    @Test("Section keys fold diacritics and send non-letters to #", arguments: [
-        ("alma", "A"), ("Áfonya", "A"), ("öntet", "O"), ("  kenyér", "K"), ("123 cola", "#"), ("", "#"), ("(bio) tej", "#"),
-    ])
-    func sectionKeys(name: String, expected: String) {
-        #expect(ProductListModel.sectionKey(for: name, locale: Self.hu) == expected)
-    }
-
     @Test func groupsAlphabeticallyWithHashLast() async throws {
         let env = try ServiceTestEnvironment()
         for name in ["alma", "Áfonya", "banán", "Kenyér", "123 cola"] { try await env.makeProduct(name) }

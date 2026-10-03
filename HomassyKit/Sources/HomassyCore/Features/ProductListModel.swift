@@ -63,12 +63,7 @@ public final class ProductListModel {
 
     public var sections: [ProductSection] {
         let visible = cards.filter { !pending.contains($0.id) }
-        let grouped = Dictionary(grouping: visible) { Self.sectionKey(for: $0.name, locale: locale) }
-        let keys = grouped.keys.sorted { lhs, rhs in
-            if lhs == "#" || rhs == "#" { return rhs == "#" && lhs != "#" }
-            return lhs.localizedStandardCompare(rhs) == .orderedAscending
-        }
-        return keys.map { ProductSection(id: $0, cards: grouped[$0] ?? []) }
+        return LetterSections.group(visible, locale: locale, name: \.name).map { ProductSection(id: $0.key, cards: $0.values) }
     }
 
     public func reload() {
@@ -120,11 +115,4 @@ public final class ProductListModel {
     }
 
     public func dismissError() { errorMessage = nil }
-
-    static func sectionKey(for name: String, locale: Locale) -> String {
-        guard let first = name.trimmingCharacters(in: .whitespacesAndNewlines).first else { return "#" }
-        let folded = String(first).folding(options: [.diacriticInsensitive, .caseInsensitive], locale: locale)
-            .uppercased(with: locale)
-        return folded.first?.isLetter == true ? folded : "#"
-    }
 }

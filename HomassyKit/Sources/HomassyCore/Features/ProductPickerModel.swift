@@ -56,14 +56,8 @@ public final class ProductPickerModel {
         let query = searchText.nilIfBlank
         do {
             let found = try products.search(query ?? "", in: space).filter { !pending.contains($0.publicId) }
-            let grouped = Dictionary(grouping: found.map(Self.row)) {
-                ProductListModel.sectionKey(for: $0.name, locale: locale)
-            }
-            let keys = grouped.keys.sorted { lhs, rhs in
-                if lhs == "#" || rhs == "#" { return rhs == "#" && lhs != "#" }
-                return lhs.localizedStandardCompare(rhs) == .orderedAscending
-            }
-            sections = keys.map { PickerSection(id: $0, products: grouped[$0] ?? []) }
+            sections = LetterSections.group(found.map(Self.row), locale: locale, name: \.name)
+                .map { PickerSection(id: $0.key, products: $0.values) }
             recents = try query == nil ? recentProducts(among: found) : []
             createCandidate = query.flatMap { text in
                 found.contains { $0.name.compare(text, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame }
