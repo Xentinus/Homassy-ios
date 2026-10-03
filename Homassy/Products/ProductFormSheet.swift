@@ -44,7 +44,7 @@ struct ProductFormSheet: View {
                         .accessibilityIdentifier("product.form.brand")
                     TextField("product.field.category", text: $model.draft.category)
                         .accessibilityIdentifier("product.form.category")
-                    let suggestions = model.suggestions()
+                    let suggestions = model.categories(matching: model.draft.category).filter { $0 != model.draft.category }
                     if !suggestions.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack {
