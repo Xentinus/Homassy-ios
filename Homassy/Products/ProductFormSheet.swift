@@ -92,6 +92,8 @@ struct ProductFormSheet: View {
                             .accessibilityIdentifier("product.form.barcode")
                         Button { scanning = true } label: {
                             Label("barcode.scan", systemImage: "barcode.viewfinder").labelStyle(.iconOnly)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.borderless)
                         .accessibilityIdentifier("product.form.scan")
