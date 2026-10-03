@@ -65,7 +65,7 @@ struct AddItemSheet: View {
         ToolbarItem(placement: .cancellationAction) {
             // With a product chosen up front, "how much" is the first page, so it offers Cancel rather than a Back to nowhere.
             if model.step == .what || (startsWithProduct && model.step == .amount) {
-                Button("common.cancel") { dismiss() }
+                SheetCancelButton { dismiss() }
             } else {
                 Button("shopping.add.back") { model.back() }
                     .accessibilityIdentifier("shopping.add.back")
@@ -73,7 +73,7 @@ struct AddItemSheet: View {
         }
         ToolbarItem(placement: .confirmationAction) {
             if model.step == .store {
-                Button("shopping.add.confirm") { if model.add() { dismiss() } }
+                SheetConfirmButton(title: "shopping.add.confirm") { if model.add() { dismiss() } }
                     .accessibilityIdentifier("shopping.add.confirm")
             } else {
                 Button("shopping.add.next") { model.next() }

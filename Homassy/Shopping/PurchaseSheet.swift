@@ -64,7 +64,7 @@ struct PurchaseSheet: View {
             .navigationTitle(Text(verbatim: model.itemName))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("common.cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancelButton { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("shopping.purchase.confirm", action: confirm)
                         .disabled(!model.canPurchase)

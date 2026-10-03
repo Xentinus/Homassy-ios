@@ -47,14 +47,14 @@ struct PhotoEditorView: View {
                 .gesture(gestures(side: side))
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("common.cancel") { dismiss() }
+                        SheetCancelButton { dismiss() }
                     }
                     ToolbarItem(placement: .bottomBar) {
                         Button { rotateLeft() } label: { Label("photoEditor.rotate", systemImage: "rotate.left") }
                             .accessibilityIdentifier("photoEditor.rotate")
                     }
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("photoEditor.done") { finish(side: side) }
+                        SheetConfirmButton(title: "photoEditor.done") { finish(side: side) }
                             .disabled(image == nil)
                             .accessibilityIdentifier("photoEditor.done")
                     }

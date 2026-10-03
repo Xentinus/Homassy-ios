@@ -32,12 +32,12 @@ struct ImportFlowView: View {
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         if model.phase == .finished {
             ToolbarItem(placement: .confirmationAction) {
-                Button("archive.import.done.button") { dismiss() }
+                SheetConfirmButton(title: "archive.import.done.button") { dismiss() }
                     .accessibilityIdentifier("import.close")
             }
         } else {
             ToolbarItem(placement: .cancellationAction) {
-                Button("archive.import.cancel") { dismiss() }
+                SheetCancelButton(title: "archive.import.cancel") { dismiss() }
                     .accessibilityIdentifier("import.cancel")
             }
             ToolbarItem(placement: .confirmationAction) {

@@ -83,7 +83,7 @@ struct PriceChartSheet: View {
             .navigationTitle(storeTitle(for: line, directory: directory))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("common.close") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetCancelButton(title: "common.close", role: .close) { dismiss() } }
             }
         }
         .presentationDetents([.medium, .large])

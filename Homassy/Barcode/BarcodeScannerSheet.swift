@@ -50,7 +50,7 @@ struct BarcodeScannerSheet: View {
             .navigationTitle("barcode.scan")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("common.close") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancelButton(title: "common.close", role: .close) { dismiss() } }
                 if gate == .ready, Torch.isAvailable {
                     ToolbarItem(placement: .primaryAction) {
                         Button {

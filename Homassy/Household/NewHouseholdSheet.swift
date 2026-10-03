@@ -26,7 +26,7 @@ struct NewHouseholdSheet: View {
             .toolbar {
                 if model.createdSpace == nil {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("common.cancel") { dismiss() }
+                        SheetCancelButton { dismiss() }
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("household.new.create") { Task { await model.create() } }
@@ -35,7 +35,7 @@ struct NewHouseholdSheet: View {
                     }
                 } else {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("household.new.done") { finish() }
+                        SheetConfirmButton(title: "household.new.done") { finish() }
                             .accessibilityIdentifier("household.new.done")
                     }
                 }

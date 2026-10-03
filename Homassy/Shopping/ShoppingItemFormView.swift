@@ -64,9 +64,9 @@ struct ShoppingItemFormView: View {
             .navigationTitle(Text("shopping.form.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("common.cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetCancelButton { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("common.save") {
+                    SheetConfirmButton {
                         if model.save() {
                             onSaved()
                             dismiss()
