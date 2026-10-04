@@ -4,6 +4,7 @@ import SwiftUI
 /// VoiceOver sees one adjustable element: swipe up or down to move between letters.
 struct SectionIndexBar: View {
     let letters: [String]
+    let identifier: String
     let onSelect: (String) -> Void
 
     @State private var current: String?
@@ -43,7 +44,7 @@ struct SectionIndexBar: View {
             let next = direction == .increment ? min(index + 1, letters.count - 1) : max(index - 1, 0)
             jump(to: letters[next])
         }
-        .accessibilityIdentifier("products.index")
+        .accessibilityIdentifier(identifier)
     }
 
     /// Letters sit in the middle of the available height, at most 18 points apart.

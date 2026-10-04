@@ -25,8 +25,8 @@ struct ProductCard: View {
                 }
             }
             AttributionCaption(ids: card.relatedIDs) {
-                if let brand = card.brand {
-                    Text(brand).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                if let secondary = secondaryLine {
+                    Text(secondary).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                 }
             }
         } trailing: {
@@ -41,5 +41,12 @@ struct ProductCard: View {
         }
         .attributionRing(card.relatedIDs)
         .accessibilityElement(children: .combine)
+    }
+
+    /// The brand, or in the Inventory name and expiry groupings "places · brand" (P2-08e, user pick 6C). The places
+    /// come first, so a long line truncates the brand.
+    private var secondaryLine: String? {
+        let parts = [card.placesText, card.brand].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 }

@@ -14,6 +14,7 @@ struct InventoryView: View {
     @State private var scanning = false
     @State private var router = AppRouter.shared
     @State private var cardActions = ProductCardActions()
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
@@ -43,32 +44,44 @@ struct InventoryView: View {
 
     @ViewBuilder
     private func content(_ model: InventoryModel) -> some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 8, pinnedViews: [.sectionHeaders]) {
-                ForEach(model.sections) { section in
-                    Section {
-                        ForEach(section.cards.map { SectionCard(section: section.id, card: $0) }) { entry in
-                            let card = entry.card
-                            NavigationLink(value: ProductRoute(id: card.id)) { ProductCard(card: card) }
-                                .buttonStyle(.plain)
-                                .productCardMenu(card, actions: cardActions, canEdit: model.canEdit)
-                                .accessibilityIdentifier("inventory.row.\(card.name)")
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 8, pinnedViews: [.sectionHeaders]) {
+                    ForEach(model.sections) { section in
+                        Section {
+                            ForEach(section.cards.map { SectionCard(section: section.id, card: $0) }) { entry in
+                                let card = entry.card
+                                NavigationLink(value: ProductRoute(id: card.id)) { ProductCard(card: card) }
+                                    .buttonStyle(.plain)
+                                    .productCardMenu(card, actions: cardActions, canEdit: model.canEdit)
+                                    .accessibilityIdentifier("inventory.row.\(card.name)")
+                            }
+                        } header: {
+                            header(section).id(section.id)
                         }
-                    } header: {
-                        header(section)
                     }
                 }
+                .frame(maxWidth: CardColumn.maxWidth)
+                .frame(maxWidth: .infinity)
+                .padding(.leading)
+                .padding(.trailing, showsIndex(model) ? 28 : 16)
+                .padding(.bottom, 24)
             }
-            .frame(maxWidth: CardColumn.maxWidth)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal)
-            .padding(.bottom, 24)
+            // On the scroll view, not the reader: an identifier on the container would also replace the index's own.
+            .accessibilityIdentifier("inventory.grid")
+            .overlay(alignment: .trailing) {
+                if showsIndex(model) {
+                    SectionIndexBar(letters: model.sections.compactMap(\.letter), identifier: "inventory.index") { letter in
+                        proxy.scrollTo(InventorySection.Kind.letter(letter), anchor: .top)
+                    }
+                    .padding(.trailing, 2)
+                }
+            }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
             BackupReminderBanner(space: model.space)
         }
         .background(Color(uiColor: .systemGroupedBackground))
-        .accessibilityIdentifier("inventory.grid")
         .overlay {
             if model.isEmpty {
                 ContentUnavailableView {
@@ -132,6 +145,24 @@ struct InventoryView: View {
     private var toolbar: some ToolbarContent {
         SpaceSwitcherToolbarItem()
         ToolbarItem(placement: .primaryAction) {
+            Menu {
+                Section {
+                    Picker("inventory.grouping", selection: groupingBinding) {
+                        Label("inventory.grouping.location", systemImage: "archivebox").tag(InventoryGrouping.location)
+                        Label("inventory.grouping.name", systemImage: "textformat.abc").tag(InventoryGrouping.name)
+                        Label("inventory.grouping.expiry", systemImage: "calendar.badge.clock").tag(InventoryGrouping.expiry)
+                    }
+                    .pickerStyle(.inline)
+                } header: {
+                    Text("inventory.grouping")
+                }
+            } label: {
+                Label("inventory.more", systemImage: "ellipsis")
+            }
+            .accessibilityIdentifier("inventory.more")
+            .disabled(model == nil)
+        }
+        ToolbarItem(placement: .primaryAction) {
             AddMenu {
                 Button { addingStock = true } label: { Label("add.inventoryItem", systemImage: "plus.circle") }
                     .accessibilityIdentifier("addMenu.stock")
@@ -142,6 +173,16 @@ struct InventoryView: View {
             }
             .disabled(model?.canEdit != true)
         }
+    }
+
+    /// The grouping lives on the model (remembered per device); the menu shows location until the model exists.
+    private var groupingBinding: Binding<InventoryGrouping> {
+        Binding(get: { model?.grouping ?? .location }, set: { model?.grouping = $0 })
+    }
+
+    /// As on Search: name grouping with at least two letters, and not at accessibility sizes.
+    private func showsIndex(_ model: InventoryModel) -> Bool {
+        model.showsLetterIndex && !dynamicTypeSize.isAccessibilitySize
     }
 
     /// The Scan Barcode quick action (N-02) opens the scanner once the model, and so the space, exists.

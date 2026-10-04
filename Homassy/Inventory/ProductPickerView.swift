@@ -54,7 +54,7 @@ struct ProductPickerView: View {
             .overlay(alignment: .trailing) {
                 // Hidden at accessibility sizes, like the Search index (X-04).
                 if !model.isSearching, model.sections.count > 1, !dynamicTypeSize.isAccessibilitySize {
-                    SectionIndexBar(letters: model.sections.map(\.id)) { letter in
+                    SectionIndexBar(letters: model.sections.map(\.id), identifier: "products.index") { letter in
                         if let first = model.sections.first(where: { $0.id == letter })?.products.first {
                             proxy.scrollTo(first.id, anchor: .top)
                         }

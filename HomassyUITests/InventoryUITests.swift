@@ -46,6 +46,56 @@ final class InventoryUITests: XCTestCase {
         return search
     }
 
+    /// "•••" → a grouping, by its English label ("By location", "By name", "By expiry").
+    private func chooseGrouping(_ label: String, in app: XCUIApplication) {
+        app.buttons["inventory.more"].firstMatch.tap()
+        let option = app.buttons[label].firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 3))
+        option.tap()
+    }
+
+    func testGroupingByNameShowsLettersPlacesAndTheIndex() {
+        let app = openInventory()
+        XCTAssertTrue(element("inventory.section.expiring", in: app).waitForExistence(timeout: 10))
+        chooseGrouping("By name", in: app)
+
+        for letter in ["A", "B", "E", "M"] {
+            XCTAssertTrue(element("inventory.section.letter.\(letter)", in: app).waitForExistence(timeout: 5), letter)
+        }
+        XCTAssertFalse(element("inventory.section.expiring", in: app).exists, "5A: no expiring section by name")
+        XCTAssertTrue(app.buttons["inventory.row.Apples"].label.contains("No location"))
+        XCTAssertTrue(app.buttons["inventory.row.Milk"].label.contains("Fridge"))
+
+        let index = element("inventory.index", in: app)
+        XCTAssertTrue(index.exists)
+        index.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.99)).press(forDuration: 0.2)
+        XCTAssertTrue(app.buttons["inventory.row.Milk"].isHittable)
+        attachScreenshot(app, named: "inventory-by-name")
+    }
+
+    func testGroupingByExpiryShowsBandsAndBackToLocation() {
+        let app = openInventory()
+        XCTAssertTrue(element("inventory.section.expiring", in: app).waitForExistence(timeout: 10))
+        chooseGrouping("By expiry", in: app)
+
+        let expired = element("inventory.section.expiry.expired", in: app)
+        let soon = element("inventory.section.expiry.soon", in: app)
+        let later = element("inventory.section.expiry.later", in: app)
+        XCTAssertTrue(expired.waitForExistence(timeout: 5))
+        XCTAssertTrue(soon.exists && later.exists)
+        XCTAssertFalse(element("inventory.section.expiry.today", in: app).exists)
+        XCTAssertLessThan(expired.frame.minY, soon.frame.minY)
+        XCTAssertLessThan(soon.frame.minY, later.frame.minY)
+        let bread = app.buttons["inventory.row.Bread"]
+        XCTAssertTrue(bread.frame.minY > expired.frame.minY && bread.frame.minY < soon.frame.minY)
+        XCTAssertFalse(element("inventory.index", in: app).exists)
+        attachScreenshot(app, named: "inventory-by-expiry")
+
+        chooseGrouping("By location", in: app)
+        XCTAssertTrue(element("inventory.section.expiring", in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(element("inventory.section.Fridge", in: app).exists)
+    }
+
     func testSectionsExpiringFirstThenLocations() {
         let app = openInventory()
         let expiring = element("inventory.section.expiring", in: app)

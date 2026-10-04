@@ -89,7 +89,7 @@ struct SearchView: View {
             }
             .overlay(alignment: .trailing) {
                 if showsIndex(model) {
-                    SectionIndexBar(letters: model.sections.map(\.id)) { letter in
+                    SectionIndexBar(letters: model.sections.map(\.id), identifier: "products.index") { letter in
                         proxy.scrollTo(letter, anchor: .top)
                     }
                     .padding(.trailing, 2)
