@@ -5,7 +5,7 @@ import XCTest
 final class AccessibilityAuditTests: XCTestCase {
     enum Screen: String {
         case inventory, stockSheet, storePicker, search, productDetail, productForm, shopping, listManager, addItem, purchase,
-             spaceSettings, introduction, gate
+             inventoryByName, shoppingByName, spaceSettings, introduction, gate
     }
 
     enum Mode: String, CaseIterable {
@@ -118,6 +118,8 @@ final class AccessibilityAuditTests: XCTestCase {
     @MainActor func testProductDetail() { audit(.productDetail) }
     @MainActor func testProductForm() { audit(.productForm) }
     @MainActor func testShopping() { audit(.shopping) }
+    @MainActor func testInventoryByName() { audit(.inventoryByName) }
+    @MainActor func testShoppingByName() { audit(.shoppingByName) }
     @MainActor func testListManager() { audit(.listManager) }
     @MainActor func testAddItem() { audit(.addItem) }
     @MainActor func testPurchase() { audit(.purchase) }
@@ -183,7 +185,7 @@ final class AccessibilityAuditTests: XCTestCase {
     private func launch(for screen: Screen, mode: Mode) -> XCUIApplication {
         var extra = ["-uiTestSeed"]
         switch screen {
-        case .shopping, .listManager, .addItem, .purchase: extra.append("-uiTestSeedStoreItems")
+        case .shopping, .shoppingByName, .listManager, .addItem, .purchase: extra.append("-uiTestSeedStoreItems")
         case .introduction: extra.append("-resetIntroduction")
         default: break
         }
@@ -232,6 +234,18 @@ final class AccessibilityAuditTests: XCTestCase {
         let tab = app.tabBars.buttons[label]
         guard tab.waitForExistence(timeout: 10) else { return false }
         tab.tap()
+        return true
+    }
+
+    /// "•••" → "By name". A menu item's identifier is not reachable, so it goes by the English label.
+    @MainActor
+    private func chooseByName(menu: String, in app: XCUIApplication) -> Bool {
+        let more = app.buttons[menu].firstMatch
+        guard more.waitForExistence(timeout: 5) else { return false }
+        more.tap()
+        let option = app.buttons["By name"].firstMatch
+        guard option.waitForExistence(timeout: 3) else { return false }
+        option.tap()
         return true
     }
 
@@ -292,6 +306,18 @@ final class AccessibilityAuditTests: XCTestCase {
             return app.textFields["product.form.name"].waitForExistence(timeout: 5)
         case .shopping:
             return tapTab("Shopping", in: app) && app.buttons["shopping.filter.all"].waitForExistence(timeout: 10)
+        case .inventoryByName:
+            guard tapTab("Inventory", in: app), app.buttons["inventory.row.Bread"].waitForExistence(timeout: 10) else {
+                return false
+            }
+            return chooseByName(menu: "inventory.more", in: app)
+                && app.descendants(matching: .any)["inventory.section.letter.B"].waitForExistence(timeout: 5)
+        case .shoppingByName:
+            guard tapTab("Shopping", in: app), app.buttons["shopping.filter.all"].waitForExistence(timeout: 10) else {
+                return false
+            }
+            return chooseByName(menu: "shopping.more", in: app)
+                && app.descendants(matching: .any)["shopping.section.letter.M"].waitForExistence(timeout: 5)
         case .listManager:
             guard tapTab("Shopping", in: app), app.buttons["shopping.more"].firstMatch.waitForExistence(timeout: 10) else {
                 return false
