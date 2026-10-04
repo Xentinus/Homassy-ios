@@ -286,6 +286,32 @@ final class ShoppingUITests: XCTestCase {
     }
 
     @MainActor
+    func testGroupingByNameShowsLettersTheIndexAndTheStore() {
+        let app = XCUIApplication.launchedOnShoppingTab(extraArguments: ["-uiTestSeedStoreItems"])
+        XCTAssertTrue(app.buttons["shopping.item.Napkins"].waitForExistence(timeout: 10))
+        app.chooseShoppingGrouping("By name")
+
+        for letter in ["M", "N", "S"] {
+            XCTAssertTrue(app.descendants(matching: .any)["shopping.section.letter.\(letter)"].waitForExistence(timeout: 5), letter)
+        }
+        let napkins = app.buttons["shopping.item.Napkins"]
+        XCTAssertTrue(napkins.label.contains("Corner Shop"), "7A: the store is on the card")
+        XCTAssertFalse(napkins.label.contains("Party"))
+
+        let index = app.descendants(matching: .any)["shopping.index"]
+        XCTAssertTrue(index.exists)
+        index.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.99)).press(forDuration: 0.2)
+        XCTAssertTrue(app.buttons["shopping.item.Soap"].isHittable)
+        attachScreenshot(app, named: "shopping-by-name")
+
+        let soap = app.buttons["shopping.item.Soap"]
+        soap.swipeLeft()
+        let delete = app.buttons["Delete"].firstMatch
+        if delete.waitForExistence(timeout: 2) { delete.tap() }
+        XCTAssertTrue(soap.waitForNonExistence(timeout: 5), "swipe delete still works by name")
+    }
+
+    @MainActor
     func testManageListsRenamesAndDeletes() {
         let app = XCUIApplication.launchedOnShoppingTab()
         app.createShoppingList(named: "Weekly")

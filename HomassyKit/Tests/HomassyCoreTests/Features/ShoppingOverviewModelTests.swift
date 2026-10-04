@@ -34,12 +34,36 @@ struct ShoppingOverviewModelTests {
         case .list(let chip): "list:\(chip.name)"
         case .store(_, let title, let distance): "store:\(title)" + (distance.map { "@\(Int($0))" } ?? "")
         case .noStore: "noStore"
+        case .letter(let key): "letter:\(key)"
         }
     }
 
     private func names(_ section: ShoppingOverviewModel.Section) -> [String] { section.rows.map(\.name) }
 
     // MARK: Lists and chips
+
+    @Test func nameGroupingHasLetterSectionsAcrossLists() throws {
+        let heti = try stack.service.createList(name: "Heti", in: stack.space)
+        let drog = try stack.service.createList(name: "Drogéria", in: stack.space)
+        try stack.service.addItem(to: heti, customName: "banán")
+        try stack.service.addItem(to: drog, customName: "Öblítő")
+        try stack.service.addItem(to: heti, customName: "Avokádó")
+        try stack.service.addItem(to: heti, customName: "alma")
+        try stack.service.addItem(to: drog, customName: "fogkrém")
+
+        let model = makeModel()
+        model.grouping = .name
+        #expect(model.sections.map(label) == ["letter:A", "letter:B", "letter:F", "letter:O"])
+        #expect(model.sections.map(names) == [["alma", "Avokádó"], ["banán"], ["fogkrém"], ["Öblítő"]])
+        #expect(model.sections.map(\.letter) == ["A", "B", "F", "O"])
+        #expect(model.sections.first?.id == "letter-A")
+        #expect(!model.canReorder && !model.showsListHeaders)
+        #expect(model.showsLetterIndex)
+        #expect(ShoppingHomePreferences(defaults: defaults).grouping == .name)
+
+        model.filter = drog.publicId
+        #expect(model.sections.map(label) == ["letter:F", "letter:O"])
+    }
 
     @Test func listGroupingHasASectionPerListInListOrder() throws {
         let heti = try stack.service.createList(name: "Heti", color: "#e0533b", in: stack.space)

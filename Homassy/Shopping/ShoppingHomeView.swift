@@ -3,9 +3,9 @@ import HomassyCore
 import SwiftUI
 
 /// The Shopping tab (P4-03a, the Reminders "All" pattern): every item still to buy as wide cards in one column
-/// (P2-08d), one section per list or per store, and a list filter strip under the title. A tap on a card opens the
-/// purchase sheet; swipe left deletes and swipe right edits, long press offers both (undoable); dragging reorders
-/// within a list. The "•••" menu manages lists and switches the grouping; `+` adds an item or a list.
+/// (P2-08d), one section per list, per store or per initial letter (with a letter index, P2-08e), and a list filter
+/// strip under the title. A tap on a card opens the purchase sheet; swipe left deletes and swipe right edits, long
+/// press offers both (undoable); dragging reorders within a list. The "•••" menu manages lists and switches the grouping; `+` adds an item or a list.
 struct ShoppingHomeView: View {
     struct Target: Identifiable { let id: UUID }
     struct AddRequest: Identifiable {
@@ -124,6 +124,7 @@ struct ShoppingHomeView: View {
                     Picker("shopping.grouping", selection: $model.grouping) {
                         Label("shopping.grouping.list", systemImage: "list.bullet").tag(ShoppingGrouping.list)
                         Label("shopping.grouping.store", systemImage: "storefront").tag(ShoppingGrouping.store)
+                        Label("shopping.grouping.name", systemImage: "textformat.abc").tag(ShoppingGrouping.name)
                     }
                     .pickerStyle(.inline)
                 } header: {
@@ -161,27 +162,41 @@ struct ShoppingHomeView: View {
                     .buttonStyle(.borderedProminent)
             }
         } else {
-            List {
-                ForEach(model.sections) { section in
-                    SwiftUI.Section {
-                        ForEach(section.rows) { card($0) }
-                            .onMove(perform: model.canReorder ? { source, destination in
-                                withAnimation(reduceMotion ? nil : .snappy) {
-                                    _ = model.move(fromOffsets: source, toOffset: destination, in: section)
-                                }
-                            } : nil)
-                    } header: {
-                        if showsHeader(section) { header(section) }
+            ScrollViewReader { proxy in
+                List {
+                    ForEach(model.sections) { section in
+                        SwiftUI.Section {
+                            ForEach(section.rows) { card($0) }
+                                .onMove(perform: model.canReorder ? { source, destination in
+                                    withAnimation(reduceMotion ? nil : .snappy) {
+                                        _ = model.move(fromOffsets: source, toOffset: destination, in: section)
+                                    }
+                                } : nil)
+                        } header: {
+                            if showsHeader(section) { header(section) }
+                        }
                     }
                 }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color(uiColor: .systemGroupedBackground))
-            .onGeometryChange(for: CGFloat.self) { $0.size.width + $0.safeAreaInsets.leading + $0.safeAreaInsets.trailing } action: { listWidth = $0 }
-            .contentMargins(.horizontal, columnInset, for: .scrollContent)
-            .overlay {
-                if model.sections.isEmpty { emptyItems }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .background(Color(uiColor: .systemGroupedBackground))
+                .onGeometryChange(for: CGFloat.self) { $0.size.width + $0.safeAreaInsets.leading + $0.safeAreaInsets.trailing } action: { listWidth = $0 }
+                .contentMargins(.leading, columnInset, for: .scrollContent)
+                .contentMargins(.trailing, trailingInset, for: .scrollContent)
+                .overlay {
+                    if model.sections.isEmpty { emptyItems }
+                }
+                .overlay(alignment: .trailing) {
+                    if showsIndex {
+                        // A List does not scroll to a header id, so a letter scrolls to its first row (as the picker does).
+                        SectionIndexBar(letters: model.sections.compactMap(\.letter), identifier: "shopping.index") { letter in
+                            if let first = model.sections.first(where: { $0.letter == letter })?.rows.first {
+                                proxy.scrollTo(first.id, anchor: .top)
+                            }
+                        }
+                        .padding(.trailing, 2)
+                    }
+                }
             }
         }
     }
@@ -212,6 +227,12 @@ struct ShoppingHomeView: View {
     /// scroll content margins count from the screen edge, so the width includes the safe area.
     private var columnInset: CGFloat { max(16, (listWidth - CardColumn.maxWidth) / 2) }
 
+    /// As on Search: name grouping with at least two letters, and not at accessibility sizes.
+    private var showsIndex: Bool { model.showsLetterIndex && !dynamicTypeSize.isAccessibilitySize }
+
+    /// The letter index needs 28 pt on the trailing side.
+    private var trailingInset: CGFloat { showsIndex ? max(columnInset, 28) : columnInset }
+
     private func showsHeader(_ section: ShoppingOverviewModel.Section) -> Bool {
         if case .list = section.kind { return model.showsListHeaders }
         return true
@@ -237,7 +258,8 @@ struct ShoppingHomeView: View {
         .font(.headline)
         .foregroundStyle(.primary)          // a plain-list header would otherwise dim the title and the count
         .padding(.top, 8)
-        .padding(.horizontal, columnInset)
+        .padding(.leading, columnInset)
+        .padding(.trailing, trailingInset)
         .listRowInsets(EdgeInsets())
         .textCase(nil)
         .background(Color(uiColor: .systemGroupedBackground))
@@ -258,6 +280,8 @@ struct ShoppingHomeView: View {
                 Text(verbatim: title)
             case .noStore:
                 Text("shopping.section.noStore").foregroundStyle(.secondary)
+            case .letter(let key):
+                Text(verbatim: key)
             }
         }
     }
@@ -285,6 +309,7 @@ struct ShoppingHomeView: View {
             parts = [title]
             if let distance { parts.append(StoreLabel.distanceText(distance)) }
         case .noStore: parts = [String(localized: "shopping.section.noStore")]
+        case .letter(let key): parts = [key]
         }
         parts.append(String(localized: "shopping.lists.remaining \(section.rows.count)"))
         return parts.joined(separator: ", ")
@@ -295,6 +320,7 @@ struct ShoppingHomeView: View {
         case .list(let chip): "shopping.section.list.\(chip.name)"
         case .store(_, let title, _): "shopping.section.store.\(title)"
         case .noStore: "shopping.section.noStore"
+        case .letter(let key): "shopping.section.letter.\(key)"
         }
     }
 

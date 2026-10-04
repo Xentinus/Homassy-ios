@@ -2,8 +2,9 @@ import Foundation
 import Observation
 
 /// The Shopping tab (P4-03a, the Reminders "All" pattern): every item still to buy in a space, as one section per
-/// list or per store, with an optional list filter. Replaces the per-list `ShoppingListModel`; list management
-/// stays in `ShoppingListsModel`, and adding is `AddItemFlowModel`. Bought items leave the list (2026-09-25).
+/// list, per store or per initial letter, with an optional list filter. Replaces the per-list `ShoppingListModel`;
+/// list management stays in `ShoppingListsModel`, and adding is `AddItemFlowModel`. Bought items leave the list
+/// (2026-09-25).
 @MainActor
 @Observable
 public final class ShoppingOverviewModel {
@@ -38,6 +39,7 @@ public final class ShoppingOverviewModel {
             case list(ListChip)
             case store(id: UUID, title: String, distance: Double?)
             case noStore
+            case letter(String)
         }
 
         public let kind: Kind
@@ -48,7 +50,14 @@ public final class ShoppingOverviewModel {
             case .list(let chip): "list-\(chip.id.uuidString)"
             case .store(let id, _, _): "store-\(id.uuidString)"
             case .noStore: "no-store"
+            case .letter(let key): "letter-\(key)"
             }
+        }
+
+        /// The key of a letter section, for the letter index.
+        public var letter: String? {
+            if case .letter(let key) = kind { return key }
+            return nil
         }
     }
 
@@ -121,6 +130,7 @@ public final class ShoppingOverviewModel {
     public var showsStrip: Bool { lists.count >= 2 }
     public var showsListHeaders: Bool { grouping == .list && filter == nil && showsStrip }
     public var canReorder: Bool { grouping == .list }
+    public var showsLetterIndex: Bool { grouping == .name && sections.count > 1 }
 
     public var sections: [Section] {
         let rows = visibleRows.filter { filter == nil || $0.listID == filter }
@@ -143,6 +153,8 @@ public final class ShoppingOverviewModel {
             }
             .sorted(by: Self.storeOrder)
             return loose.isEmpty ? stores : stores + [Section(kind: .noStore, rows: loose)]
+        case .name:
+            return LetterSections.group(rows, locale: locale, name: \.name).map { Section(kind: .letter($0.key), rows: $0.values) }
         }
     }
 

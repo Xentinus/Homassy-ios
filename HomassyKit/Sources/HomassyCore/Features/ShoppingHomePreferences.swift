@@ -1,8 +1,8 @@
 import Foundation
 
-/// How the Shopping tab groups the cards (P4-03a): one section per list, or per store.
+/// How the Shopping tab groups the cards: one section per list (P4-03a), per store, or per initial letter (P2-08e).
 public enum ShoppingGrouping: String, Sendable, CaseIterable {
-    case list, store
+    case list, store, name
 }
 
 /// The Shopping tab's remembered choices: the list filter per space, and the grouping per device.

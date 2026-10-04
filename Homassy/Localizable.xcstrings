@@ -7868,6 +7868,29 @@
         }
       }
     },
+    "shopping.grouping.name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach Name"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By name"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Név szerint"
+          }
+        }
+      }
+    },
     "shopping.grouping.store" : {
       "extractionState" : "manual",
       "localizations" : {
