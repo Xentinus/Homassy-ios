@@ -17,13 +17,13 @@ public enum NotificationActions {
         return nil
     }
 
-    /// Expiry summaries open Inventory, store reminders Shopping, on the space in `userInfo`. Nil for a dismissal
+    /// Expiry summaries open Inventory grouped by expiry, store reminders Shopping, on the space in `userInfo`. Nil for a dismissal
     /// or a notification that is not ours.
     public static func destination(actionIdentifier: String, requestIdentifier: String,
                                    spaceID: UUID?) -> AppDestination? {
         guard actionIdentifier != UNNotificationDismissActionIdentifier,
               let category = category(forIdentifier: requestIdentifier) else { return nil }
-        return category == storeCategory ? .shopping(spaceID: spaceID) : .inventory(spaceID: spaceID)
+        return category == storeCategory ? .shopping(spaceID: spaceID) : .inventoryExpiring(spaceID: spaceID)
     }
 
     /// The space `SystemNotificationCenter` put in `userInfo`. Pure, so the delegate can call it on its own thread.

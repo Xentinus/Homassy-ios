@@ -51,9 +51,27 @@ final class QuickActionsUITests: XCTestCase {
         XCTAssertFalse(app.textFields["shopping.add.query"].waitForExistence(timeout: 2))
     }
 
-    func testExpiringSoonOpensInventoryAtTheTop() {
+    private func element(_ identifier: String, in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)[identifier].firstMatch
+    }
+
+    /// P2-08e: the quick action shows what expires, so it switches Inventory to the expiry bands (the seed has Bread
+    /// expired yesterday, Milk in 2 days and Apples in 10).
+    func testExpiringSoonOpensInventoryByExpiry() {
         let app = launch("com.homassy.app.quick.expiring")
         XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.descendants(matching: .any)["inventory.section.expiring"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(element("inventory.section.expiry.expired", in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(element("inventory.section.expiry.soon", in: app).exists)
+        XCTAssertFalse(element("inventory.section.expiring", in: app).exists, "not the location grouping")
+    }
+
+    /// The same from a remembered "By name": `-uiTestInventoryGrouping name` stands in for having picked it earlier,
+    /// because the quick action fires at launch, before a test could use the menu.
+    func testExpiringSoonLeavesNameGroupingForExpiry() {
+        let app = launch("com.homassy.app.quick.expiring", extra: ["-uiTestInventoryGrouping", "name"])
+        XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
+        XCTAssertTrue(element("inventory.section.expiry.expired", in: app).waitForExistence(timeout: 5))
+        XCTAssertFalse(element("inventory.section.letter.B", in: app).exists, "the letter sections are gone")
+        XCTAssertFalse(element("inventory.index", in: app).exists)
     }
 }

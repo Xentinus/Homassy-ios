@@ -11,10 +11,10 @@ struct NotificationActionsTests {
         NotificationActions.destination(actionIdentifier: action, requestIdentifier: request, spaceID: space)
     }
 
-    @Test func summaryTapOpensInventoryOnItsSpace() {
-        #expect(destination(UNNotificationDefaultActionIdentifier, "daily-2026-10-01") == .inventory(spaceID: space))
-        #expect(destination(UNNotificationDefaultActionIdentifier, "weekly-2026-10-05") == .inventory(spaceID: space))
-        #expect(destination(UNNotificationDefaultActionIdentifier, "preview-daily-2026-10-01") == .inventory(spaceID: space))
+    @Test func summaryTapOpensInventoryByExpiryOnItsSpace() {
+        #expect(destination(UNNotificationDefaultActionIdentifier, "daily-2026-10-01") == .inventoryExpiring(spaceID: space))
+        #expect(destination(UNNotificationDefaultActionIdentifier, "weekly-2026-10-05") == .inventoryExpiring(spaceID: space))
+        #expect(destination(UNNotificationDefaultActionIdentifier, "preview-daily-2026-10-01") == .inventoryExpiring(spaceID: space))
     }
 
     @Test func storeReminderTapOpensShopping() {

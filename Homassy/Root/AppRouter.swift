@@ -29,6 +29,8 @@ final class AppRouter {
     var pending: AppDestination?
     var pathRequest: PathRequest?
     var scanRequested = false
+    /// Show the Inventory grouped by expiry (the Expiring Soon quick action and the expiry notifications, P2-08e).
+    var inventoryExpiryRequested = false
     var shoppingRequest: ShoppingRequest?
     /// The region of the store reminder the user tapped (N-04): the shopping Live Activity starts for its chain there.
     var arrivalBranch: ChainBranch?

@@ -38,6 +38,12 @@ enum UITestHooks {
     /// restore scene storage across test launches, which would leak the previous test's tab.
     static var ignoresRestoredSceneState: Bool { isActive }
 
+    /// `-uiTestInventoryGrouping <location|name|expiry>`: the grouping Inventory starts in (P2-08e), written once the
+    /// per-launch defaults are wiped.
+    static var inventoryGrouping: InventoryGrouping? {
+        value(after: "-uiTestInventoryGrouping").flatMap(InventoryGrouping.init(rawValue:))
+    }
+
     static func contains(_ flag: String) -> Bool {
         ProcessInfo.processInfo.arguments.contains(flag)
     }

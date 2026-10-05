@@ -20,7 +20,7 @@ public enum QuickAction: String, CaseIterable, Sendable {
         case .scanBarcode:
             return .scanBarcode
         case .expiringSoon:
-            return .inventory(spaceID: space)
+            return .inventoryExpiring(spaceID: space)
         case .openList:
             guard let space, let list else { return .shopping(spaceID: space) }
             return .shoppingList(spaceID: space, listID: list)

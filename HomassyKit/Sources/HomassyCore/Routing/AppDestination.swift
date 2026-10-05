@@ -5,8 +5,10 @@ import HomassyShared
 /// Where a Home Screen quick action or a notification tap takes the user (N-02). HomassyCore decides which
 /// destination an input means; the app maps it onto tabs, filters and sheets (`AppRouter`).
 public enum AppDestination: Equatable, Sendable {
-    /// The Inventory tab at its root, where "Expiring soon" is the first section.
+    /// The Inventory tab at its root, in whatever grouping is remembered.
     case inventory(spaceID: UUID?)
+    /// The Inventory tab grouped by expiry (the "Expiring soon" quick action and the expiry notifications, P2-08e).
+    case inventoryExpiring(spaceID: UUID?)
     /// The Shopping home with its current filter.
     case shopping(spaceID: UUID?)
     /// The Shopping home filtered to one list.
@@ -53,6 +55,8 @@ extension ServiceContainer {
         switch destination {
         case .inventory(let spaceID?) where space(spaceID) == nil:
             return .inventory(spaceID: nil)
+        case .inventoryExpiring(let spaceID?) where space(spaceID) == nil:
+            return .inventoryExpiring(spaceID: nil)
         case .shopping(let spaceID?) where space(spaceID) == nil:
             return .shopping(spaceID: nil)
         case let .shoppingList(spaceID, listID):
@@ -70,7 +74,7 @@ extension ServiceContainer {
             return destination
         case let .shoppingByStore(spaceID):
             return space(spaceID) == nil ? .shopping(spaceID: nil) : destination
-        case .inventory, .shopping, .scanBarcode:
+        case .inventory, .inventoryExpiring, .shopping, .scanBarcode:
             return destination
         }
     }

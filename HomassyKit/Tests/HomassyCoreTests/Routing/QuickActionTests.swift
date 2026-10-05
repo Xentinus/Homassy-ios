@@ -23,7 +23,8 @@ struct QuickActionTests {
 
     @Test func typesMapToDestinations() {
         #expect(QuickAction.destination(type: "com.homassy.app.quick.scan", userInfo: [:]) == .scanBarcode)
-        #expect(QuickAction.destination(type: "com.homassy.app.quick.expiring", userInfo: [:]) == .inventory(spaceID: nil))
+        #expect(QuickAction.destination(type: "com.homassy.app.quick.expiring", userInfo: [:]) == .inventoryExpiring(spaceID: nil))
+        #expect(QuickAction.destination(type: "com.homassy.app.quick.expiring", userInfo: info) == .inventoryExpiring(spaceID: space))
         #expect(QuickAction.destination(type: "com.homassy.app.quick.openList", userInfo: info)
                 == .shoppingList(spaceID: space, listID: list))
         #expect(QuickAction.destination(type: "com.homassy.app.quick.addToList", userInfo: info)
@@ -129,5 +130,7 @@ struct QuickActionTests {
         #expect(services.validated(.scanBarcode) == .scanBarcode)
         #expect(services.validated(.inventory(spaceID: nil)) == .inventory(spaceID: nil))
         #expect(services.validated(.inventory(spaceID: UUID())) == .inventory(spaceID: nil))
+        #expect(services.validated(.inventoryExpiring(spaceID: nil)) == .inventoryExpiring(spaceID: nil))
+        #expect(services.validated(.inventoryExpiring(spaceID: UUID())) == .inventoryExpiring(spaceID: nil))
     }
 }

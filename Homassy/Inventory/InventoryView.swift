@@ -26,8 +26,10 @@ struct InventoryView: View {
         .task(id: selection.selectedSpaceID) {
             rebuildModel()
             consumeScanRequest()
+            consumeExpiryRequest()
         }
         .onChange(of: router.scanRequested, initial: true) { consumeScanRequest() }
+        .onChange(of: router.inventoryExpiryRequested, initial: true) { consumeExpiryRequest() }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange,
                                                         object: services.context)) { _ in model?.reload() }
         .barcodeFlow(isScanning: $scanning, space: model?.space)
@@ -190,6 +192,14 @@ struct InventoryView: View {
         guard router.scanRequested, model != nil else { return }
         router.scanRequested = false
         scanning = true
+    /// The Expiring Soon quick action and the expiry notifications (P2-08e) switch to expiry grouping, which is then
+    /// remembered like a pick from the menu. Waits for the model, like the scan request.
+    private func consumeExpiryRequest() {
+        guard router.inventoryExpiryRequested, let model else { return }
+        router.inventoryExpiryRequested = false
+        model.grouping = .expiry
+    }
+
     }
 
     private func rebuildModel() {

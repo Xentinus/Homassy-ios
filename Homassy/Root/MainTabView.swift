@@ -76,6 +76,11 @@ struct MainTabView: View {
             if let space { selection.selectedSpaceID = space }
             selectedTab = .inventory
             router.pathRequest = AppRouter.PathRequest(tab: .inventory)
+        case .inventoryExpiring(let space):
+            if let space { selection.selectedSpaceID = space }
+            selectedTab = .inventory
+            router.pathRequest = AppRouter.PathRequest(tab: .inventory)
+            router.inventoryExpiryRequested = true
         case .shoppingByStore(let space):
             selection.selectedSpaceID = space
             selectedTab = .shopping
