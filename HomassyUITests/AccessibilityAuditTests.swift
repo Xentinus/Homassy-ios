@@ -5,7 +5,8 @@ import XCTest
 final class AccessibilityAuditTests: XCTestCase {
     enum Screen: String {
         case inventory, stockSheet, storePicker, search, productDetail, productForm, shopping, listManager, addItem, purchase,
-             inventoryByName, shoppingByName, spaceSettings, introduction, gate
+             inventoryByName, inventoryByExpiry, shoppingByName, productHistory, categoryPicker, spaceSettings,
+             introduction, gate
     }
 
     enum Mode: String, CaseIterable {
@@ -119,7 +120,10 @@ final class AccessibilityAuditTests: XCTestCase {
     @MainActor func testProductForm() { audit(.productForm) }
     @MainActor func testShopping() { audit(.shopping) }
     @MainActor func testInventoryByName() { audit(.inventoryByName) }
+    @MainActor func testInventoryByExpiry() { audit(.inventoryByExpiry) }
     @MainActor func testShoppingByName() { audit(.shoppingByName) }
+    @MainActor func testProductHistory() { audit(.productHistory) }
+    @MainActor func testCategoryPicker() { audit(.categoryPicker) }
     @MainActor func testListManager() { audit(.listManager) }
     @MainActor func testAddItem() { audit(.addItem) }
     @MainActor func testPurchase() { audit(.purchase) }
@@ -237,13 +241,14 @@ final class AccessibilityAuditTests: XCTestCase {
         return true
     }
 
-    /// "•••" → "By name". A menu item's identifier is not reachable, so it goes by the English label.
+    /// "•••" → a grouping ("By name", "By expiry"). A menu item's identifier is not reachable, so it goes by the
+    /// English label.
     @MainActor
-    private func chooseByName(menu: String, in app: XCUIApplication) -> Bool {
+    private func chooseGrouping(_ label: String, menu: String, in app: XCUIApplication) -> Bool {
         let more = app.buttons[menu].firstMatch
         guard more.waitForExistence(timeout: 5) else { return false }
         more.tap()
-        let option = app.buttons["By name"].firstMatch
+        let option = app.buttons[label].firstMatch
         guard option.waitForExistence(timeout: 3) else { return false }
         option.tap()
         return true
@@ -266,6 +271,35 @@ final class AccessibilityAuditTests: XCTestCase {
         guard reveal(addLot, in: app) else { return false }
         addLot.tap()
         return app.buttons["lot.2.remove"].waitForExistence(timeout: 3)
+    }
+
+    /// Eggs' full history page: the seed has one event, and the page link shows from four, so eat three eggs first.
+    @MainActor
+    private func openFullHistory(in app: XCUIApplication) -> Bool {
+        let eggs = app.buttons["product.row.Eggs"]
+        guard tapTab("Search", in: app), reveal(eggs, in: app) else { return false }
+        eggs.tap()
+        guard app.navigationBars["Eggs"].waitForExistence(timeout: 5) else { return false }
+        for _ in 0..<3 {
+            let item = app.buttons["stock.item"].firstMatch
+            guard reveal(item, in: app) else { return false }
+            item.tap()
+            let consume = app.buttons["stock.consume"]
+            guard consume.waitForExistence(timeout: 3) else { return false }
+            consume.tap()
+            let field = app.textFields["amount.field"]
+            guard field.waitForExistence(timeout: 5) else { return false }
+            // The text is centred: tap the right end so the cursor lands after it.
+            field.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
+            let current = field.value as? String ?? ""
+            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count) + "1")
+            app.buttons["amount.confirm"].tap()
+            guard field.waitForNonExistence(timeout: 3) else { return false }
+        }
+        let showAll = app.buttons["history.showAll"]
+        guard reveal(showAll, in: app) else { return false }
+        showAll.tap()
+        return app.descendants(matching: .any)["history.page"].waitForExistence(timeout: 5)
     }
 
     @MainActor
@@ -304,19 +338,38 @@ final class AccessibilityAuditTests: XCTestCase {
             guard edit.waitForExistence(timeout: 5) else { return false }
             edit.tap()
             return app.textFields["product.form.name"].waitForExistence(timeout: 5)
+        case .productHistory:
+            return openFullHistory(in: app)
+        case .categoryPicker:
+            let milk = app.buttons["product.row.Milk"]
+            guard tapTab("Search", in: app), reveal(milk, in: app) else { return false }
+            milk.tap()
+            let edit = app.buttons["product.detail.edit"]
+            guard edit.waitForExistence(timeout: 5) else { return false }
+            edit.tap()
+            let category = app.buttons["product.form.category"]
+            guard reveal(category, in: app) else { return false }
+            category.tap()
+            return app.buttons["category.none"].waitForExistence(timeout: 5)
         case .shopping:
             return tapTab("Shopping", in: app) && app.buttons["shopping.filter.all"].waitForExistence(timeout: 10)
         case .inventoryByName:
             guard tapTab("Inventory", in: app), app.buttons["inventory.row.Bread"].waitForExistence(timeout: 10) else {
                 return false
             }
-            return chooseByName(menu: "inventory.more", in: app)
+            return chooseGrouping("By name", menu: "inventory.more", in: app)
                 && app.descendants(matching: .any)["inventory.section.letter.B"].waitForExistence(timeout: 5)
+        case .inventoryByExpiry:
+            guard tapTab("Inventory", in: app), app.buttons["inventory.row.Bread"].waitForExistence(timeout: 10) else {
+                return false
+            }
+            return chooseGrouping("By expiry", menu: "inventory.more", in: app)
+                && app.descendants(matching: .any)["inventory.section.expiry.expired"].waitForExistence(timeout: 5)
         case .shoppingByName:
             guard tapTab("Shopping", in: app), app.buttons["shopping.filter.all"].waitForExistence(timeout: 10) else {
                 return false
             }
-            return chooseByName(menu: "shopping.more", in: app)
+            return chooseGrouping("By name", menu: "shopping.more", in: app)
                 && app.descendants(matching: .any)["shopping.section.letter.M"].waitForExistence(timeout: 5)
         case .listManager:
             guard tapTab("Shopping", in: app), app.buttons["shopping.more"].firstMatch.waitForExistence(timeout: 10) else {
