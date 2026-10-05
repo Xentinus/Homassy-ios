@@ -13,6 +13,7 @@ struct AmountSheet: View {
     let onConfirm: (Decimal, UUID?) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var query = ""
     @State private var selectedTarget: LocationOption?
 
@@ -88,7 +89,13 @@ struct AmountSheet: View {
                 }
             }
         }
-        .presentationDetents(purpose == .consume ? [.medium, .large] : [.large])
+        .presentationDetents(detents)
+    }
+
+    /// Consume opens at half height. At the accessibility text sizes the keyboard would lift a half sheet to full
+    /// height, and the first tap on Consume then only lowered it again (X-04), so those sizes open at full height.
+    private var detents: Set<PresentationDetent> {
+        purpose == .consume && !dynamicTypeSize.isAccessibilitySize ? [.medium, .large] : [.large]
     }
 
     private var canConfirm: Bool {
