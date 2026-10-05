@@ -4,26 +4,40 @@ import SwiftUI
 struct HistoryEventRow: View {
     let row: HistoryRow
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// At the accessibility sizes the quantity goes under the kind and the date under the actor, so "Consumed" is not
+    /// hyphenated and the date does not squeeze into a narrow column beside the name (X-04).
+    private func lineLayout(spacing: CGFloat? = nil) -> AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: spacing))
+    }
+
     var body: some View {
+        let titleLine = lineLayout()
+        let actorLine = lineLayout(spacing: 6)
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: row.kind.glyph)
                 .foregroundStyle(Palette.mocha600)
                 .frame(width: 24)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                HStack(alignment: .firstTextBaseline) {
+                titleLine {
                     Text(row.kind.title)
                     Text(row.quantityText).monospacedDigit().foregroundStyle(.secondary)
                 }
                 if let places = placesText {
                     Text(places).font(.caption).foregroundStyle(.secondary)
                 }
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.memberAccent(seed: row.actorSeed))
-                        .frame(width: 8, height: 8)
-                        .accessibilityHidden(true)
-                    actorText.font(.caption)
+                actorLine {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color.memberAccent(seed: row.actorSeed))
+                            .frame(width: 8, height: 8)
+                            .accessibilityHidden(true)
+                        actorText.font(.caption)
+                    }
                     if let date = row.occurredAt {
                         Text(date, format: .dateTime.year().month().day().hour().minute())
                             .font(.caption).foregroundStyle(.secondary)
