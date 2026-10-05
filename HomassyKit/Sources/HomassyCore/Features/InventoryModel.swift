@@ -89,7 +89,9 @@ public final class InventoryModel {
     public var canEdit: Bool { inventory.canEdit(space) }
     public var isEmpty: Bool { sections.isEmpty }
 
-    public var showsLetterIndex: Bool { grouping == .name && sections.count > 1 }
+    public var showsLetterIndex: Bool { hasLetterIndex(in: sections) }
+    /// The same rule for sections the caller already built, so a view builds them once per render.
+    public func hasLetterIndex(in sections: [InventorySection]) -> Bool { grouping == .name && sections.count > 1 }
 
     public var sections: [InventorySection] {
         let context = Context(now: inventory.currentDate(), calendar: inventory.calendar, locale: locale)
@@ -142,11 +144,15 @@ public final class InventoryModel {
         }.map(\.card)
     }
 
-    /// The places of a product's items in the space's location order, "No location" last.
+    /// The places of a product's items in the space's location order, "No location" last. A location this space does
+    /// not list counts as no location, so the line is never empty.
     private func placesText(_ items: [Entry]) -> String {
+        let known = Set(locations.map(\.id))
         let ids = Set(items.map(\.locationID))
         var names = locations.filter { ids.contains($0.id) }.map(\.name)
-        if ids.contains(nil) { names.append(CoreLocalization.string("inventory.places.noLocation", locale: locale)) }
+        if items.contains(where: { $0.locationID.map { !known.contains($0) } ?? true }) {
+            names.append(CoreLocalization.string("inventory.places.noLocation", locale: locale))
+        }
         return names.joined(separator: ", ")
     }
 

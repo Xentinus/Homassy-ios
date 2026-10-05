@@ -130,7 +130,9 @@ public final class ShoppingOverviewModel {
     public var showsStrip: Bool { lists.count >= 2 }
     public var showsListHeaders: Bool { grouping == .list && filter == nil && showsStrip }
     public var canReorder: Bool { grouping == .list }
-    public var showsLetterIndex: Bool { grouping == .name && sections.count > 1 }
+    public var showsLetterIndex: Bool { hasLetterIndex(in: sections) }
+    /// The same rule for sections the caller already built, so a view builds them once per render.
+    public func hasLetterIndex(in sections: [Section]) -> Bool { grouping == .name && sections.count > 1 }
 
     public var sections: [Section] {
         let rows = visibleRows.filter { filter == nil || $0.listID == filter }

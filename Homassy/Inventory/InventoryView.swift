@@ -46,10 +46,13 @@ struct InventoryView: View {
 
     @ViewBuilder
     private func content(_ model: InventoryModel) -> some View {
+        // Built once per render: `model.sections` regroups every card, and the index and the inset both need it.
+        let sections = model.sections
+        let showsIndex = model.hasLetterIndex(in: sections) && !dynamicTypeSize.isAccessibilitySize
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8, pinnedViews: [.sectionHeaders]) {
-                    ForEach(model.sections) { section in
+                    ForEach(sections) { section in
                         Section {
                             ForEach(section.cards.map { SectionCard(section: section.id, card: $0) }) { entry in
                                 let card = entry.card
@@ -66,14 +69,14 @@ struct InventoryView: View {
                 .frame(maxWidth: CardColumn.maxWidth)
                 .frame(maxWidth: .infinity)
                 .padding(.leading)
-                .padding(.trailing, showsIndex(model) ? 28 : 16)
+                .padding(.trailing, showsIndex ? 28 : 16)
                 .padding(.bottom, 24)
             }
             // On the scroll view, not the reader: an identifier on the container would also replace the index's own.
             .accessibilityIdentifier("inventory.grid")
             .overlay(alignment: .trailing) {
-                if showsIndex(model) {
-                    SectionIndexBar(letters: model.sections.compactMap(\.letter), identifier: "inventory.index") { letter in
+                if showsIndex {
+                    SectionIndexBar(letters: sections.compactMap(\.letter), identifier: "inventory.index") { letter in
                         proxy.scrollTo(InventorySection.Kind.letter(letter), anchor: .top)
                     }
                     .padding(.trailing, 2)
@@ -85,7 +88,7 @@ struct InventoryView: View {
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .overlay {
-            if model.isEmpty {
+            if sections.isEmpty {
                 ContentUnavailableView {
                     Label("inventory.empty.title", systemImage: "refrigerator")
                 } description: {
@@ -108,18 +111,18 @@ struct InventoryView: View {
         HStack(spacing: 6) {
             switch section.kind {
             case .expiring:
-                Image(systemName: "clock").foregroundStyle(Palette.expirySoon)
+                Image(systemName: "clock").foregroundStyle(Palette.expirySoon).accessibilityHidden(true)
                 Text("inventory.section.expiring")
             case .location:
-                Image(systemName: section.isFreezer ? "snowflake" : "archivebox")
+                Image(systemName: section.isFreezer ? "snowflake" : "archivebox").accessibilityHidden(true)
                 Text(section.title ?? "")
             case .noLocation:
-                Image(systemName: "tray")
+                Image(systemName: "tray").accessibilityHidden(true)
                 Text("inventory.noLocation")
             case .letter(let key):
                 Text(verbatim: key)
             case .expiry(let bucket):
-                Image(systemName: bucket.symbol).foregroundStyle(bucket.tint)
+                Image(systemName: bucket.symbol).foregroundStyle(bucket.tint).accessibilityHidden(true)
                 Text(bucket.titleKey)
             }
         }
@@ -182,24 +185,19 @@ struct InventoryView: View {
         Binding(get: { model?.grouping ?? .location }, set: { model?.grouping = $0 })
     }
 
-    /// As on Search: name grouping with at least two letters, and not at accessibility sizes.
-    private func showsIndex(_ model: InventoryModel) -> Bool {
-        model.showsLetterIndex && !dynamicTypeSize.isAccessibilitySize
-    }
-
     /// The Scan Barcode quick action (N-02) opens the scanner once the model, and so the space, exists.
     private func consumeScanRequest() {
         guard router.scanRequested, model != nil else { return }
         router.scanRequested = false
         scanning = true
+    }
+
     /// The Expiring Soon quick action and the expiry notifications (P2-08e) switch to expiry grouping, which is then
     /// remembered like a pick from the menu. Waits for the model, like the scan request.
     private func consumeExpiryRequest() {
         guard router.inventoryExpiryRequested, let model else { return }
         router.inventoryExpiryRequested = false
         model.grouping = .expiry
-    }
-
     }
 
     private func rebuildModel() {

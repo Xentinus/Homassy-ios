@@ -29,6 +29,12 @@ struct ExpirationStatusTests {
         return budapest.date(bySettingHour: hour, minute: 0, second: 0, of: day)!
     }
 
+    /// The inventory.section.soon strings ("Within 14 days" / "14 napon belül" / "In den nächsten 14 Tagen") write the
+    /// number out, so a change here must change them (P2-08e).
+    @Test func soonDaysIsTheFourteenTheSectionTitleSays() {
+        #expect(ExpirationStatus.soonDays == 14)
+    }
+
     @Test("Boundary days", arguments: [
         (-30, ExpirationLevel.expired), (-1, .expired), (0, .critical), (1, .critical), (3, .critical),
         (4, .soon), (13, .soon), (14, .soon), (15, .ok), (400, .ok),

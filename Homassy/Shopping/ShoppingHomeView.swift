@@ -5,7 +5,8 @@ import SwiftUI
 /// The Shopping tab (P4-03a, the Reminders "All" pattern): every item still to buy as wide cards in one column
 /// (P2-08d), one section per list, per store or per initial letter (with a letter index, P2-08e), and a list filter
 /// strip under the title. A tap on a card opens the purchase sheet; swipe left deletes and swipe right edits, long
-/// press offers both (undoable); dragging reorders within a list. The "•••" menu manages lists and switches the grouping; `+` adds an item or a list.
+/// press offers both (undoable); dragging reorders within a list. The "•••" menu manages lists and switches the
+/// grouping; `+` adds an item or a list.
 struct ShoppingHomeView: View {
     struct Target: Identifiable { let id: UUID }
     struct AddRequest: Identifiable {
@@ -162,9 +163,13 @@ struct ShoppingHomeView: View {
                     .buttonStyle(.borderedProminent)
             }
         } else {
+            // Built once per render: `model.sections` regroups every row, and the headers and the index share it.
+            let sections = model.sections
+            let showsIndex = model.hasLetterIndex(in: sections) && !dynamicTypeSize.isAccessibilitySize
+            let trailingInset = showsIndex ? max(columnInset, 28) : columnInset      // the index needs 28 pt
             ScrollViewReader { proxy in
                 List {
-                    ForEach(model.sections) { section in
+                    ForEach(sections) { section in
                         SwiftUI.Section {
                             ForEach(section.rows) { card($0) }
                                 .onMove(perform: model.canReorder ? { source, destination in
@@ -173,7 +178,7 @@ struct ShoppingHomeView: View {
                                     }
                                 } : nil)
                         } header: {
-                            if showsHeader(section) { header(section) }
+                            if showsHeader(section) { header(section, trailingInset: trailingInset) }
                         }
                     }
                 }
@@ -184,13 +189,13 @@ struct ShoppingHomeView: View {
                 .contentMargins(.leading, columnInset, for: .scrollContent)
                 .contentMargins(.trailing, trailingInset, for: .scrollContent)
                 .overlay {
-                    if model.sections.isEmpty { emptyItems }
+                    if sections.isEmpty { emptyItems }
                 }
                 .overlay(alignment: .trailing) {
                     if showsIndex {
                         // A List does not scroll to a header id, so a letter scrolls to its first row (as the picker does).
-                        SectionIndexBar(letters: model.sections.compactMap(\.letter), identifier: "shopping.index") { letter in
-                            if let first = model.sections.first(where: { $0.letter == letter })?.rows.first {
+                        SectionIndexBar(letters: sections.compactMap(\.letter), identifier: "shopping.index") { letter in
+                            if let first = sections.first(where: { $0.letter == letter })?.rows.first {
                                 proxy.scrollTo(first.id, anchor: .top)
                             }
                         }
@@ -227,19 +232,14 @@ struct ShoppingHomeView: View {
     /// scroll content margins count from the screen edge, so the width includes the safe area.
     private var columnInset: CGFloat { max(16, (listWidth - CardColumn.maxWidth) / 2) }
 
-    /// As on Search: name grouping with at least two letters, and not at accessibility sizes.
-    private var showsIndex: Bool { model.showsLetterIndex && !dynamicTypeSize.isAccessibilitySize }
-
-    /// The letter index needs 28 pt on the trailing side.
-    private var trailingInset: CGFloat { showsIndex ? max(columnInset, 28) : columnInset }
-
     private func showsHeader(_ section: ShoppingOverviewModel.Section) -> Bool {
         if case .list = section.kind { return model.showsListHeaders }
         return true
     }
 
     /// One line at normal sizes; at accessibility sizes the count and distance go under the title and the title wraps.
-    @ViewBuilder private func header(_ section: ShoppingOverviewModel.Section) -> some View {
+    @ViewBuilder private func header(_ section: ShoppingOverviewModel.Section,
+                                     trailingInset: CGFloat) -> some View {
         let stacked = dynamicTypeSize.isAccessibilitySize
         Group {
             if stacked {

@@ -125,6 +125,34 @@ struct InventoryModelTests {
         #expect(names(model.sections[0]) == ["Eggs"])
     }
 
+    @Test("Under the name and expiry groupings too, pending deletions are hidden and come back on revert")
+    func pendingDeletionsAreHiddenInEveryGrouping() async throws {
+        for grouping in [InventoryGrouping.name, .expiry] {
+            let env = try ServiceTestEnvironment()
+            let eggs = try await env.makeProduct("Eggs")
+            let first = try env.stock(eggs, 2, expiresInDays: 5)
+            try env.stock(eggs, 3, expiresInDays: 30)
+            let milk = try await env.makeProduct("Milk")
+            let lone = try env.stock(milk, 1)
+            let pending = PendingDeletions()
+            let model = model(env, pending: pending, grouping: grouping)
+            func cards() -> [String: String?] {
+                Dictionary(uniqueKeysWithValues: model.sections.flatMap(\.cards).map { ($0.name, $0.stockText) })
+            }
+            #expect(cards() == ["Eggs": "5\u{00A0}db", "Milk": "1\u{00A0}db"], "\(grouping)")
+
+            let itemDeletion = try InventoryActions.delete(first, service: env.inventoryService(), pending: pending)
+            #expect(cards() == ["Eggs": "3\u{00A0}db", "Milk": "1\u{00A0}db"], "\(grouping): one item hidden")
+            itemDeletion.revert()
+            let loneDeletion = try InventoryActions.delete(lone, service: env.inventoryService(), pending: pending)
+            #expect(cards().keys.sorted() == ["Eggs"], "\(grouping): the last item hides the product's card")
+            loneDeletion.revert()
+            _ = try env.productService().deletion(of: milk, pending: pending)
+            #expect(cards().keys.sorted() == ["Eggs"], "\(grouping): a product in its undo window is hidden")
+            #expect(model.sections.allSatisfy { !$0.cards.isEmpty })
+        }
+    }
+
     @Test func canEditFollowsTheSpace() async throws {
         let env = try ServiceTestEnvironment()
         #expect(model(env).canEdit)
