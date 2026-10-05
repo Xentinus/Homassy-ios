@@ -45,6 +45,11 @@ public final class ShoppingService {
         }
     }
 
+    /// A list of any space by its `publicId` (N-03: a list window opens its list whatever space its window shows).
+    public func list(publicId: UUID) throws -> ShoppingList? {
+        try context.fetchEntities(ShoppingList.self, where: NSPredicate(format: "publicId == %@", publicId as CVarArg)).first
+    }
+
     @discardableResult
     public func createList(name: String, color: String? = nil, in space: Space) throws -> ShoppingList {
         guard !space.isGone else { throw ServiceError.notFound }

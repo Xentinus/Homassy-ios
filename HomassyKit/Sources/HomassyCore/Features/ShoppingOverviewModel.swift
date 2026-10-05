@@ -68,11 +68,20 @@ public final class ShoppingOverviewModel {
     }
 
     public let space: Space
+    /// Set in a list window (N-03): the overview shows only this list, with no strip, and its filter is neither
+    /// read from nor written to the space's remembered filter.
+    public let pinnedListID: UUID?
     public private(set) var errorMessage: String?
 
-    /// nil = "Mind". Remembered per space.
+    /// nil = "Mind". Remembered per space, except in a list window.
     public var filter: UUID? {
-        didSet { if filter != oldValue { preferences.setFilter(filter, for: space.publicId) } }
+        didSet {
+            if let pinnedListID {
+                if filter != pinnedListID { filter = pinnedListID }
+            } else if filter != oldValue {
+                preferences.setFilter(filter, for: space.publicId)
+            }
+        }
     }
 
     /// Remembered per device.
@@ -99,10 +108,11 @@ public final class ShoppingOverviewModel {
     /// the directory's observable location.
     public init(service: ShoppingService, space: Space, undoQueue: UndoQueue, pending: PendingDeletions,
                 preferences: ShoppingHomePreferences, distance: @escaping (UUID) -> Double?,
-                storeTitle: @escaping (UUID) -> String?, locale: Locale = .current, calendar: Calendar = .current,
-                now: @escaping () -> Date = { Date() }) {
+                storeTitle: @escaping (UUID) -> String?, pinnedListID: UUID? = nil, locale: Locale = .current,
+                calendar: Calendar = .current, now: @escaping () -> Date = { Date() }) {
         self.service = service
         self.space = space
+        self.pinnedListID = pinnedListID
         self.undoQueue = undoQueue
         self.pending = pending
         self.preferences = preferences
@@ -111,7 +121,7 @@ public final class ShoppingOverviewModel {
         self.locale = locale
         self.calendar = calendar
         self.now = now
-        filter = preferences.filter(for: space.publicId)
+        filter = pinnedListID ?? preferences.filter(for: space.publicId)
         grouping = preferences.grouping
         reload()
     }
@@ -127,7 +137,12 @@ public final class ShoppingOverviewModel {
 
     public var totalCount: Int { visibleRows.count }
     public var hasLists: Bool { !lists.isEmpty }
-    public var showsStrip: Bool { lists.count >= 2 }
+    public var showsStrip: Bool { pinnedListID == nil && lists.count >= 2 }
+    /// A list window whose list was deleted, in this or another window (N-03).
+    public var isPinnedListMissing: Bool {
+        guard let pinnedListID else { return false }
+        return !lists.contains { $0.id == pinnedListID }
+    }
     public var showsListHeaders: Bool { grouping == .list && filter == nil && showsStrip }
     public var canReorder: Bool { grouping == .list }
     public var showsLetterIndex: Bool { hasLetterIndex(in: sections) }
@@ -194,7 +209,9 @@ public final class ShoppingOverviewModel {
             items = map
             allRows = rows
             // Without a strip there is no way to see or clear a filter, so it must not linger.
-            if let filter, lists.count < 2 || !lists.contains(where: { $0.id == filter }) { self.filter = nil }
+            if pinnedListID == nil, let filter, lists.count < 2 || !lists.contains(where: { $0.id == filter }) {
+                self.filter = nil
+            }
         } catch {
             errorMessage = FeatureError.message(for: error)
         }

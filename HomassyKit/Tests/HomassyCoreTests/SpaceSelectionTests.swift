@@ -89,4 +89,65 @@ struct SpaceSelectionTests {
     @Test func resolvesNothingFromNoSpaces() {
         #expect(SpaceSelection(defaults: freshDefaults()).resolve(in: []) == nil)
     }
+
+    // MARK: Per window (N-03)
+
+    @Test func aRestoredWindowStartsWithItsOwnSpace() {
+        let defaults = freshDefaults()
+        let lastUsed = UUID()
+        let own = UUID()
+        defaults.set(lastUsed.uuidString, forKey: SpaceSelection.defaultsKey)
+
+        #expect(SpaceSelection(defaults: defaults, restoredID: own).selectedSpaceID == own)
+    }
+
+    @Test func aNewWindowStartsFromTheLastUsedSpace() {
+        let defaults = freshDefaults()
+        let lastUsed = UUID()
+        defaults.set(lastUsed.uuidString, forKey: SpaceSelection.defaultsKey)
+
+        #expect(SpaceSelection(defaults: defaults, restoredID: nil).selectedSpaceID == lastUsed)
+    }
+
+    @Test func windowsChooseIndependentlyAndTheLastChoiceSeedsTheNextWindow() {
+        let defaults = freshDefaults()
+        let left = SpaceSelection(defaults: defaults, restoredID: UUID())
+        let rightID = UUID()
+        let right = SpaceSelection(defaults: defaults, restoredID: rightID)
+
+        let picked = UUID()
+        left.selectedSpaceID = picked
+
+        #expect(right.selectedSpaceID == rightID)             // the other window keeps its space
+        #expect(defaults.string(forKey: SpaceSelection.defaultsKey) == picked.uuidString)
+        #expect(SpaceSelection(defaults: defaults).selectedSpaceID == picked)
+    }
+
+    @Test func restoringDoesNotChangeTheLastUsedSpace() {
+        let defaults = freshDefaults()
+        let lastUsed = UUID()
+        defaults.set(lastUsed.uuidString, forKey: SpaceSelection.defaultsKey)
+        let selection = SpaceSelection(defaults: defaults, restoredID: UUID())
+
+        let shown = UUID()
+        selection.restore(shown)
+
+        #expect(selection.selectedSpaceID == shown)
+        #expect(defaults.string(forKey: SpaceSelection.defaultsKey) == lastUsed.uuidString)
+        selection.restore(nil)
+        #expect(selection.selectedSpaceID == nil)
+        #expect(defaults.string(forKey: SpaceSelection.defaultsKey) == lastUsed.uuidString)
+    }
+
+    @Test func aRestoredWindowResolvesItsOwnSpace() throws {
+        let f = try SpaceFixture()
+        let personal = try f.store.bootstrapPersonalSpace(userRecordName: "_abc123")
+        let flat = f.makeSpace("Flat", sortOrder: 1)
+        try f.context.save()
+        let defaults = freshDefaults()
+        defaults.set(personal.publicId.uuidString, forKey: SpaceSelection.defaultsKey)
+
+        let window = SpaceSelection(defaults: defaults, restoredID: flat.publicId)
+        #expect(window.resolve(in: try f.store.allSpaces())?.objectID == flat.objectID)
+    }
 }
