@@ -1,7 +1,9 @@
 import CloudKit
 import UIKit
 
-/// SwiftUI still owns the window; this class only receives CloudKit share acceptances and Home Screen quick actions.
+/// SwiftUI still owns the windows; this class only receives CloudKit share acceptances and Home Screen quick actions.
+/// AppDelegate gives every window's scene one (main windows and N-03 list and product windows), so an invitation
+/// arrives whichever window the system picks.
 final class SceneDelegate: NSObject, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         if let metadata = connectionOptions.cloudKitShareMetadata {       // cold start from a link

@@ -10,11 +10,14 @@ struct ImportFlowView: View {
     @State private var model: ArchiveImportModel
     @Environment(\.dismiss) private var dismiss
 
-    init(url: URL, archive: ArchiveServices, undoQueue: UndoQueue, onFinished: @escaping (Space) -> Void) {
+    /// - Parameter commitPendingChanges: saves what waits in the undo windows before the import writes; with
+    ///   several iPad windows that is every window's queue (N-03).
+    init(url: URL, archive: ArchiveServices, commitPendingChanges: @escaping @MainActor () throws -> Void,
+         onFinished: @escaping (Space) -> Void) {
         self.url = url
         self.onFinished = onFinished
         _model = State(initialValue: ArchiveImportModel(importer: archive.makeImporter(), spaceStore: archive.spaceStore,
-                                                        prepare: { try undoQueue.commitAll() }))
+                                                        prepare: commitPendingChanges))
     }
 
     var body: some View {

@@ -6,7 +6,8 @@ import SwiftUI
 /// (P2-08d), one section per list, per store or per initial letter (with a letter index, P2-08e), and a list filter
 /// strip under the title. A tap on a card opens the purchase sheet; swipe left deletes and swipe right edits, long
 /// press offers both (undoable); dragging reorders within a list. The "•••" menu manages lists and switches the
-/// grouping; `+` adds an item or a list.
+/// grouping; `+` adds an item or a list. In a list window (N-03, `pinnedListID`) it shows that one list, titled
+/// with the list's name, without the strip, the space menu or list management.
 struct ShoppingHomeView: View {
     struct Target: Identifiable { let id: UUID }
     struct AddRequest: Identifiable {
@@ -23,25 +24,25 @@ struct ShoppingHomeView: View {
     @State private var listEditor: ListEditorSheet.Mode?
     @State private var managing = false
     @State private var pendingListDelete: ShoppingListsModel.Summary?
-    @State private var router = AppRouter.shared
+    @Environment(WindowRouter.self) private var router
     @State private var listWidth: CGFloat = 0
     @Environment(StoreDirectory.self) private var directory
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    init(space: Space, services: ServiceContainer, undoQueue: UndoQueue, directory: StoreDirectory) {
+    init(space: Space, services: ServiceContainer, undoQueue: UndoQueue, directory: StoreDirectory,
+         pinnedListID: UUID? = nil) {
         self.services = services
         _model = State(initialValue: ShoppingOverviewModel(
             service: services.shopping, space: space, undoQueue: undoQueue, pending: services.pendingDeletions,
             preferences: ShoppingHomePreferences(defaults: TabDefaults.store),
             distance: { directory.distance(ofStore: $0) },
-            storeTitle: { directory.compactName(ofStore: $0) }))
+            storeTitle: { directory.compactName(ofStore: $0) }, pinnedListID: pinnedListID))
         _lists = State(initialValue: ShoppingListsModel(service: services.shopping, space: space))
     }
 
     var body: some View {
-        content
-            .navigationTitle(Text("shopping.lists.title"))
+        titled(content)
             .safeAreaBar(edge: .top) {
                 if model.showsStrip {
                     ShoppingFilterStrip(chips: model.chips, total: model.totalCount, filter: $model.filter,
@@ -96,11 +97,23 @@ struct ShoppingHomeView: View {
         lists.reload()
     }
 
+    /// A list window is titled with its list and its space, like a Reminders list window (N-03).
+    @ViewBuilder private func titled(_ content: some View) -> some View {
+        if let pinned = model.pinnedListID {
+            content
+                .navigationTitle(Text(verbatim: model.chips.first { $0.id == pinned }?.name ?? ""))
+                .navigationSubtitle(Text(verbatim: model.space.name))
+        } else {
+            content.navigationTitle(Text("shopping.lists.title"))
+        }
+    }
+
     /// A quick action (N-02) filters to its list or opens the add sheet preset to it; a Live Activity tap (N-04) shows
     /// every list grouped by store. Only the home of the request's space takes it: the home of the previous space may
     /// still be on screen while the space switches.
     private func consumeShoppingRequest() {
-        guard let request = router.shoppingRequest, request.spaceID == model.space.publicId else { return }
+        guard model.pinnedListID == nil, let request = router.shoppingRequest,
+              request.spaceID == model.space.publicId else { return }
         router.shoppingRequest = nil
         if request.byStore {
             model.filter = nil
@@ -116,11 +129,13 @@ struct ShoppingHomeView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        SpaceSwitcherToolbarItem()
+        if model.pinnedListID == nil { SpaceSwitcherToolbarItem() }
         ToolbarItem(placement: .primaryAction) {
             Menu {
-                Button { managing = true } label: { Label("shopping.manage", systemImage: "list.bullet") }
-                    .accessibilityIdentifier("shopping.manage")
+                if model.pinnedListID == nil {
+                    Button { managing = true } label: { Label("shopping.manage", systemImage: "list.bullet") }
+                        .accessibilityIdentifier("shopping.manage")
+                }
                 Section {
                     Picker("shopping.grouping", selection: $model.grouping) {
                         Label("shopping.grouping.list", systemImage: "list.bullet").tag(ShoppingGrouping.list)
@@ -137,15 +152,25 @@ struct ShoppingHomeView: View {
             .accessibilityIdentifier("shopping.more")
             .disabled(!model.hasLists)
         }
-        ToolbarItem(placement: .primaryAction) {
-            AddMenu {
-                Button { adding = AddRequest(preselected: model.filter) } label: {
-                    Label("add.shoppingItem", systemImage: "plus.circle")
+        if let pinned = model.pinnedListID {
+            ToolbarItem(placement: .primaryAction) {
+                Button { adding = AddRequest(preselected: pinned) } label: {
+                    Label("add.shoppingItem", systemImage: "plus")
                 }
-                .accessibilityIdentifier("addMenu.shoppingItem")
-                .disabled(!model.hasLists)
-                Button { listEditor = .create } label: { Label("add.shoppingList", systemImage: "list.bullet") }
-                    .accessibilityIdentifier("addMenu.shoppingList")
+                .accessibilityIdentifier("shopping.window.add")
+                .disabled(model.isPinnedListMissing)
+            }
+        } else {
+            ToolbarItem(placement: .primaryAction) {
+                AddMenu {
+                    Button { adding = AddRequest(preselected: model.filter) } label: {
+                        Label("add.shoppingItem", systemImage: "plus.circle")
+                    }
+                    .accessibilityIdentifier("addMenu.shoppingItem")
+                    .disabled(!model.hasLists)
+                    Button { listEditor = .create } label: { Label("add.shoppingList", systemImage: "list.bullet") }
+                        .accessibilityIdentifier("addMenu.shoppingList")
+                }
             }
         }
     }
@@ -153,7 +178,9 @@ struct ShoppingHomeView: View {
     // MARK: Content
 
     @ViewBuilder private var content: some View {
-        if !model.hasLists {
+        if model.isPinnedListMissing {
+            ContentUnavailableView("shopping.list.missing", systemImage: "questionmark.folder")
+        } else if !model.hasLists {
             ContentUnavailableView {
                 Label("shopping.lists.empty.title", systemImage: "cart")
             } description: {

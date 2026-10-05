@@ -6,7 +6,8 @@ import Observation
 
 /// The single composition root. `AppModel.shared` is the only instance outside previews:
 /// `HomassyApp` injects it.
-/// Later tasks add stored properties here: `selection` (P1-07), `undoQueue` (P1-08), `services` (P2-05).
+/// Later tasks add stored properties here: `undoQueues` (N-03; P1-08's single queue before), `services` (P2-05).
+/// The selected space and the undo queue are per window since N-03 (`SceneRoot`).
 @MainActor
 @Observable
 final class AppModel {
@@ -58,8 +59,15 @@ final class AppModel {
     let spaceStore: SpaceStore
     let accountGate: AccountGateModel
     let introduction: IntroductionModel
+    /// One undo queue per window (N-03, Apple's per-window undo). The registry commits them all at once.
+    let undoQueues = UndoQueueRegistry()
+    /// The space whose first-visit member setup is on screen in some window, so only one window asks (N-03).
+    var memberSetupSpaceID: UUID?
+    #if DEBUG
+    /// Previews only: the state one window would have. Real windows get theirs from `SceneRoot`.
     let selection = SpaceSelection()
     let undoQueue = UndoQueue()
+    #endif
     private(set) var personalSpace: Space?
     /// Every domain service. Built once the account is available and the Personal space exists.
     private(set) var services: ServiceContainer?
@@ -315,8 +323,8 @@ final class AppModel {
     }
 
     /// On launch, every foreground and after an arrival notification tap (N-04 D9 B): where the user is, which chain
-    /// branches the store reminders know, and the selected household decide whether the shopping Live Activity starts.
-    func evaluateShoppingActivity() async {
+    /// branches the store reminders know, and the window's household decide whether the shopping Live Activity starts.
+    func evaluateShoppingActivity(preferredSpaceID: UUID?) async {
         guard let services else { return }
         var branches = services.storeReminders.lastPlan.compactMap { reminder in
             StoreReminderPlanner.chainKey(fromIdentifier: reminder.identifier).map {
@@ -325,7 +333,7 @@ final class AppModel {
         }
         if let arrival = AppRouter.shared.arrivalBranch { branches.append(arrival) }
         await services.shoppingActivity.evaluate(position: await shoppingPosition(), branches: branches,
-                                                 preferredSpaceID: selection.selectedSpaceID)
+                                                 preferredSpaceID: preferredSpaceID)
     }
 
     private func shoppingPosition() async -> Coordinate? {

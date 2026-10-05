@@ -2,13 +2,15 @@ import HomassyCore
 import SwiftUI
 
 /// The list filter under the title (P4-03a): "All" and one chip per list with its colour dot and count, in list
-/// order. A long press on a list chip offers Edit and Delete; VoiceOver gets them as actions.
+/// order. A long press on a list chip offers Edit and Delete; VoiceOver gets them as actions. On iPad the menu
+/// starts with Open in New Window, and a chip dragged to the screen edge becomes a list window (N-03).
 struct ShoppingFilterStrip: View {
     let chips: [ShoppingOverviewModel.ListChip]
     let total: Int
     @Binding var filter: UUID?
     let edit: (UUID) -> Void
     let delete: (UUID) -> Void
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
 
     var body: some View {
         ScrollView(.horizontal) {
@@ -18,8 +20,15 @@ struct ShoppingFilterStrip: View {
                 ForEach(chips) { item in
                     chip(id: item.id, name: item.name, color: item.color, count: item.remaining,
                          identifier: "shopping.filter.\(item.name)")
-                        .contextMenu { actions(item.id) }
-                        .accessibilityActions { actions(item.id) }
+                        .contextMenu {
+                            OpenInNewWindowMenuItems(route: .shoppingList(item.id))
+                            actions(item.id)
+                        }
+                        .accessibilityActions {
+                            if supportsMultipleWindows { OpenInNewWindowButton(route: .shoppingList(item.id)) }
+                            actions(item.id)
+                        }
+                        .draggableIntoWindow(.shoppingList(item.id))
                 }
             }
             .padding(.horizontal)

@@ -8029,6 +8029,29 @@
         }
       }
     },
+    "shopping.list.missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Liste gibt es nicht mehr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This list no longer exists"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ez a lista már nem létezik"
+          }
+        }
+      }
+    },
     "shopping.listEditor.color" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -10683,6 +10706,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tömeg"
+          }
+        }
+      }
+    },
+    "window.open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In neuem Fenster öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open in New Window"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Megnyitás új ablakban"
           }
         }
       }

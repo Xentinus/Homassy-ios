@@ -12,7 +12,7 @@ struct InventoryView: View {
     @State private var addingStock = false
     @State private var creatingProduct = false
     @State private var scanning = false
-    @State private var router = AppRouter.shared
+    @Environment(WindowRouter.self) private var router
     @State private var cardActions = ProductCardActions()
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -271,6 +271,7 @@ private extension ExpiryBucket {
         .environment(model).environment(model.selection).environment(model.undoQueue)
         .environment(model.services!).environment(model.services!.attribution).environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
+        .environment(WindowRouter())
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
@@ -279,5 +280,6 @@ private extension ExpiryBucket {
         .environment(model).environment(model.selection).environment(model.undoQueue)
         .environment(model.services!).environment(model.services!.attribution).environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
+        .environment(WindowRouter())
 }
 #endif

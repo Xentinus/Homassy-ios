@@ -19,7 +19,7 @@ struct SpaceSwitcher: View {
     @State private var isShowingSettings = false
     /// Imports started in the settings sheet wait here until it has closed; the shell cannot present over it.
     @State private var settingsImports = ArchiveImportRouter()
-    @State private var router = AppRouter.shared
+    @Environment(WindowRouter.self) private var router
 
     var body: some View {
         let current = selection.resolve(in: spaces)

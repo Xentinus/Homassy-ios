@@ -21,7 +21,7 @@ struct TabNavigationStack<Root: View>: View {
     @SceneStorage private var storedPath: Data?
     @State private var path = NavigationPath()
     @State private var restored = false
-    @State private var router = AppRouter.shared
+    @Environment(WindowRouter.self) private var router
     private let tab: AppTab
     private let root: Root
 

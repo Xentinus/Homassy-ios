@@ -29,6 +29,7 @@ SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD|NO
 SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD|NO
 INFOPLIST_FILE|Homassy/Info.plist
 GENERATE_INFOPLIST_FILE|YES
+INFOPLIST_KEY_UIApplicationSceneManifest_Generation|YES
 ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME|AccentColor
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone|UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad|UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight'
@@ -90,6 +91,10 @@ expect_plist() {
 }
 plutil -lint -s Homassy/Info.plist || fail=1
 expect_plist Homassy/Info.plist CKSharingSupported true
+# N-03: iPad windows. Explicit, so a settings change cannot turn multiple windows off silently. A dragged card
+# carries the window activity, so it must be declared.
+expect_plist Homassy/Info.plist UIApplicationSceneManifest:UIApplicationSupportsMultipleScenes true
+expect_plist Homassy/Info.plist NSUserActivityTypes:0 com.homassy.app.window
 # N-01: background app refresh. Plain Info.plist keys, no entitlement (works on the free Personal Team).
 expect_plist Homassy/Info.plist BGTaskSchedulerPermittedIdentifiers:0 com.homassy.app.refresh
 expect_plist Homassy/Info.plist UIBackgroundModes:0 fetch

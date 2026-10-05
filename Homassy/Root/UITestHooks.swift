@@ -38,6 +38,10 @@ enum UITestHooks {
     /// restore scene storage across test launches, which would leak the previous test's tab.
     static var ignoresRestoredSceneState: Bool { isActive }
 
+    /// Set by "Open in New Window" (N-03). A list or product window that appears without it was restored from the
+    /// previous test launch, and shows the main shell instead (`SceneRoot`).
+    static var routeWindowRequested = false
+
     /// `-uiTestInventoryGrouping <location|name|expiry>`: the grouping Inventory starts in (P2-08e), written once the
     /// per-launch defaults are wiped.
     static var inventoryGrouping: InventoryGrouping? {

@@ -182,6 +182,7 @@ struct SearchView: View {
         .environment(model).environment(model.selection).environment(model.undoQueue)
         .environment(model.services!).environment(model.services!.attribution).environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter())
+        .environment(WindowRouter())
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
@@ -190,5 +191,6 @@ struct SearchView: View {
         .environment(model).environment(model.selection).environment(model.undoQueue)
         .environment(model.services!).environment(model.services!.attribution).environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter())
+        .environment(WindowRouter())
 }
 #endif

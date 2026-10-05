@@ -2,8 +2,14 @@ import XCTest
 
 @MainActor
 extension XCUIApplication {
+    /// On the iPhone the tab is in the tab bar. On the iPad (regular width, `sidebarAdaptable`) the sidebar shows it
+    /// as a cell, and the floating tab bar (sidebar hidden) as a plain button.
     func openTab(_ title: String) {
-        let tab = tabBars.buttons[title]
+        var tab = tabBars.buttons[title]
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let cell = cells[title]
+            tab = cell.waitForExistence(timeout: 10) ? cell : buttons[title].firstMatch
+        }
         XCTAssertTrue(tab.waitForExistence(timeout: 10), "tab \(title) missing")
         tab.tap()
     }

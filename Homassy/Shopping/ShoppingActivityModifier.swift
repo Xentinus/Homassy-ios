@@ -11,16 +11,17 @@ private struct ShoppingActivityModifier: ViewModifier {
     let coordinator: ShoppingActivityCoordinator
     let context: NSManagedObjectContext
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(SpaceSelection.self) private var selection
     @State private var router = AppRouter.shared
 
     func body(content: Content) -> some View {
         content
-            .task { await app.evaluateShoppingActivity() }
+            .task { await app.evaluateShoppingActivity(preferredSpaceID: selection.selectedSpaceID) }
             .onChange(of: scenePhase) {
-                if scenePhase == .active { Task { await app.evaluateShoppingActivity() } }
+                if scenePhase == .active { Task { await app.evaluateShoppingActivity(preferredSpaceID: selection.selectedSpaceID) } }
             }
             .onChange(of: router.arrivalBranch) {
-                Task { await app.evaluateShoppingActivity() }
+                Task { await app.evaluateShoppingActivity(preferredSpaceID: selection.selectedSpaceID) }
             }
             .onReceive(NotificationCenter.default.publisher(for: NSManagedObjectContext.didSaveObjectsNotification,
                                                             object: context)

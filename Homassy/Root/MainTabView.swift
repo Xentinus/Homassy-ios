@@ -2,15 +2,16 @@ import HomassyCore
 import SwiftUI
 
 /// The main shell (P1-07a): Inventory, Shopping and the Search tab. A tab bar in compact width, a sidebar-capable
-/// tab view in regular width. The space's settings open from the space menu, not from a tab.
+/// tab view in regular width. The space's settings open from the space menu, not from a tab. The selected tab is
+/// per window (scene storage); the import sheet is presented by `RootView` (`archiveImportPresentation`, N-03).
 struct MainTabView: View {
     @SceneStorage("selectedTab") private var selectedTab: AppTab = .inventory
     @Environment(ServiceContainer.self) private var services
-    @Environment(ArchiveImportRouter.self) private var archiveRouter
     @Environment(BackupReminder.self) private var backupReminder
-    @Environment(UndoQueue.self) private var undoQueue
     @Environment(SpaceSelection.self) private var selection
-    @State private var router = AppRouter.shared
+    @Environment(WindowRouter.self) private var router
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var appRouter = AppRouter.shared
 
     @ViewBuilder
     private var inventoryRoot: some View {
@@ -38,25 +39,10 @@ struct MainTabView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
-        .sheet(item: Bindable(archiveRouter).pending) { pending in
-            if let archive = services.archive {
-                ImportFlowView(url: pending.url, archive: archive, undoQueue: undoQueue) { space in
-                    selection.select(space)
-                }
-            }
-        }
-        .alert(Text("archive.import.failed.title"),
-               isPresented: Binding(get: { archiveRouter.errorMessage != nil },
-                                    set: { if !$0 { archiveRouter.errorMessage = nil } })) {
-            Button("archive.ok", role: .cancel) {}
-        } message: {
-            Text(verbatim: archiveRouter.errorMessage ?? "")
-        }
         .task { backupReminder.recordFirstUseIfNeeded() }
-        .onChange(of: router.pending, initial: true) { _, destination in
-            guard let destination else { return }
-            router.pending = nil
-            apply(services.validated(destination))
+        .onChange(of: appRouter.pending, initial: true) { takeDestination() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { takeDestination() }      // a cold start from a tap becomes active after the tap
         }
         #if DEBUG
         .task {
@@ -69,8 +55,16 @@ struct MainTabView: View {
         #endif
     }
 
+    /// A notification tap, quick action or deep link opens in one window only: the first active main window takes
+    /// it (N-03).
+    private func takeDestination() {
+        guard scenePhase == .active, appRouter.pending != nil, let destination = appRouter.take() else { return }
+        apply(services.validated(destination))
+    }
+
     /// Selects the space and the tab, and hands the stack, filter and sheet requests to the views that own them.
     private func apply(_ destination: AppDestination) {
+        router.didOpen()
         switch destination {
         case .inventory(let space):
             if let space { selection.selectedSpaceID = space }
@@ -115,6 +109,7 @@ struct MainTabView: View {
         .environment(model.services!).environment(model.services!.attribution).environment(model.services!.syncStatus)
         .environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
+        .environment(WindowRouter())
 }
 
 #Preview("Landscape", traits: .landscapeLeft) {
@@ -123,5 +118,6 @@ struct MainTabView: View {
         .environment(model.services!).environment(model.services!.attribution).environment(model.services!.syncStatus)
         .environment(model.services!.storeDirectory)
         .environment(ArchiveImportRouter()).environment(BackupReminder(defaults: UserDefaults(suiteName: "HomassyPreview")!))
+        .environment(WindowRouter())
 }
 #endif

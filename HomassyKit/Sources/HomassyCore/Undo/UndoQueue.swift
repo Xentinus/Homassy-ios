@@ -1,7 +1,8 @@
 import Foundation
 import Observation
 
-/// The app-wide optimistic-change queue behind the undo toast. See P1-08 for the rules ported from the web app.
+/// The optimistic-change queue behind the undo toast. See P1-08 for the rules ported from the web app. Since N-03
+/// every window has its own (`UndoQueueRegistry`).
 @MainActor
 @Observable
 public final class UndoQueue {

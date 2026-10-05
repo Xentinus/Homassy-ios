@@ -1,14 +1,16 @@
 import HomassyCore
 import SwiftUI
 
-/// While an invitation is being accepted, a capsule at the top; on failure, an alert with Try again.
+/// While an invitation is being accepted, a capsule at the top; on failure, an alert with Try again. With several
+/// iPad windows only the owning window shows either (N-03).
 struct ShareAcceptanceOverlay: ViewModifier {
     @Bindable var model: ShareAcceptanceModel
+    let isOwner: Bool
 
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .top) {
-                if model.isBusy {
+                if isOwner && model.isBusy {
                     HStack(spacing: 12) {
                         ProgressView()
                         Text("share.accept.joining")
@@ -31,14 +33,17 @@ struct ShareAcceptanceOverlay: ViewModifier {
 
     private var isFailed: Binding<Bool> {
         Binding(
-            get: { if case .failed = model.state { true } else { false } },
+            get: {
+                guard isOwner else { return false }
+                if case .failed = model.state { return true } else { return false }
+            },
             set: { _ in }
         )
     }
 }
 
 extension View {
-    func shareAcceptanceOverlay(_ model: ShareAcceptanceModel) -> some View {
-        modifier(ShareAcceptanceOverlay(model: model))
+    func shareAcceptanceOverlay(_ model: ShareAcceptanceModel, isOwner: Bool = true) -> some View {
+        modifier(ShareAcceptanceOverlay(model: model, isOwner: isOwner))
     }
 }

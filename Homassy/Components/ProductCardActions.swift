@@ -9,7 +9,8 @@ enum CardColumn {
 
 /// The long-press menu of a product card on Inventory and Search (P2-08d, user pick 3B, the Photos / Music pattern):
 /// add stock, add to a shopping list, favourite. Nothing destructive; delete stays in the product detail
-/// (user rule 2026-09-24). One per screen; the cards set a target, the screen's sheets open it.
+/// (user rule 2026-09-24). One per screen; the cards set a target, the screen's sheets open it. On iPad the menu
+/// starts with Open in New Window, also for read-only members, and the card can be dragged out into a window (N-03).
 @Observable
 final class ProductCardActions {
     struct Target: Identifiable { let id: UUID }
@@ -38,11 +39,19 @@ private struct ProductCardMenu: ViewModifier {
     let actions: ProductCardActions
     let canEdit: Bool
     @Environment(ServiceContainer.self) private var services
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
 
     func body(content: Content) -> some View {
         content
-            .contextMenu { if canEdit { items(forAccessibility: false) } }
-            .accessibilityActions { if canEdit { items(forAccessibility: true) } }
+            .contextMenu {
+                OpenInNewWindowMenuItems(route: .product(card.id))
+                if canEdit { items(forAccessibility: false) }
+            }
+            .accessibilityActions {
+                if supportsMultipleWindows { OpenInNewWindowButton(route: .product(card.id)) }
+                if canEdit { items(forAccessibility: true) }
+            }
+            .draggableIntoWindow(.product(card.id))
     }
 
     /// `.disabled` is not reliably honoured for VoiceOver custom actions, so the accessibility copy leaves Listára
