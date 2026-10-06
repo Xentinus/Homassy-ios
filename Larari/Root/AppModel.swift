@@ -129,6 +129,11 @@ final class AppModel {
         #endif
         let (mode, provider, defaults) = configuration
 
+        #if CLOUDKIT_ENABLED
+        if case .cloudKit = mode {
+            Self.migrateLocalStoreIfNeeded(mode: mode)
+        }
+        #endif
         let persistence: PersistenceController
         do {
             persistence = try PersistenceController(mode: mode)
@@ -149,6 +154,24 @@ final class AppModel {
                   defaults: defaults,
                   introduction: IntroductionModel(notifications: notifications))
     }
+
+    #if CLOUDKIT_ENABLED
+    /// First cloud launch after the local phase: move the local SQLite store into the App Group store
+    /// before NSPersistentCloudKitContainer loads it (C-01). A failure is logged and leaves the local
+    /// store in place; the P3 archive path is the fallback.
+    private static func migrateLocalStoreIfNeeded(mode: StoreMode) {
+        do {
+            let destination = try PersistenceController.storeDirectory(for: mode)
+            let result = try LocalStoreMigrator.migrate(from: StoreMode.localDevelopmentDirectory, to: destination)
+            if case .migrated = result {
+                appDefaults.set(true, forKey: LocalStoreMigrator.pendingAdoptionKey)
+                UserDefaults.standard.removeObject(forKey: LocalCloudSharing.sharedSpaceIDsKey)
+            }
+        } catch {
+            print("Larari: local store migration failed: \(error)")
+        }
+    }
+    #endif
 
     #if DEBUG
     /// For SwiftUI previews: seeded in-memory store, available account, Personal space bootstrapped.
@@ -189,6 +212,12 @@ final class AppModel {
     func bootstrapPersonalSpace() {
         guard let userRecordName = accountGate.userRecordName else { return }
         do {
+            #if CLOUDKIT_ENABLED
+            if Self.appDefaults.bool(forKey: LocalStoreMigrator.pendingAdoptionKey) {
+                try LocalStoreMigrator.adoptLocalData(in: persistence, to: userRecordName)
+                Self.appDefaults.removeObject(forKey: LocalStoreMigrator.pendingAdoptionKey)
+            }
+            #endif
             personalSpace = try spaceStore.bootstrapPersonalSpace(userRecordName: userRecordName)
             bootstrapError = nil
             Task { await buildServices() }

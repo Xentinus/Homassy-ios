@@ -120,7 +120,7 @@ public final class PersistenceController {
 
     /// `<App Group>/Stores/` for CloudKit mode, or the given directory for SQLite mode, created if needed.
     /// It is unused for in-memory mode.
-    private static func storeDirectory(for mode: StoreMode) throws -> URL {
+    public static func storeDirectory(for mode: StoreMode) throws -> URL {
         switch mode {
         case .inMemory:
             return URL(fileURLWithPath: "/dev/null")

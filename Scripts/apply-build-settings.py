@@ -45,13 +45,13 @@ text = edit(text, 'PBXNativeTarget "Larari"', {
     **common,
     "PRODUCT_BUNDLE_IDENTIFIER": "app.larari",
     "INFOPLIST_FILE": "Larari/Info.plist",
+    "CODE_SIGN_ENTITLEMENTS": "Larari/Larari.entitlements",
     "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
     "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone":
         '"UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"',
     "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad":
         '"UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"',
-}, drop_platforms | {"INFOPLIST_KEY_UISupportedInterfaceOrientations", "ENABLE_APP_SANDBOX", "ENABLE_USER_SELECTED_FILES",
-                     "CODE_SIGN_ENTITLEMENTS"})
+}, drop_platforms | {"INFOPLIST_KEY_UISupportedInterfaceOrientations", "ENABLE_APP_SANDBOX", "ENABLE_USER_SELECTED_FILES"})
 
 text = edit(text, 'PBXNativeTarget "LarariUITests"', {
     **common,
@@ -69,16 +69,20 @@ text = edit(text, 'PBXNativeTarget "LarariWidgetsExtension"', {
     "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
 }, drop_platforms)
 
-# Free-team fallback (Step 15a): LARARI_DEV_BUNDLE_ID=1 gives Debug the `.dev` bundle IDs; Release keeps the permanent ones.
-import os
-if os.environ.get("LARARI_DEV_BUNDLE_ID") == "1":
-    for owner, dev_id in (('PBXNativeTarget "Larari"', "app.larari.dev"),
-                          ('PBXNativeTarget "LarariUITests"', "app.larari.dev.uitests"),
-                          ('PBXNativeTarget "LarariWidgetsExtension"', "app.larari.dev.widgets")):
-        block = re.compile(r"(/\* Debug configuration for " + re.escape(owner) + r" \*/ = \{.*?PRODUCT_BUNDLE_IDENTIFIER = )[^;]+;", re.S)
-        text, n = block.subn(lambda m: m.group(1) + dev_id + ";", text, count=1)
-        if n != 1:
-            sys.exit(f"{owner}: Debug PRODUCT_BUNDLE_IDENTIFIER not found")
+# Cloud mode (C-01): CLOUDKIT_ENABLED in both configurations. edit() sets one value for Debug and Release,
+# and Debug also needs DEBUG, so this pass works per configuration.
+conditions = {"Debug": '"DEBUG CLOUDKIT_ENABLED $(inherited)"', "Release": '"CLOUDKIT_ENABLED $(inherited)"'}
+for config, value in conditions.items():
+    block = re.compile(r"(/\* " + config + r' configuration for PBXNativeTarget "Larari" \*/ = \{\n'
+                       r"\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = \{\n)(.*?)(\n\t\t\t\};)", re.S)
+    def fix(match, value=value):
+        kept = [line for line in match.group(2).split("\n")
+                if line.strip().split(" = ", 1)[0].strip('"') != "SWIFT_ACTIVE_COMPILATION_CONDITIONS"]
+        kept.append(f"\t\t\t\tSWIFT_ACTIVE_COMPILATION_CONDITIONS = {value};")
+        return match.group(1) + "\n".join(kept) + match.group(3)
+    text, count = block.subn(fix, text)
+    if count != 1:
+        sys.exit(f"Larari {config}: configuration block not found")
 
 pbx.write_text(text)
 print("pbxproj updated")

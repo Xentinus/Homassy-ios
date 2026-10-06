@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Verifies the Larari build settings, Info.plist, local-mode signing rules and git-ignore rules.
-# C-01 replaces the "Local-mode checks" block with cloud-mode checks.
+# Verifies the Larari build settings, Info.plist, the cloud configuration (entitlements, CLOUDKIT_ENABLED,
+# permanent bundle IDs; C-01) and git-ignore rules.
 # Usage: Scripts/check-project-settings.sh   (from the repository root)
 set -u
 cd "$(dirname "$0")/.."
@@ -57,38 +57,38 @@ setting() {  # setting <target> <config> <key>
   xcodebuild -project Larari.xcodeproj -target "$1" -configuration "$2" -showBuildSettings 2>/dev/null \
     | awk -F' = ' -v k="$3" '{ name = $1; sub(/^ +/, "", name) } name == k { print $2; exit }'
 }
-# Bundle IDs: Release is always the permanent ID; Debug may carry the free-team `.dev` override (Step 15a).
+# Bundle IDs: the permanent IDs in both configurations (C-01 dropped the free-team `.dev` override).
 expect_one_of() {  # expect_one_of <label> <got> <allowed...>
   local label=$1 got=$2; shift 2
   for want in "$@"; do [ "$got" = "$want" ] && return 0; done
   echo "FAIL $label: got '$got', want one of: $*"; fail=1
 }
 expect_one_of "Larari/Release PRODUCT_BUNDLE_IDENTIFIER" "$(setting Larari Release PRODUCT_BUNDLE_IDENTIFIER)" app.larari
-expect_one_of "Larari/Debug PRODUCT_BUNDLE_IDENTIFIER" "$(setting Larari Debug PRODUCT_BUNDLE_IDENTIFIER)" app.larari app.larari.dev
+expect_one_of "Larari/Debug PRODUCT_BUNDLE_IDENTIFIER" "$(setting Larari Debug PRODUCT_BUNDLE_IDENTIFIER)" app.larari
 expect_one_of "LarariUITests/Release PRODUCT_BUNDLE_IDENTIFIER" "$(setting LarariUITests Release PRODUCT_BUNDLE_IDENTIFIER)" app.larari.uitests
-expect_one_of "LarariUITests/Debug PRODUCT_BUNDLE_IDENTIFIER" "$(setting LarariUITests Debug PRODUCT_BUNDLE_IDENTIFIER)" app.larari.uitests app.larari.dev.uitests
+expect_one_of "LarariUITests/Debug PRODUCT_BUNDLE_IDENTIFIER" "$(setting LarariUITests Debug PRODUCT_BUNDLE_IDENTIFIER)" app.larari.uitests
 expect_one_of "LarariWidgetsExtension/Release PRODUCT_BUNDLE_IDENTIFIER" "$(setting LarariWidgetsExtension Release PRODUCT_BUNDLE_IDENTIFIER)" app.larari.widgets
-expect_one_of "LarariWidgetsExtension/Debug PRODUCT_BUNDLE_IDENTIFIER" "$(setting LarariWidgetsExtension Debug PRODUCT_BUNDLE_IDENTIFIER)" app.larari.widgets app.larari.dev.widgets
-
-# --- Local-mode checks (C-01 replaces this block) ---
-for cfg in Debug Release; do
-  got=$(setting Larari "$cfg" CODE_SIGN_ENTITLEMENTS)
-  [ -z "$got" ] || { echo "FAIL Larari/$cfg CODE_SIGN_ENTITLEMENTS must be empty before C-01, got '$got'"; fail=1; }
-  conditions=$(setting Larari "$cfg" SWIFT_ACTIVE_COMPILATION_CONDITIONS)
-  case " $conditions " in *" CLOUDKIT_ENABLED "*) echo "FAIL Larari/$cfg CLOUDKIT_ENABLED is set before C-01"; fail=1;; esac
-done
-[ ! -e Larari/Larari.entitlements ] || { echo "FAIL Larari/Larari.entitlements exists before C-01"; fail=1; }
-for cfg in Debug Release; do
-  got=$(setting LarariWidgetsExtension "$cfg" CODE_SIGN_ENTITLEMENTS)
-  [ -z "$got" ] || { echo "FAIL LarariWidgetsExtension/$cfg CODE_SIGN_ENTITLEMENTS must be empty before N-05, got '$got'"; fail=1; }
-done
-# --- end local-mode checks ---
+expect_one_of "LarariWidgetsExtension/Debug PRODUCT_BUNDLE_IDENTIFIER" "$(setting LarariWidgetsExtension Debug PRODUCT_BUNDLE_IDENTIFIER)" app.larari.widgets
 
 plist() { /usr/libexec/PlistBuddy -c "Print :$2" "$1" 2>/dev/null; }
 expect_plist() {
   local got; got=$(plist "$1" "$2")
   if [ "$got" != "$3" ]; then echo "FAIL $1 :$2: got '$got', want '$3'"; fail=1; fi
 }
+# --- Cloud-mode checks (C-01) ---
+for cfg in Debug Release; do
+  got=$(setting Larari "$cfg" CODE_SIGN_ENTITLEMENTS)
+  [ "$got" = "Larari/Larari.entitlements" ] || { echo "FAIL Larari/$cfg CODE_SIGN_ENTITLEMENTS: got '$got'"; fail=1; }
+  conditions=$(setting Larari "$cfg" SWIFT_ACTIVE_COMPILATION_CONDITIONS)
+  case " $conditions " in *" CLOUDKIT_ENABLED "*) ;; *) echo "FAIL Larari/$cfg CLOUDKIT_ENABLED is not set: '$conditions'"; fail=1;; esac
+done
+plutil -lint -s Larari/Larari.entitlements || fail=1
+expect_plist Larari/Larari.entitlements com.apple.developer.icloud-container-identifiers:0 iCloud.app.larari
+expect_plist Larari/Larari.entitlements com.apple.developer.icloud-services:0 CloudKit
+expect_plist Larari/Larari.entitlements aps-environment development
+expect_plist Larari/Larari.entitlements com.apple.security.application-groups:0 group.app.larari
+expect_plist Larari/Info.plist UIBackgroundModes:1 remote-notification
+# --- end cloud-mode checks ---
 plutil -lint -s Larari/Info.plist || fail=1
 expect_plist Larari/Info.plist CKSharingSupported true
 # N-03: iPad windows. Explicit, so a settings change cannot turn multiple windows off silently. A dragged card
