@@ -12,10 +12,12 @@ import Testing
 struct InventoryModelTests {
     static let hu = Locale(identifier: "hu_HU")
 
+    /// Most tests check the location grouping, so a fresh model starts in it; with `defaults` the stored (or default)
+    /// grouping applies.
     func model(_ env: ServiceTestEnvironment, pending: PendingDeletions = PendingDeletions(),
                canEdit: Bool = true, grouping: InventoryGrouping? = nil, defaults: UserDefaults? = nil) -> InventoryModel {
         let preferences = InventoryPreferences(defaults: defaults ?? UserDefaults(suiteName: "test.inventory.\(UUID().uuidString)")!)
-        if let grouping { preferences.grouping = grouping }
+        if let grouping = grouping ?? (defaults == nil ? .location : nil) { preferences.grouping = grouping }
         let model = InventoryModel(inventory: env.inventoryService(canEdit: { _ in canEdit }),
                                    storage: env.storageService(), space: env.personal, pending: pending,
                                    preferences: preferences, locale: Self.hu)
@@ -248,7 +250,7 @@ struct InventoryModelTests {
         let env = try ServiceTestEnvironment()
         let defaults = try #require(UserDefaults(suiteName: "test.inventory.\(UUID().uuidString)"))
         let first = model(env, defaults: defaults)
-        #expect(first.grouping == .location)
+        #expect(first.grouping == .name)
         first.grouping = .expiry
         #expect(model(env, defaults: defaults).grouping == .expiry)
     }

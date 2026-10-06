@@ -306,7 +306,12 @@ final class AccessibilityAuditTests: XCTestCase {
     private func navigate(to screen: Screen, in app: XCUIApplication) -> Bool {
         switch screen {
         case .inventory:
-            return tapTab("Inventory", in: app) && app.buttons["inventory.row.Bread"].waitForExistence(timeout: 10)
+            // Inventory starts by name (2026-10-05); this screen audits the location grouping.
+            guard tapTab("Inventory", in: app), app.buttons["inventory.row.Bread"].waitForExistence(timeout: 10) else {
+                return false
+            }
+            return chooseGrouping("By location", menu: "inventory.more", in: app)
+                && app.descendants(matching: .any)["inventory.section.expiring"].waitForExistence(timeout: 5)
         case .stockSheet:
             return openStockSheet(in: app)
         case .storePicker:

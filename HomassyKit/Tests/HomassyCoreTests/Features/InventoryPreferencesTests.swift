@@ -8,15 +8,15 @@ struct InventoryPreferencesTests {
     let defaults: UserDefaults
     init() throws { defaults = try #require(UserDefaults(suiteName: "test.inventoryPreferences.\(UUID().uuidString)")) }
 
-    @Test func groupingDefaultsToLocationAndIsRemembered() {
+    @Test func groupingDefaultsToNameAndIsRemembered() {
         let preferences = InventoryPreferences(defaults: defaults)
-        #expect(preferences.grouping == .location)
+        #expect(preferences.grouping == .name)
         preferences.grouping = .expiry
         #expect(InventoryPreferences(defaults: defaults).grouping == .expiry)
     }
 
-    @Test func anUnknownValueFallsBackToLocation() {
+    @Test func anUnknownValueFallsBackToName() {
         defaults.set("quantity", forKey: "inventory.grouping")
-        #expect(InventoryPreferences(defaults: defaults).grouping == .location)
+        #expect(InventoryPreferences(defaults: defaults).grouping == .name)
     }
 }

@@ -10,7 +10,7 @@ enum TabDefaults {
             let suite = "uiTest.tabs"
             UserDefaults.standard.removePersistentDomain(forName: suite)
             guard let defaults = UserDefaults(suiteName: suite) else { return .standard }
-            // `-uiTestInventoryGrouping name|expiry`: start Inventory in that grouping, as if it had been picked before.
+            // `-uiTestInventoryGrouping location|name|expiry`: start Inventory in that grouping, as if it had been picked before.
             if let grouping = UITestHooks.inventoryGrouping { InventoryPreferences(defaults: defaults).grouping = grouping }
             return defaults
         }

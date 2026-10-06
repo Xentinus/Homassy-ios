@@ -7,9 +7,12 @@ import XCTest
 final class InventoryUITests: XCTestCase {
     private let nbsp = "\u{00A0}"
 
-    private func openInventory(seeded: Bool = true) -> XCUIApplication {
+    /// Most tests check the location grouping, so they start in it; `grouping: nil` keeps the default (by name).
+    private func openInventory(seeded: Bool = true, grouping: String? = "location") -> XCUIApplication {
         continueAfterFailure = false
-        let app = XCUIApplication.homassy(extraArguments: seeded ? ["-uiTestSeed"] : [])
+        var arguments = seeded ? ["-uiTestSeed"] : []
+        if let grouping { arguments += ["-uiTestInventoryGrouping", grouping] }
+        let app = XCUIApplication.homassy(extraArguments: arguments)
         app.launch()
         app.openTab("Inventory")
         return app
@@ -52,6 +55,14 @@ final class InventoryUITests: XCTestCase {
         let option = app.buttons[label].firstMatch
         XCTAssertTrue(option.waitForExistence(timeout: 3))
         option.tap()
+    }
+
+    /// Inventory starts A–Z, like Search (user request 2026-10-05).
+    func testStartsByName() {
+        let app = openInventory(grouping: nil)
+        XCTAssertTrue(element("inventory.section.letter.B", in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(element("inventory.section.letter.M", in: app).exists)
+        XCTAssertFalse(element("inventory.section.expiring", in: app).exists)
     }
 
     func testGroupingByNameShowsLettersPlacesAndTheIndex() {

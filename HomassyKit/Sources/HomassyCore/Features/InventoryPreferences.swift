@@ -6,7 +6,8 @@ public enum InventoryGrouping: String, Sendable, CaseIterable {
     case location, name, expiry
 }
 
-/// The Inventory tab's remembered grouping, per device, like the Shopping grouping.
+/// The Inventory tab's remembered grouping, per device, like the Shopping grouping. It starts by name, A–Z like Search
+/// (user request 2026-10-05; P2-08e started by location).
 @MainActor
 public final class InventoryPreferences {
     private let defaults: UserDefaults
@@ -16,7 +17,7 @@ public final class InventoryPreferences {
     }
 
     public var grouping: InventoryGrouping {
-        get { defaults.string(forKey: Self.groupingKey).flatMap(InventoryGrouping.init(rawValue:)) ?? .location }
+        get { defaults.string(forKey: Self.groupingKey).flatMap(InventoryGrouping.init(rawValue:)) ?? .name }
         set { defaults.set(newValue.rawValue, forKey: Self.groupingKey) }
     }
 
