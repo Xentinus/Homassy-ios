@@ -1,0 +1,117 @@
+import XCTest
+
+/// P1-10 introduction, animated in P1-10a (user pick 1I · 2C · 3B · 4B · 5C · 8H · 6C, 2026-09-26).
+final class IntroductionUITests: XCTestCase {
+    /// Titles after the welcome page, in order.
+    private let laterTitles = ["Completely free", "Know what's at home", "Shopping made simple",
+                               "Personal and shared", "Your data is yours", "Stay ahead of expiry dates"]
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+    }
+
+    @MainActor
+    private func launch(accountState: String = "noAccount") -> XCUIApplication {
+        let app = XCUIApplication.larari(accountState: accountState, skipIntroduction: false,
+                                          extraArguments: ["-resetIntroduction"])
+        app.launch()
+        return app
+    }
+
+    @MainActor
+    func testFreeIsTheSecondPage() throws {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["Welcome to Larari"].waitForExistence(timeout: 10))
+        app.buttons["Next"].tap()
+        XCTAssertTrue(app.staticTexts["Completely free"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Every feature is for everyone, with no subscription, no ads and no premium tier."].exists)
+    }
+
+    @MainActor
+    func testFirstLaunchShowsIntroductionOnceThenTheGate() throws {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["Welcome to Larari"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Skip"].exists)
+        XCTAssertFalse(app.staticTexts["iCloud is required"].exists)
+
+        for title in laterTitles {
+            app.swipeLeft()
+            XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 3), "Page \(title) not shown")
+        }
+        XCTAssertFalse(app.buttons["Skip"].exists)
+
+        app.buttons["Get started"].tap()
+        XCTAssertTrue(app.staticTexts["iCloud is required"].waitForExistence(timeout: 10))
+
+        app.terminate()
+        let relaunched = XCUIApplication.larari(accountState: "noAccount", skipIntroduction: false)
+        relaunched.launch()
+        XCTAssertTrue(relaunched.staticTexts["iCloud is required"].waitForExistence(timeout: 10))
+        XCTAssertFalse(relaunched.staticTexts["Welcome to Larari"].exists)
+    }
+
+    @MainActor
+    func testSkipGoesStraightToTheMainShell() throws {
+        let app = launch(accountState: "available")
+        let skip = app.buttons["introduction.skip"]
+        XCTAssertTrue(skip.waitForExistence(timeout: 10))
+        XCTAssertEqual(skip.label, "Skip")
+        skip.tap()
+        XCTAssertTrue(app.navigationBars["Inventory"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    func testLandscapeShowsTheSamePage() throws {
+        let app = launch()
+        defer { XCUIDevice.shared.orientation = .portrait }
+        XCTAssertTrue(app.staticTexts["Welcome to Larari"].waitForExistence(timeout: 10))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(app.staticTexts["Welcome to Larari"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Next"].isHittable)
+        app.buttons["Next"].tap()
+        XCTAssertTrue(app.staticTexts["Completely free"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Next"].isHittable)
+    }
+
+    /// Device review aid (previews time out in Xcode 27): one screenshot per page after its scene has finished.
+    /// Export with `xcrun xcresulttool export attachments`.
+    @MainActor
+    func testEveryPageFinishesItsScene() throws {
+        let app = launch()
+        XCTAssertTrue(app.staticTexts["Welcome to Larari"].waitForExistence(timeout: 10))
+        let names = ["welcome", "free", "inventory", "shopping", "spaces", "privacy", "notifications"]
+        for (index, name) in names.enumerated() {
+            if index > 0 {
+                app.buttons["Next"].tap()
+                XCTAssertTrue(app.staticTexts[laterTitles[index - 1]].waitForExistence(timeout: 3))
+            }
+            sleep(4)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "intro-\(index + 1)-\(name)"
+            shot.lifetime = .keepAlways
+            add(shot)
+        }
+        XCTAssertTrue(app.buttons["Get started"].exists)
+    }
+
+    /// Device review aid (P2-08d): the three card pages in landscape, where the scene is only 260 pt high.
+    @MainActor
+    func testCardPagesInLandscape() throws {
+        let app = launch()
+        defer { XCUIDevice.shared.orientation = .portrait }
+        XCTAssertTrue(app.staticTexts["Welcome to Larari"].waitForExistence(timeout: 10))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        for (index, name) in ["welcome", "free", "inventory", "shopping"].enumerated() {
+            if index > 0 {
+                app.buttons["Next"].tap()
+                XCTAssertTrue(app.staticTexts[laterTitles[index - 1]].waitForExistence(timeout: 3))
+            }
+            guard name != "free" else { continue }
+            sleep(4)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "intro-landscape-\(name)"
+            shot.lifetime = .keepAlways
+            add(shot)
+        }
+    }
+}

@@ -1,0 +1,78 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Larari Archive" : {
+      "comment" : "Document type name of .larari files (UTTypeDescription, CFBundleTypeName)",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Larari-Archiv"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Larari Archive"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Larari-archívum"
+          }
+        }
+      }
+    },
+    "NSCameraUsageDescription" : {
+      "comment" : "Camera permission prompt (barcode scanner, product and member photos)",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Larari verwendet die Kamera, um Barcodes zu scannen und Produkt- und Mitgliederfotos aufzunehmen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Larari uses the camera to scan barcodes and to take product and member photos."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Larari a kamerát vonalkódok beolvasására, valamint termék- és tagfotók készítésére használja."
+          }
+        }
+      }
+    },
+    "NSLocationWhenInUseUsageDescription" : {
+      "comment" : "Location permission prompt (nearby shops)",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Larari verwendet deinen Standort nur, um Geschäfte in deiner Nähe zu finden. Er wird weder gespeichert noch geteilt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Larari uses your location only to find shops near you. It is not stored or shared."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Larari a helyzetedet csak a közeli üzletek megkereséséhez használja. Nem tárolja és nem osztja meg."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

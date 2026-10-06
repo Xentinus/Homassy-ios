@@ -5,8 +5,8 @@ Checks:
 - the built app's Info.plist has every required usage string and no forbidden key
   ("Always" location, tracking, and the microphone/speech/Siri keys, since voice is not in v1);
 - the app bundle has PrivacyInfo.xcprivacy and hu/en/de InfoPlist.strings with every key;
-- Homassy/InfoPlist.xcstrings translates every key into hu, en and de;
-- Homassy/PrivacyInfo.xcprivacy: no tracking, no tracking domains, no collected data,
+- Larari/InfoPlist.xcstrings translates every key into hu, en and de;
+- Larari/PrivacyInfo.xcprivacy: no tracking, no tracking domains, no collected data,
   UserDefaults reasons CA92.1 + 1C8F.1, and a reason for every declared API category.
 """
 import argparse
@@ -112,9 +112,9 @@ def check_bundle(app):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--app", help="built Homassy.app to check")
-    parser.add_argument("--catalog", default="Homassy/InfoPlist.xcstrings")
-    parser.add_argument("--privacy", default="Homassy/PrivacyInfo.xcprivacy")
+    parser.add_argument("--app", help="built Larari.app to check")
+    parser.add_argument("--catalog", default="Larari/InfoPlist.xcstrings")
+    parser.add_argument("--privacy", default="Larari/PrivacyInfo.xcprivacy")
     args = parser.parse_args(argv)
 
     errors = check_catalog(json.loads(Path(args.catalog).read_text(encoding="utf-8")))

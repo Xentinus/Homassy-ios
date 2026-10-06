@@ -1,6 +1,6 @@
 import pathlib, re, sys
 
-pbx = pathlib.Path("Homassy.xcodeproj/project.pbxproj")
+pbx = pathlib.Path("Larari.xcodeproj/project.pbxproj")
 text = pbx.read_text()
 
 def edit(text, owner, set_keys, remove_keys):
@@ -39,12 +39,12 @@ common = {
 drop_platforms = {"MACOSX_DEPLOYMENT_TARGET", "XROS_DEPLOYMENT_TARGET", "TVOS_DEPLOYMENT_TARGET",
                   "WATCHOS_DEPLOYMENT_TARGET", "LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]"}
 
-text = edit(text, 'PBXProject "Homassy"', {"IPHONEOS_DEPLOYMENT_TARGET": "26.0"}, drop_platforms)
+text = edit(text, 'PBXProject "Larari"', {"IPHONEOS_DEPLOYMENT_TARGET": "26.0"}, drop_platforms)
 
-text = edit(text, 'PBXNativeTarget "Homassy"', {
+text = edit(text, 'PBXNativeTarget "Larari"', {
     **common,
-    "PRODUCT_BUNDLE_IDENTIFIER": "com.homassy.app",
-    "INFOPLIST_FILE": "Homassy/Info.plist",
+    "PRODUCT_BUNDLE_IDENTIFIER": "app.larari",
+    "INFOPLIST_FILE": "Larari/Info.plist",
     "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
     "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone":
         '"UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"',
@@ -53,28 +53,28 @@ text = edit(text, 'PBXNativeTarget "Homassy"', {
 }, drop_platforms | {"INFOPLIST_KEY_UISupportedInterfaceOrientations", "ENABLE_APP_SANDBOX", "ENABLE_USER_SELECTED_FILES",
                      "CODE_SIGN_ENTITLEMENTS"})
 
-text = edit(text, 'PBXNativeTarget "HomassyUITests"', {
+text = edit(text, 'PBXNativeTarget "LarariUITests"', {
     **common,
-    "PRODUCT_BUNDLE_IDENTIFIER": "com.homassy.app.uitests",
+    "PRODUCT_BUNDLE_IDENTIFIER": "app.larari.uitests",
 }, drop_platforms)
 
 # Widget extension (N-04): same language and isolation settings as the app, so shared files compile the same way.
-text = edit(text, 'PBXNativeTarget "HomassyWidgetsExtension"', {
+text = edit(text, 'PBXNativeTarget "LarariWidgetsExtension"', {
     **common,
-    "PRODUCT_BUNDLE_IDENTIFIER": "com.homassy.app.widgets",
-    "INFOPLIST_KEY_CFBundleDisplayName": "Homassy",
+    "PRODUCT_BUNDLE_IDENTIFIER": "app.larari.widgets",
+    "INFOPLIST_KEY_CFBundleDisplayName": "Larari",
     "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
     "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
     "SWIFT_APPROACHABLE_CONCURRENCY": "YES",
     "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
 }, drop_platforms)
 
-# Free-team fallback (Step 15a): HOMASSY_DEV_BUNDLE_ID=1 gives Debug the `.dev` bundle IDs; Release keeps the permanent ones.
+# Free-team fallback (Step 15a): LARARI_DEV_BUNDLE_ID=1 gives Debug the `.dev` bundle IDs; Release keeps the permanent ones.
 import os
-if os.environ.get("HOMASSY_DEV_BUNDLE_ID") == "1":
-    for owner, dev_id in (('PBXNativeTarget "Homassy"', "com.homassy.app.dev"),
-                          ('PBXNativeTarget "HomassyUITests"', "com.homassy.app.dev.uitests"),
-                          ('PBXNativeTarget "HomassyWidgetsExtension"', "com.homassy.app.dev.widgets")):
+if os.environ.get("LARARI_DEV_BUNDLE_ID") == "1":
+    for owner, dev_id in (('PBXNativeTarget "Larari"', "app.larari.dev"),
+                          ('PBXNativeTarget "LarariUITests"', "app.larari.dev.uitests"),
+                          ('PBXNativeTarget "LarariWidgetsExtension"', "app.larari.dev.widgets")):
         block = re.compile(r"(/\* Debug configuration for " + re.escape(owner) + r" \*/ = \{.*?PRODUCT_BUNDLE_IDENTIFIER = )[^;]+;", re.S)
         text, n = block.subn(lambda m: m.group(1) + dev_id + ";", text, count=1)
         if n != 1:

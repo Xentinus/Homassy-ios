@@ -12,7 +12,7 @@ KEYS = checker.REQUIRED_USAGE_KEYS
 
 
 def good_info():
-    return {key: f"{key} text" for key in KEYS} | {"CFBundleIdentifier": "com.homassy.app"}
+    return {key: f"{key} text" for key in KEYS} | {"CFBundleIdentifier": "app.larari"}
 
 
 def good_catalog():
@@ -35,7 +35,7 @@ def good_privacy():
 
 
 def make_bundle(root, info=None, languages=("hu", "en", "de"), privacy=True):
-    app = Path(root) / "Homassy.app"
+    app = Path(root) / "Larari.app"
     app.mkdir()
     (app / "Info.plist").write_bytes(plistlib.dumps(info or good_info(), fmt=plistlib.FMT_BINARY))
     if privacy:
@@ -133,8 +133,8 @@ class BundleTests(unittest.TestCase):
 
 class RepositoryTests(unittest.TestCase):
     def test_repository_catalog_and_manifest_pass(self):
-        catalog = json.loads((REPO / "Homassy/InfoPlist.xcstrings").read_text(encoding="utf-8"))
-        manifest = checker.load_plist(REPO / "Homassy/PrivacyInfo.xcprivacy")
+        catalog = json.loads((REPO / "Larari/InfoPlist.xcstrings").read_text(encoding="utf-8"))
+        manifest = checker.load_plist(REPO / "Larari/PrivacyInfo.xcprivacy")
         self.assertEqual(checker.check_catalog(catalog) + checker.check_privacy(manifest), [])
 
 
