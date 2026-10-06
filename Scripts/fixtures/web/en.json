@@ -1,9 +1,0 @@
-{
-  "common": { "personal": "Personal", "cancel": "Cancel" },
-  "undo": {
-    "action": "Undo",
-    "item": { "delete": "{name} removed" },
-    "collapsed": { "delete": "1 item removed | {count} items removed" }
-  },
-  "onlyEnglish": "Only in English"
-}

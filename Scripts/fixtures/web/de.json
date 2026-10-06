@@ -1,8 +1,0 @@
-{
-  "common": { "personal": "Persönlich", "cancel": "Abbrechen" },
-  "undo": {
-    "action": "Rückgängig",
-    "item": { "delete": "{name} entfernt" },
-    "collapsed": { "delete": "1 Artikel entfernt | {count} Artikel entfernt" }
-  }
-}
