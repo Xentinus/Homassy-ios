@@ -167,6 +167,15 @@ struct SharingServiceTests {
         #expect(try SharingFixtures.fetchSpace(id, in: persistence) == nil)
     }
 
+    @Test func deleteDecidesWithAFreshLookupNotTheCache() async throws {
+        let owned = try await service.createHousehold(name: "Mine")
+        cloud.coldCache = true          // right after launch: the cache still says "not shared"
+
+        try await service.deleteHousehold(owned)
+
+        #expect(cloud.purgedZones.first?.store === persistence.privateStore)
+    }
+
     @Test func participantCannotDeleteHousehold() async throws {
         let joined = try cloud.simulateJoinedHousehold(named: "Theirs")
         await #expect(throws: SharingError.notOwner) { try await service.deleteHousehold(joined) }

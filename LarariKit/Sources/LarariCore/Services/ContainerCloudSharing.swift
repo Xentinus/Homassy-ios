@@ -16,9 +16,20 @@ public final class ContainerCloudSharing: CloudSharing {
     @ObservationIgnored private var refreshing = false
     @ObservationIgnored private var refreshAgain = false
 
-    public init(persistence: PersistenceController, backend: any SharingBackend) {
+    @ObservationIgnored private let retryDelay: Duration
+
+    public init(persistence: PersistenceController, backend: any SharingBackend, retryDelay: Duration = .seconds(2)) {
         self.persistence = persistence
         self.backend = backend
+        self.retryDelay = retryDelay
+    }
+
+    /// NSPersistentCloudKitContainer drops a request when one of the same kind is already pending
+    /// (`NSCocoaErrorDomain` 134417, "cancelled because there is already a pending request"). P5-06 smoke: a purge
+    /// right after launch removed the local copy but left the zone on the server, so it must be retried.
+    static func isCancelledForPendingRequest(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        return nsError.domain == NSCocoaErrorDomain && nsError.code == 134417
     }
 
     private func scope(of store: NSPersistentStore) -> StoreScope {
@@ -69,11 +80,14 @@ public final class ContainerCloudSharing: CloudSharing {
     /// Not answered synchronously any more (it would block); use `fetchRecordZoneID(forObjectWith:)`.
     public func recordZoneID(forObjectWith objectID: NSManagedObjectID) -> CKRecordZone.ID? { nil }
 
+    /// The container's answer, or the last known share when it has none (it answers "not shared" until mirroring
+    /// is set up), so a leave never fails and a share is never created twice because of a cold container.
     public func fetchShare(forObjectWith objectID: NSManagedObjectID) async -> CKShare? {
         guard !objectID.isTemporaryID else { return nil }
         let state = await backend.states(for: [objectID])[objectID]
+        guard let fresh = state?.share else { return states[objectID]?.share }
         if let state, states[objectID] != state { states[objectID] = state }
-        return state?.share
+        return fresh
     }
 
     public func fetchRecordZoneID(forObjectWith objectID: NSManagedObjectID) async -> CKRecordZone.ID? {
@@ -96,7 +110,17 @@ public final class ContainerCloudSharing: CloudSharing {
     }
 
     public func purgeObjectsAndRecordsInZone(with zoneID: CKRecordZone.ID, in store: NSPersistentStore) async throws {
-        try await backend.purgeZone(zoneID, in: scope(of: store))
+        let scope = scope(of: store)
+        var attempt = 1
+        while true {
+            do {
+                try await backend.purgeZone(zoneID, in: scope)
+                return
+            } catch where Self.isCancelledForPendingRequest(error) && attempt < 5 {
+                attempt += 1
+                try await Task.sleep(for: retryDelay)
+            }
+        }
     }
 
     public func acceptShareInvitations(from invitations: [any ShareInvitation], into store: NSPersistentStore) async throws {

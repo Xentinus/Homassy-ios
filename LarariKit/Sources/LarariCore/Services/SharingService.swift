@@ -166,13 +166,12 @@ public final class SharingService {
     /// An unshared household is deleted locally.
     public func deleteHousehold(_ space: Space) async throws {
         guard space.kind == .household else { throw SharingError.personalSpace }
-        switch role(for: space) {
-        case .participant:
-            throw SharingError.notOwner
-        case .owner:
-            guard let share = await cloud.fetchShare(forObjectWith: space.objectID) else { throw SharingError.notShared }
+        guard spaceStore.store(for: space) === persistence.privateStore else { throw SharingError.notOwner }
+        // A fresh lookup decides, never the cache: right after launch the cache can still say "not shared", and a
+        // local delete would leave the share and its zone behind on the server (P5-06 smoke).
+        if let share = await cloud.fetchShare(forObjectWith: space.objectID) {
             try await purge(space, zoneID: share.recordID.zoneID, in: persistence.privateStore)
-        case .notShared:
+        } else {
             for id in ObjectGraph.objectIDs(reachableFrom: space) {
                 context.delete(try context.existingObject(with: id))
             }

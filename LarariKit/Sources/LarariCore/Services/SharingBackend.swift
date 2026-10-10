@@ -39,6 +39,35 @@ public protocol SharingBackend: Sendable {
     func recordZoneID(for objectID: NSManagedObjectID) async -> CKRecordZone.ID?
 }
 
+/// Opens once NSPersistentCloudKitContainer has set up mirroring for every store. Before that its lookups answer
+/// "not shared" for everything (P5-06 smoke: a leave right after launch failed with `notParticipant`), so the
+/// backend waits here, on its own queue, up to `timeout` (no account, or setup finished before anyone listened).
+final class SetupGate: @unchecked Sendable {
+    private let condition = NSCondition()
+    private var pending: Set<String>
+
+    init(storeIdentifiers: Set<String>) { pending = storeIdentifiers }
+
+    func markSetUp(_ storeIdentifier: String) {
+        condition.lock()
+        pending.remove(storeIdentifier)
+        condition.broadcast()
+        condition.unlock()
+    }
+
+    /// Blocks the calling (background) thread until every store is set up or the timeout passes.
+    @discardableResult
+    func wait(timeout: TimeInterval) -> Bool {
+        let deadline = Date.now.addingTimeInterval(timeout)
+        condition.lock()
+        defer { condition.unlock() }
+        while !pending.isEmpty {
+            if !condition.wait(until: deadline) { return pending.isEmpty }
+        }
+        return true
+    }
+}
+
 /// The real backend: one serial background queue, a background context for existence checks.
 public final class ContainerSharingBackend: SharingBackend, @unchecked Sendable {
     // Immutable references, only used on `queue`.
@@ -47,13 +76,33 @@ public final class ContainerSharingBackend: SharingBackend, @unchecked Sendable 
     private let sharedStore: NSPersistentStore
     private let queue = DispatchQueue(label: "app.larari.sharing", qos: .userInitiated)
     private let lookupContext: NSManagedObjectContext
+    private let setupGate: SetupGate
+    private let setupTimeout: TimeInterval
+    private var setupObserver: NSObjectProtocol?
 
+    /// Create it right after the stores load (AppModel does), so it sees the setup events.
     @MainActor
-    public init(persistence: PersistenceController) {
+    public init(persistence: PersistenceController, setupTimeout: TimeInterval = 15) {
         container = persistence.container
         privateStore = persistence.privateStore
         sharedStore = persistence.sharedStore
         lookupContext = persistence.container.newBackgroundContext()
+        self.setupTimeout = setupTimeout
+        let gate = SetupGate(storeIdentifiers: Set([persistence.privateStore.identifier, persistence.sharedStore.identifier]
+            .compactMap { $0 }))
+        setupGate = gate
+        setupObserver = NotificationCenter.default.addObserver(
+            forName: NSPersistentCloudKitContainer.eventChangedNotification, object: persistence.container, queue: nil
+        ) { note in
+            guard let event = note.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
+                    as? NSPersistentCloudKitContainer.Event,
+                  event.type == .setup, event.endDate != nil, event.succeeded else { return }
+            gate.markSetUp(event.storeIdentifier)
+        }
+    }
+
+    deinit {
+        if let setupObserver { NotificationCenter.default.removeObserver(setupObserver) }
     }
 
     private func store(_ scope: StoreScope) -> NSPersistentStore {
@@ -64,7 +113,8 @@ public final class ContainerSharingBackend: SharingBackend, @unchecked Sendable 
     private func run<T>(_ work: @escaping () throws -> T) async throws -> T {
         let job = UncheckedSendable(value: work)
         let box: UncheckedSendable<T> = try await withCheckedThrowingContinuation { continuation in
-            queue.async {
+            queue.async { [setupGate, setupTimeout] in
+                setupGate.wait(timeout: setupTimeout)
                 do { continuation.resume(returning: UncheckedSendable(value: try job.value())) }
                 catch { continuation.resume(throwing: error) }
             }
@@ -76,7 +126,8 @@ public final class ContainerSharingBackend: SharingBackend, @unchecked Sendable 
     private func runCallback<T>(_ start: @escaping (@escaping @Sendable (Result<T, Error>) -> Void) -> Void) async throws -> T {
         let job = UncheckedSendable(value: start)
         let box: UncheckedSendable<T> = try await withCheckedThrowingContinuation { continuation in
-            queue.async {
+            queue.async { [setupGate, setupTimeout] in
+                setupGate.wait(timeout: setupTimeout)
                 job.value { result in
                     switch result {
                     case let .success(value): continuation.resume(returning: UncheckedSendable(value: value))
