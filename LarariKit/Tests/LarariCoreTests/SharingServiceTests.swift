@@ -127,6 +127,28 @@ struct SharingServiceTests {
         #expect(try SharingFixtures.fetchSpace(id, in: persistence) == nil)
     }
 
+    @Test func leaveAndDeleteForgetThePurgedObjects() async throws {
+        let joined = try cloud.simulateJoinedHousehold(named: "Theirs")
+        let joinedID = joined.objectID
+        try await service.leave(joined)
+        #expect(cloud.forgotten.contains(joinedID))
+
+        let owned = try await service.createHousehold(name: "Mine")
+        let ownedIDs = ObjectGraph.objectIDs(reachableFrom: owned)
+        try await service.deleteHousehold(owned)
+        #expect(ownedIDs.isSubset(of: Set(cloud.forgotten)))
+    }
+
+    @Test func leaveDecidesWithAFreshLookupNotTheCache() async throws {
+        let joined = try cloud.simulateJoinedHousehold(named: "Theirs")
+        cloud.coldCache = true
+
+        try await service.leave(joined)
+
+        #expect(cloud.fetchShareCallCount >= 1)
+        #expect(cloud.purgedZones.count == 1)
+    }
+
     @Test func ownerCannotLeave() async throws {
         let owned = try await service.createHousehold(name: "Mine")
         await #expect(throws: SharingError.notParticipant) { try await service.leave(owned) }
@@ -193,6 +215,18 @@ struct SharingServiceTests {
         #expect(cloud.shareCallCount == calls)
     }
 
+    @Test func shareExistingSpaceNeverSharesTwiceWhenTheCacheIsCold() async throws {
+        let owned = try await service.createHousehold(name: "Mine")
+        let existing = try #require(service.share(for: owned))
+        cloud.coldCache = true          // the cache has not caught up yet
+        let calls = cloud.shareCallCount
+
+        let again = try await service.shareExistingSpace(owned)
+
+        #expect(again === existing)
+        #expect(cloud.shareCallCount == calls)
+    }
+
     // MARK: helpers
 
     @Test func suggestedOwnerDisplayNameUsesMostRecentOwnMemberRecord() async throws {
@@ -203,10 +237,10 @@ struct SharingServiceTests {
 
     @Test func objectsOutsideShareZoneReportsMisplacedObjects() async throws {
         let owned = try await service.createHousehold(name: "Mine")
-        #expect(service.objectsOutsideShareZone(in: owned).isEmpty)
+        #expect(await service.objectsOutsideShareZone(in: owned).isEmpty)
 
         let member = try #require(try SharingFixtures.members(of: owned, in: persistence).first)
         cloud.zoneOverrides[member.objectID] = CKRecordZone.ID(zoneName: "com.apple.coredata.cloudkit.zone", ownerName: CKCurrentUserDefaultName)
-        #expect(service.objectsOutsideShareZone(in: owned) == [member.objectID])
+        #expect(await service.objectsOutsideShareZone(in: owned) == [member.objectID])
     }
 }

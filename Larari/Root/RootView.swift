@@ -64,7 +64,10 @@ struct RootView: View {
                     .shareAcceptanceOverlay(app.shareAcceptance, isOwner: ownsInvitation)
                     .onChange(of: inbox.pending.count, initial: true) { startNextInvitation() }
                     .onChange(of: scenePhase) { _, phase in
-                        if phase == .active { startNextInvitation() }
+                        if phase == .active {
+                            startNextInvitation()
+                            app.scheduleShareRefresh(after: .zero)     // P5-06: removals and permissions after an import
+                        }
                     }
                     .onChange(of: app.shareAcceptance.state) { _, state in
                         guard ownsInvitation, case let .accepted(id) = state else { return }
@@ -86,6 +89,7 @@ struct RootView: View {
                     .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)
                         .receive(on: RunLoop.main)) { _ in
                         evaluateMemberSetup()       // a joined space's share and permissions arrive with the import
+                        app.scheduleShareRefresh()  // debounced; the share-state cache follows the import (P5-06)
                     }
                     .sheet(item: $memberSetupSpace, onDismiss: { app.memberSetupSpaceID = nil }) { target in
                         if let members = services.members {

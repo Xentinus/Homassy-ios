@@ -78,6 +78,7 @@ final class AppModel {
     /// Runs persistent-history processing on every remote change (P5-04).
     private(set) var remoteChanges: RemoteChangeObserver?
     private var isBuildingServices = false
+    private var shareRefresh: Task<Void, Never>?
     private(set) var bootstrapError: (any Error)?
 
     init(persistence: PersistenceController,
@@ -202,7 +203,7 @@ final class AppModel {
         }
         #endif
         #if CLOUDKIT_ENABLED
-        return ContainerCloudSharing(container: persistence.container)
+        return ContainerCloudSharing(persistence: persistence, backend: ContainerSharingBackend(persistence: persistence))
         #else
         return LocalCloudSharing(persistence: persistence, defaults: appDefaults)
         #endif
@@ -297,9 +298,22 @@ final class AppModel {
         }
         #endif
         services = container
+        scheduleShareRefresh(after: .zero)
         storeLocation?.onAccessChange = { container.storeReminders.scheduleRefresh(.authorization) }
         startRemoteChanges(for: container)
         container.shoppingActivity.scheduleRefresh()     // adopts an activity that outlived the previous process, or ends it when its store is gone
+    }
+
+    /// Re-reads shares and permissions off the main thread (P5-06): at launch, after remote changes (debounced, an
+    /// import posts many) and when the app becomes active, so removals and permission changes show once imported.
+    func scheduleShareRefresh(after delay: Duration = .seconds(1)) {
+        shareRefresh?.cancel()
+        shareRefresh = Task { [cloudSharing] in
+            if delay > .zero {
+                do { try await Task.sleep(for: delay) } catch { return }
+            }
+            await cloudSharing.refreshShares()
+        }
     }
 
     /// The services for work without a scene (N-01 background refresh): a background launch never shows RootView,

@@ -25,6 +25,10 @@ struct HouseholdSpaceSections<TrailingContent: View>: View {
     @State private var showsFormer = false
     /// Bumped on every view-context change: member rows are computed, not observed.
     @State private var revision = 0
+    #if DEBUG
+    /// The DEBUG zone check, computed off the main thread (P5-06).
+    @State private var zoneCheckCount: Int?
+    #endif
 
     var body: some View {
         let _ = revision
@@ -106,9 +110,12 @@ struct HouseholdSpaceSections<TrailingContent: View>: View {
             }
             #if DEBUG
             LabeledContent("household.sharing.zoneCheck") {
-                Text(verbatim: "\(sharing.objectsOutsideShareZone(in: space).count)")
+                Text(verbatim: zoneCheckCount.map(String.init) ?? "…")
             }
             .accessibilityIdentifier("household.sharing.zoneCheck")
+            .task(id: space.objectID) {
+                zoneCheckCount = await sharing.objectsOutsideShareZone(in: space).count   // the zone lookups block (P5-06)
+            }
             #endif
         } header: {
             Text("member.section.title")

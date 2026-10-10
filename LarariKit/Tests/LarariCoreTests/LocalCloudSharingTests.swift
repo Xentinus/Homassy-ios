@@ -42,7 +42,7 @@ struct LocalCloudSharingTests {
         #expect(service.canEdit(space))
         #expect(try cloud.shares(in: persistence.privateStore).count == 1)
         #expect(try cloud.shares(in: persistence.sharedStore).isEmpty)
-        #expect(service.objectsOutsideShareZone(in: space).isEmpty)
+        #expect(await service.objectsOutsideShareZone(in: space).isEmpty)
         #expect(try SharingFixtures.members(of: space, in: persistence).map(\.displayName) == ["Béla"])
     }
 

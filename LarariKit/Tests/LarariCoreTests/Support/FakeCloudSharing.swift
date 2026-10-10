@@ -29,6 +29,10 @@ final class FakeCloudSharing: CloudSharing {
     private(set) var persistedShares: [(share: CKShare, store: NSPersistentStore)] = []
     private(set) var purgedZones: [(zoneID: CKRecordZone.ID, store: NSPersistentStore)] = []
     private(set) var acceptCallCount = 0
+    /// P5-06: the sync lookup answers nil (a cold cache) while the async lookup still sees the share.
+    var coldCache = false
+    private(set) var fetchShareCallCount = 0
+    private(set) var forgotten: [NSManagedObjectID] = []
 
     init(persistence: PersistenceController) { self.persistence = persistence }
 
@@ -40,7 +44,14 @@ final class FakeCloudSharing: CloudSharing {
         return share
     }
 
-    func share(forObjectWith objectID: NSManagedObjectID) -> CKShare? { sharesByRoot[objectID] }
+    func share(forObjectWith objectID: NSManagedObjectID) -> CKShare? { coldCache ? nil : sharesByRoot[objectID] }
+
+    func fetchShare(forObjectWith objectID: NSManagedObjectID) async -> CKShare? {
+        fetchShareCallCount += 1
+        return sharesByRoot[objectID]
+    }
+
+    func forget(_ objectIDs: [NSManagedObjectID]) { forgotten.append(contentsOf: objectIDs) }
 
     func shares(in store: NSPersistentStore) throws -> [CKShare] {
         var seen = Set<CKRecord.ID>()

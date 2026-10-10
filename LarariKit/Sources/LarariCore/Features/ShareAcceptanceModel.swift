@@ -66,7 +66,7 @@ public final class ShareAcceptanceModel {
             return
         }
         let zoneID = invitation.sharedZoneID
-        if let id = joinedSpaceID(in: zoneID) {
+        if let id = await joinedSpaceID(in: zoneID) {
             state = .accepted(spacePublicId: id)
             return
         }
@@ -84,7 +84,7 @@ public final class ShareAcceptanceModel {
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: timeout)
         while true {
-            if let id = joinedSpaceID(in: zoneID) {
+            if let id = await joinedSpaceID(in: zoneID) {
                 state = .accepted(spacePublicId: id)
                 return
             }
@@ -111,11 +111,17 @@ public final class ShareAcceptanceModel {
         lastInvitation = nil
     }
 
-    private func joinedSpaceID(in zoneID: CKRecordZone.ID) -> UUID? {
+    /// The cache first; a joined space it has not seen yet (the import just arrived) gets a fresh lookup (P5-06).
+    private func joinedSpaceID(in zoneID: CKRecordZone.ID) async -> UUID? {
         let request = NSFetchRequest<Space>(entityName: "Space")
         request.affectedStores = [persistence.sharedStore]
         guard let spaces = try? persistence.viewContext.fetch(request) else { return nil }
-        return spaces.first { cloud.share(for: $0)?.recordID.zoneID == zoneID }?.publicId
+        for space in spaces {
+            let cached = cloud.share(for: space)
+            let share = if let cached { cached } else { await cloud.fetchShare(forObjectWith: space.objectID) }
+            if share?.recordID.zoneID == zoneID { return space.publicId }
+        }
+        return nil
     }
 
     static func failure(from error: Error) -> ShareAcceptanceFailure {

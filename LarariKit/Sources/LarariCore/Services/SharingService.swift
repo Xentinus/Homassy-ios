@@ -85,7 +85,8 @@ public final class SharingService {
     @discardableResult
     public func shareExistingSpace(_ space: Space) async throws -> CKShare {
         guard space.kind == .household else { throw SharingError.personalSpace }
-        if let existing = cloud.share(for: space) { return existing }
+        // A fresh lookup, not the cache: a stale "not shared" here would create a second share (P5-06).
+        if let existing = await cloud.fetchShare(forObjectWith: space.objectID) { return existing }
         guard spaceStore.store(for: space) === persistence.privateStore else { throw SharingError.notOwner }
         if try !hasOwnMember(in: space) {
             insertOwnerMember(in: space, displayName: suggestedOwnerDisplayName() ?? "")
@@ -137,15 +138,16 @@ public final class SharingService {
     }
 
     /// Exported objects of the space whose CloudKit zone differs from the share's zone.
-    /// Must be empty; shown in a DEBUG row and checked in the manual checklist.
-    public func objectsOutsideShareZone(in space: Space) -> [NSManagedObjectID] {
-        guard let zoneID = cloud.share(for: space)?.recordID.zoneID else { return [] }
-        return ObjectGraph.objectIDs(reachableFrom: space)
-            .filter { id in
-                guard let recordZone = cloud.recordZoneID(forObjectWith: id) else { return false }
-                return recordZone != zoneID
+    /// Must be empty; shown in a DEBUG row and checked in the manual checklist. Async: the zone lookups block.
+    public func objectsOutsideShareZone(in space: Space) async -> [NSManagedObjectID] {
+        guard let zoneID = await cloud.fetchShare(forObjectWith: space.objectID)?.recordID.zoneID else { return [] }
+        var outside: [NSManagedObjectID] = []
+        for id in ObjectGraph.objectIDs(reachableFrom: space) {
+            if let recordZone = await cloud.fetchRecordZoneID(forObjectWith: id), recordZone != zoneID {
+                outside.append(id)
             }
-            .sorted { $0.uriRepresentation().absoluteString < $1.uriRepresentation().absoluteString }
+        }
+        return outside.sorted { $0.uriRepresentation().absoluteString < $1.uriRepresentation().absoluteString }
     }
 
     // MARK: Leave and delete
@@ -153,7 +155,8 @@ public final class SharingService {
     /// Participant: purging the zone in the shared store ends the participation and removes the
     /// local copy. The UI offers an export first.
     public func leave(_ space: Space) async throws {
-        guard role(for: space) == .participant, let share = cloud.share(for: space) else {
+        guard space.kind == .household, spaceStore.store(for: space) === persistence.sharedStore,
+              let share = await cloud.fetchShare(forObjectWith: space.objectID) else {
             throw SharingError.notParticipant
         }
         try await purge(space, zoneID: share.recordID.zoneID, in: persistence.sharedStore)
@@ -167,7 +170,7 @@ public final class SharingService {
         case .participant:
             throw SharingError.notOwner
         case .owner:
-            guard let share = cloud.share(for: space) else { throw SharingError.notShared }
+            guard let share = await cloud.fetchShare(forObjectWith: space.objectID) else { throw SharingError.notShared }
             try await purge(space, zoneID: share.recordID.zoneID, in: persistence.privateStore)
         case .notShared:
             for id in ObjectGraph.objectIDs(reachableFrom: space) {
@@ -182,6 +185,8 @@ public final class SharingService {
         try await cloud.purgeObjectsAndRecordsInZone(with: zoneID, in: store)
         // The purge is a batch delete in the store; tell the view context so rows disappear now.
         NSManagedObjectContext.mergeChanges(fromRemoteContextSave: [NSDeletedObjectsKey: Array(ids)], into: [context])
+        // Never ask the container about purged objects again: it raises an Objective-C exception (P0-01 rows 17–18).
+        cloud.forget(Array(ids))
     }
 
     // MARK: UICloudSharingController hooks
